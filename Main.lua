@@ -5,24 +5,29 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==========================================================
--- HỆ THỐNG CẤU HÌNH & ENGINE ĐỊNH VỊ (CONFIG)
+-- SYSTEM CONFIGURATION (ENGLISH TRANSLATED)
 -- ==========================================================
 local Config = {
     Aimbot_Enabled = false,
-    AimbotMode = "Mọi người", 
+    AimbotMode = "Everyone", -- "None", "Enemy", "Everyone", "Bot"
     FOV_Enabled = true,       
     FOV_Radius = 140,         
     ESP_Box_Enabled = false,    
-    ESP_Chams_Enabled = false,  
+    ESP_Chams_Enabled = false,  -- Dynamic Chams (BoxHandle + BillboardGui)
     SnapSpeed = 0.85,         
-    SwitchDelay = 0.05        
+    SwitchDelay = 0.05,
+    
+    -- Chams Config Upgraded Max Distance
+    FillTransparency = 0.8,
+    DefaultColor = Color3.fromRGB(0, 255, 0),
+    MaxDistance = 2000 -- Increased distance as requested
 }
 
 local CurrentTarget = nil
 local TargetStartTime = 0
 local ESP_Data = {}
 
--- Khởi tạo Highlight màu đỏ cho mục tiêu Aimbot
+-- Target Highlight for Aimbot Look-at
 local TargetHighlight = Instance.new("Highlight")
 TargetHighlight.Name = "Wangcaos_TargetHighlight"
 TargetHighlight.FillColor = Color3.fromRGB(255, 0, 0)
@@ -32,23 +37,17 @@ TargetHighlight.OutlineTransparency = 0
 TargetHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 TargetHighlight.Adornee = nil
 
--- Thư mục gốc chứa GUI bảo mật
 local ParentGui = game:GetService("CoreGui")
 pcall(function() if gethui then ParentGui = gethui() end end)
 
 TargetHighlight.Parent = ParentGui
 
-local ChamsFolder = Instance.new("Folder")
-ChamsFolder.Name = "Wangcaos_ChamsFolder"
-ChamsFolder.Parent = ParentGui
-
--- Dọn dẹp bản chạy cũ nếu trùng lặp
 if ParentGui:FindFirstChild("Wangcaos_SplitMenu") then
     ParentGui["Wangcaos_SplitMenu"]:Destroy()
 end
 
 -- ==========================================================
--- HÀM XỬ LÝ KÉO THẢ NGHIÊM NGẶT (STRICT DRAGGING)
+-- STRICT DRAG HANDLE SYSTEM
 -- ==========================================================
 local function MakeDraggable(dragHandle, targetObject)
     local dragging = false
@@ -86,7 +85,7 @@ local function MakeDraggable(dragHandle, targetObject)
 end
 
 -- ==========================================================
--- BỘ LỌC ĐỐI TƯỢNG VÀ KIỂM TRA ĐỘ KHẢ DỤNG (LOGIC ENGINE)
+-- CORE UTILITIES & TARGET FILTERING LOGIC
 -- ==========================================================
 local LogicEngine = {}
 
@@ -133,7 +132,7 @@ function LogicEngine.GetClosestTarget()
     else
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and LogicEngine.IsAlive(p.Character) then
-                local isAllowed = (Config.AimbotMode == "Mọi người") or (Config.AimbotMode == "Khác team" and p.Team ~= LocalPlayer.Team)
+                local isAllowed = (Config.AimbotMode == "Everyone") or (Config.AimbotMode == "Enemy" and p.Team ~= LocalPlayer.Team)
                 if isAllowed then
                     local head = p.Character.Head
                     local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
@@ -148,39 +147,125 @@ function LogicEngine.GetClosestTarget()
     return selectedTarget
 end
 
-local function UpdateChams()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            local char = p.Character
-            if Config.ESP_Chams_Enabled and char and LogicEngine.IsAlive(char) then
-                local hl = ChamsFolder:FindFirstChild(p.Name)
-                if not hl then
-                    hl = Instance.new("Highlight")
-                    hl.Name = p.Name
-                    hl.Parent = ChamsFolder
-                    hl.FillColor = Color3.fromRGB(0, 255, 0)
-                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    hl.FillTransparency = 0.5
-                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                end
-                hl.Adornee = char
-            else
-                local hl = ChamsFolder:FindFirstChild(p.Name)
-                if hl then hl:Destroy() end
-            end
-        end
+-- ==========================================================
+-- DYNAMIC CHAMS ENGINE CORE (UPGRADED VERSION)
+-- ==========================================================
+local function GetPlayerColor(Player)
+    if Player.Team then
+        return Player.TeamColor.Color
+    end
+    if Player.TeamColor ~= BrickColor.new("White") and Player.TeamColor ~= BrickColor.new("Medium stone grey") then
+        return Player.TeamColor.Color
+    end
+    return Config.DefaultColor
+end
+
+local function GetEquippedTool(Character)
+    local Tool = Character:FindFirstChildOfClass("Tool")
+    if Tool then
+        return Tool.Name
+    end
+    return "None"
+end
+
+local function CleanUpChams(character)
+    if character then
+        local root = character:FindFirstChild("HumanoidRootPart")
+        local head = character:FindFirstChild("Head")
+        if root and root:FindFirstChild("BéBoxFill") then root["BéBoxFill"]:Destroy() end
+        if head and head:FindFirstChild("BéInfoTag") then head["BéInfoTag"]:Destroy() end
     end
 end
 
+local function ApplyESP(Player)
+    if Player == LocalPlayer then return end
+
+    local function Setup(Character)
+        Character:WaitForChild("HumanoidRootPart", 15)
+        Character:WaitForChild("Head", 15)
+        
+        local Root = Character:FindFirstChild("HumanoidRootPart")
+        local Head = Character:FindFirstChild("Head")
+        if not Root or not Head then return end
+
+        CleanUpChams(Character)
+
+        -- 1. Solid Color Box Adornment (20% Opacity Fill)
+        local Box = Instance.new("BoxHandleAdornment")
+        Box.Name = "BéBoxFill"
+        Box.Parent = Root
+        Box.Adornee = Root
+        Box.AlwaysOnTop = true
+        Box.ZIndex = 5
+        Box.Size = Vector3.new(4, 6, 4)
+        Box.Transparency = Config.FillTransparency
+        Box.Visible = false
+
+        -- 2. Information Header Tag (BillboardGui)
+        local Gui = Instance.new("BillboardGui")
+        Gui.Name = "BéInfoTag"
+        Gui.Adornee = Head
+        Gui.Size = UDim2.new(0, 200, 0, 100)
+        Gui.StudsOffset = Vector3.new(0, 4, 0) 
+        Gui.AlwaysOnTop = true
+
+        local Label = Instance.new("TextLabel", Gui)
+        Label.Size = UDim2.new(1, 0, 1, 0)
+        Label.BackgroundTransparency = 1
+        Label.Font = Enum.Font.Code
+        Label.TextScaled = false
+        Label.TextSize = 13
+        Label.TextStrokeTransparency = 0
+        Label.TextColor3 = Color3.new(1, 1, 1)
+        Gui.Parent = Head
+        Gui.Enabled = false
+
+        local Connection
+        Connection = RunService.RenderStepped:Connect(function()
+            if not Character.Parent or not Root.Parent or not Head.Parent then
+                Connection:Disconnect()
+                Gui:Destroy()
+                return
+            end
+
+            local Hum = Character:FindFirstChild("Humanoid")
+            if Config.ESP_Chams_Enabled and Hum and Hum.Health > 0 and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local color = GetPlayerColor(Player)
+                local dist = math.floor((Root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                local teamName = Player.Team and Player.Team.Name or "No Team"
+                local toolName = GetEquippedTool(Character)
+
+                if dist <= Config.MaxDistance then
+                    Box.Visible = true
+                    Box.Color3 = color
+
+                    Label.Visible = true
+                    Label.TextColor3 = color
+                    Label.Text = string.format("%s (%dm)\n(%s)(%s)", Player.Name, dist, teamName, toolName)
+                    Gui.Enabled = true
+                else
+                    Box.Visible = false
+                    Gui.Enabled = false
+                end
+            else
+                Box.Visible = false
+                Gui.Enabled = false
+            end
+        end)
+    end
+
+    Player.CharacterAdded:Connect(Setup)
+    if Player.Character then task.spawn(Setup, Player.Character) end
+end
+
 -- ==========================================================
--- THIẾT KẾ GIAO DIỆN HÌNH KHỐI PHONG CÁCH CŨ (GUI)
+-- CLASSIC INTERFACE BUILD (ENGLISH TRANSLATED)
 -- ==========================================================
 local ScreenGui = Instance.new("ScreenGui", ParentGui)
 ScreenGui.Name = "Wangcaos_SplitMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 
--- Nút tròn thu phóng di động "GH"
 local MobileToggleBtn = Instance.new("TextButton", ScreenGui)
 MobileToggleBtn.Size = UDim2.new(0, 45, 0, 45)
 MobileToggleBtn.Position = UDim2.new(0, 15, 0.4, 0)
@@ -195,7 +280,6 @@ BtnStroke.Color = Color3.fromRGB(100, 255, 100)
 BtnStroke.Thickness = 1.5
 MakeDraggable(MobileToggleBtn, MobileToggleBtn)
 
--- Khung hiển thị trung tâm bo góc
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 310, 0, 255)
 MainFrame.Position = UDim2.new(0.5, -155, 0.5, -127)
@@ -209,7 +293,6 @@ FrameStroke.Thickness = 1.5
 
 MobileToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
--- Thanh Header Tiêu Đề - Vùng duy nhất để điều hướng vị trí bảng
 local TitleBar = Instance.new("Frame", MainFrame)
 TitleBar.Size = UDim2.new(1, 0, 0, 28)
 TitleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
@@ -220,7 +303,7 @@ BarCorner.CornerRadius = UDim.new(0, 6)
 MakeDraggable(TitleBar, MainFrame)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
-TitleText.Text = "  wangcaos script (Full Legacy Build)"
+TitleText.Text = "  wangcaos script (English Classic v15)"
 TitleText.TextColor3 = Color3.fromRGB(235, 235, 235)
 TitleText.Font = Enum.Font.SourceSansBold
 TitleText.TextSize = 13
@@ -238,10 +321,11 @@ CloseBtn.Size = UDim2.new(0, 22, 0, 20)
 CloseBtn.Position = UDim2.new(1, -26, 0.5, -10)
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 CloseBtn.MouseButton1Click:Connect(function() 
-    TargetHighlight:Destroy() ChamsFolder:Destroy() ScreenGui:Destroy() 
+    TargetHighlight:Destroy()
+    for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
+    ScreenGui:Destroy() 
 end)
 
--- Vùng đệm các nút bấm tương tác
 local ContentFrame = Instance.new("Frame", MainFrame)
 ContentFrame.Size = UDim2.new(1, -24, 1, -42)
 ContentFrame.Position = UDim2.new(0, 12, 0, 36)
@@ -251,7 +335,6 @@ local ListLayout = Instance.new("UIListLayout", ContentFrame)
 ListLayout.Padding = UDim.new(0, 7)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Trình khởi tạo Checkbox vuông bo cạnh
 local function CreateMenuRow(labelText, layoutOrder)
     local row = Instance.new("Frame", ContentFrame)
     row.Size = UDim2.new(1, 0, 0, 28)
@@ -284,7 +367,7 @@ local function CreateMenuRow(labelText, layoutOrder)
 end
 
 -- ==========================================================
--- ĐỒNG BỘ LOGIC HOẠT ĐỘNG VÀ VÒNG LẶP HỆ THỐNG
+-- INTERACTION & SELECTION HANDLING
 -- ==========================================================
 local function ToggleVisual(btn, stroke, state)
     if state then
@@ -296,43 +379,45 @@ local function ToggleVisual(btn, stroke, state)
     end
 end
 
-local AimBtn, AimLabel, AimStroke = CreateMenuRow("Aimbot + Kéo Tâm Siêu Tốc", 1)
+local AimBtn, AimLabel, AimStroke = CreateMenuRow("Aimbot Tracking Target", 1)
 ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 AimBtn.MouseButton1Click:Connect(function()
     Config.Aimbot_Enabled = not Config.Aimbot_Enabled
     ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 end)
 
-local FovBtn, FovLabel, FovStroke = CreateMenuRow("Vòng Tròn Định Vị FOV (Trắng)", 2)
+local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display FOV Radius (White)", 2)
 ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 FovBtn.MouseButton1Click:Connect(function()
     Config.FOV_Enabled = not Config.FOV_Enabled
     ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 end)
 
-local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("ESP Khung Vuông Định Vị", 3)
+local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("ESP Red Box Framework", 3)
 ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 EspBoxBtn.MouseButton1Click:Connect(function()
     Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
     ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 end)
 
-local ChamsBtn, ChamsLabel, ChamsStroke = CreateMenuRow("Chams Nhìn Xuyên Vật Cản", 4)
+local ChamsBtn, ChamsLabel, ChamsStroke = CreateMenuRow("Chams Tag Info (Max 2000m)", 4)
 ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
 ChamsBtn.MouseButton1Click:Connect(function()
     Config.ESP_Chams_Enabled = not Config.ESP_Chams_Enabled
     ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
-    if not Config.ESP_Chams_Enabled then ChamsFolder:ClearAllChildren() end
+    if not Config.ESP_Chams_Enabled then
+        for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
+    end
 end)
 
--- Tạo cụm menu thả lựa chọn chế độ ngắm
+-- English Trans Dropdown
 local DropRow = Instance.new("Frame", ContentFrame)
 DropRow.Size = UDim2.new(1, 0, 0, 28)
 DropRow.BackgroundTransparency = 1
 DropRow.LayoutOrder = 5
 
 local DropTitle = Instance.new("TextLabel", DropRow)
-DropTitle.Text = "Mục tiêu quét:"
+DropTitle.Text = "Target Mode:"
 DropTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
 DropTitle.Font = Enum.Font.SourceSansBold
 DropTitle.TextSize = 14
@@ -383,9 +468,20 @@ local function BuildOption(modeName)
         DropContainer.Visible = false
     end)
 end
-BuildOption("None") BuildOption("Khác team") BuildOption("Mọi người") BuildOption("Bot")
+BuildOption("None") BuildOption("Enemy") BuildOption("Everyone") BuildOption("Bot")
 
--- Thiết lập công cụ vẽ khung vẽ ngoại vi (Drawing API)
+-- Left Bracket Hotkey Compatibility
+UserInputService.InputBegan:Connect(function(i, p)
+    if not p and i.KeyCode == Enum.KeyCode.LeftBracket then
+        Config.ESP_Chams_Enabled = not Config.ESP_Chams_Enabled
+        ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
+        if not Config.ESP_Chams_Enabled then
+            for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
+        end
+    end
+end)
+
+-- Outer Drawing API FOV Base
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Thickness = 1.5
@@ -410,15 +506,15 @@ end
 
 Players.PlayerRemoving:Connect(function(p)
     if ESP_Data[p] then for _, l in pairs(ESP_Data[p]) do l:Remove() end ESP_Data[p] = nil end
-    if ChamsFolder:FindFirstChild(p.Name) then ChamsFolder[p.Name]:Destroy() end
+    CleanUpChams(p.Character)
 end)
 Players.PlayerAdded:Connect(BuildESP)
 for _, v in pairs(Players:GetPlayers()) do BuildESP(v) end
 
--- VÒNG LẶP XỬ LÝ FRAME-BY-FRAME KHÔNG KHỰNG TÂM
+-- ==========================================================
+-- MAIN SYSTEM ITERATION RENDERING LOOP
+-- ==========================================================
 RunService.RenderStepped:Connect(function()
-    UpdateChams()
-
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     FOVCircle.Position = center
     FOVCircle.Radius = Config.FOV_Radius
@@ -450,6 +546,7 @@ RunService.RenderStepped:Connect(function()
         TargetHighlight.Adornee = nil
     end
 
+    -- Independent Traditional Box Framing Loop
     for _, p in pairs(Players:GetPlayers()) do
         local lines = ESP_Data[p]
         if not lines then continue end
@@ -479,4 +576,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("--- [Wangcaos Unified Version V14 - 200+ Lines Checked] ---")
+-- Fire Initial Loops across Active Sessions
+for _, p in pairs(Players:GetPlayers()) do ApplyESP(p) end
+Players.PlayerAdded:Connect(ApplyESP)
+
+print("--- [Wangcaos Chams Update & English GUI Loaded!] ---")

@@ -26,7 +26,6 @@ local Config = {
 local CurrentTarget = nil
 local TargetStartTime = 0
 local ESP_Lines_Data = {}
-local ESP_Tags_Data = {}
 
 -- Visual Target Marker for Aimbot Target Focus
 local TargetHighlight = Instance.new("Highlight")
@@ -201,7 +200,6 @@ local function ApplyChamsTag(Player)
         Gui.Name = "BéInfoTag"
         Gui.Adornee = Head
         Gui.Size = UDim2.new(0, 200, 0, 100)
-        Gui.Value = Vector3.new(0, 4, 0)
         Gui.StudsOffset = Vector3.new(0, 4, 0)
         Gui.AlwaysOnTop = true
 
@@ -253,26 +251,14 @@ local function ApplyChamsTag(Player)
 end
 
 -- ==========================================================
--- ADVANCED MAIZIK CROSSHAIR FOV & TRADITIONAL DRAWING ESP
+-- TRADITIONAL DRAWING FOV & ESP OVERLAY ENGINE
 -- ==========================================================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Thickness = 1.5
 FOVCircle.Filled = false
-FOVCircle.Transparency = 0.8
+FOVCircle.Transparency = 0.9
 FOVCircle.NumSides = 64
-
--- 4 Reticle targeting indicators surrounding center point (Maizik Style)
-local ReticleLines = {
-    Top = Drawing.new("Line"), Bottom = Drawing.new("Line"),
-    Left = Drawing.new("Line"), Right = Drawing.new("Line")
-}
-for _, rLine in pairs(ReticleLines) do
-    rLine.Thickness = 2
-    rLine.Color = Color3.fromRGB(0, 255, 255)
-    rLine.Transparency = 0.9
-    rLine.Visible = false
-end
 
 local function createESP(player)
     if player == LocalPlayer or ESP_Lines_Data[player] then return end
@@ -296,7 +282,7 @@ local function createESP(player)
 end
 
 -- ==========================================================
--- CLASSIC UI FRAME BUILD (ENGLISH RE-TRANSLATED)
+-- CLASSIC UI FRAME BUILD (ENGLISH TRANSLATED)
 -- ==========================================================
 local ScreenGui = Instance.new("ScreenGui", ParentGui)
 ScreenGui.Name = "Wangcaos_SplitMenu"
@@ -340,7 +326,7 @@ BarCorner.CornerRadius = UDim.new(0, 6)
 MakeDraggable(TitleBar, MainFrame)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
-TitleText.Text = "  wangcaos script (Maizik Crosshair v16)"
+TitleText.Text = "  wangcaos script (Perfect Circle v17)"
 TitleText.TextColor3 = Color3.fromRGB(235, 235, 235)
 TitleText.Font = Enum.Font.SourceSansBold
 TitleText.TextSize = 13
@@ -360,7 +346,6 @@ Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 CloseBtn.MouseButton1Click:Connect(function() 
     TargetHighlight:Destroy()
     FOVCircle:Remove()
-    for _, rLine in pairs(ReticleLines) do rLine:Remove() end
     for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
     for _, data in pairs(ESP_Lines_Data) do
         for _, line in pairs(data) do line:Remove() end
@@ -428,7 +413,7 @@ AimBtn.MouseButton1Click:Connect(function()
     ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 end)
 
-local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display Maizik Crosshair FOV", 2)
+local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display Circle FOV (White)", 2)
 ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 FovBtn.MouseButton1Click:Connect(function()
     Config.FOV_Enabled = not Config.FOV_Enabled
@@ -534,36 +519,15 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 -- ==========================================================
--- STEPPED RENDER PIPELINE CORE VÒNG LẶP LIÊN TỤC
+-- STEPPED RENDER PIPELINE CORE LAYER
 -- ==========================================================
 RunService.RenderStepped:Connect(function()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    -- Setup Advanced Maizik Crosshair Display Circle Framework
+    -- Setup Clean Solid Circle Framework
     FOVCircle.Position = center
     FOVCircle.Radius = Config.FOV_Radius
     FOVCircle.Visible = Config.FOV_Enabled 
-
-    if Config.FOV_Enabled then
-        local lineLength = 12
-        local gap = Config.FOV_Radius
-
-        ReticleLines.Top.From = Vector2.new(center.X, center.Y - gap)
-        ReticleLines.Top.To = Vector2.new(center.X, center.Y - gap + lineLength)
-
-        ReticleLines.Bottom.From = Vector2.new(center.X, center.Y + gap)
-        ReticleLines.Bottom.To = Vector2.new(center.X, center.Y + gap - lineLength)
-
-        ReticleLines.Left.From = Vector2.new(center.X - gap, center.Y)
-        ReticleLines.Left.To = Vector2.new(center.X - gap + lineLength, center.Y)
-
-        ReticleLines.Right.From = Vector2.new(center.X + gap, center.Y)
-        ReticleLines.Right.To = Vector2.new(center.X + gap - lineLength, center.Y)
-
-        for _, rLine in pairs(ReticleLines) do rLine.Visible = true end
-    else
-        for _, rLine in pairs(ReticleLines) do rLine.Visible = false end
-    end
 
     -- Closest-to-Crosshair Aimbot Thread Logic Execution
     if Config.Aimbot_Enabled then
@@ -622,7 +586,7 @@ RunService.RenderStepped:Connect(function()
                 data.L4.From = Vector2.new(x, y + h)
                 data.L4.To = Vector2.new(x, y)
 
-                -- Dynamic Red Health Line Placement
+                -- Dynamic Red Health Line Placement SÁT BOX
                 local healthX = x - 2 
                 data.Health.From = Vector2.new(healthX, y + h)
                 data.Health.To = Vector2.new(healthX, y + h - (h * (hum.Health / hum.MaxHealth)))
@@ -648,4 +612,4 @@ for _, v in pairs(Players:GetPlayers()) do
     ApplyChamsTag(v)
 end
 
-print("--- [Wangcaos Unified Version V16 - Maizik Reticle & Closest Target Engine Loaded] ---")
+print("--- [Wangcaos Unified Version V17 - Perfect Circle FOV Verified] ---")

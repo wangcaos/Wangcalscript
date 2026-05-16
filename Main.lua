@@ -5,29 +5,30 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==========================================================
--- SYSTEM CONFIGURATION (ENGLISH TRANSLATED)
+-- SYSTEM CONFIGURATION (ENGLISH CENTRAL ENGINE)
 -- ==========================================================
 local Config = {
     Aimbot_Enabled = false,
     AimbotMode = "Everyone", -- "None", "Enemy", "Everyone", "Bot"
     FOV_Enabled = true,       
     FOV_Radius = 140,         
-    ESP_Box_Enabled = false,    
-    ESP_Chams_Enabled = false,  -- Dynamic Chams (BoxHandle + BillboardGui)
+    ESP_Box_Enabled = false,   -- Toggle for Drawing Box + Tracer + Health Line
+    ESP_Chams_Enabled = false, -- Toggle for Information Head Tags
     SnapSpeed = 0.85,         
     SwitchDelay = 0.05,
     
-    -- Chams Config Upgraded Max Distance
+    -- Chams Config Parameters
     FillTransparency = 0.8,
     DefaultColor = Color3.fromRGB(0, 255, 0),
-    MaxDistance = 2000 -- Increased distance as requested
+    MaxDistance = 2000
 }
 
 local CurrentTarget = nil
 local TargetStartTime = 0
-local ESP_Data = {}
+local ESP_Lines_Data = {}
+local ESP_Tags_Data = {}
 
--- Target Highlight for Aimbot Look-at
+-- Visual Target Marker for Aimbot Target Focus
 local TargetHighlight = Instance.new("Highlight")
 TargetHighlight.Name = "Wangcaos_TargetHighlight"
 TargetHighlight.FillColor = Color3.fromRGB(255, 0, 0)
@@ -39,7 +40,6 @@ TargetHighlight.Adornee = nil
 
 local ParentGui = game:GetService("CoreGui")
 pcall(function() if gethui then ParentGui = gethui() end end)
-
 TargetHighlight.Parent = ParentGui
 
 if ParentGui:FindFirstChild("Wangcaos_SplitMenu") then
@@ -47,7 +47,7 @@ if ParentGui:FindFirstChild("Wangcaos_SplitMenu") then
 end
 
 -- ==========================================================
--- STRICT DRAG HANDLE SYSTEM
+-- DRAG-DROP CONTROLLER FOR TITLEBAR ONLY
 -- ==========================================================
 local function MakeDraggable(dragHandle, targetObject)
     local dragging = false
@@ -85,7 +85,7 @@ local function MakeDraggable(dragHandle, targetObject)
 end
 
 -- ==========================================================
--- CORE UTILITIES & TARGET FILTERING LOGIC
+-- CORE UTILITIES & TARGET CLOSEST-TO-CROSSHAIR FILTER
 -- ==========================================================
 local LogicEngine = {}
 
@@ -113,6 +113,7 @@ function LogicEngine.IsAlive(char)
     return true
 end
 
+-- Target algorithm focusing target closest to crosshair center position
 function LogicEngine.GetClosestTarget()
     if Config.AimbotMode == "None" then return nil end
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -148,12 +149,10 @@ function LogicEngine.GetClosestTarget()
 end
 
 -- ==========================================================
--- DYNAMIC CHAMS ENGINE CORE (UPGRADED VERSION)
+-- BILLBOARD CHAMS TAG CONTEXT LOGIC
 -- ==========================================================
 local function GetPlayerColor(Player)
-    if Player.Team then
-        return Player.TeamColor.Color
-    end
+    if Player.Team then return Player.TeamColor.Color end
     if Player.TeamColor ~= BrickColor.new("White") and Player.TeamColor ~= BrickColor.new("Medium stone grey") then
         return Player.TeamColor.Color
     end
@@ -162,9 +161,7 @@ end
 
 local function GetEquippedTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
-    if Tool then
-        return Tool.Name
-    end
+    if Tool then return Tool.Name end
     return "None"
 end
 
@@ -177,7 +174,7 @@ local function CleanUpChams(character)
     end
 end
 
-local function ApplyESP(Player)
+local function ApplyChamsTag(Player)
     if Player == LocalPlayer then return end
 
     local function Setup(Character)
@@ -190,7 +187,6 @@ local function ApplyESP(Player)
 
         CleanUpChams(Character)
 
-        -- 1. Solid Color Box Adornment (20% Opacity Fill)
         local Box = Instance.new("BoxHandleAdornment")
         Box.Name = "BéBoxFill"
         Box.Parent = Root
@@ -201,12 +197,12 @@ local function ApplyESP(Player)
         Box.Transparency = Config.FillTransparency
         Box.Visible = false
 
-        -- 2. Information Header Tag (BillboardGui)
         local Gui = Instance.new("BillboardGui")
         Gui.Name = "BéInfoTag"
         Gui.Adornee = Head
         Gui.Size = UDim2.new(0, 200, 0, 100)
-        Gui.StudsOffset = Vector3.new(0, 4, 0) 
+        Gui.Value = Vector3.new(0, 4, 0)
+        Gui.StudsOffset = Vector3.new(0, 4, 0)
         Gui.AlwaysOnTop = true
 
         local Label = Instance.new("TextLabel", Gui)
@@ -218,7 +214,6 @@ local function ApplyESP(Player)
         Label.TextStrokeTransparency = 0
         Label.TextColor3 = Color3.new(1, 1, 1)
         Gui.Parent = Head
-        Gui.Enabled = false
 
         local Connection
         Connection = RunService.RenderStepped:Connect(function()
@@ -238,7 +233,6 @@ local function ApplyESP(Player)
                 if dist <= Config.MaxDistance then
                     Box.Visible = true
                     Box.Color3 = color
-
                     Label.Visible = true
                     Label.TextColor3 = color
                     Label.Text = string.format("%s (%dm)\n(%s)(%s)", Player.Name, dist, teamName, toolName)
@@ -259,7 +253,50 @@ local function ApplyESP(Player)
 end
 
 -- ==========================================================
--- CLASSIC INTERFACE BUILD (ENGLISH TRANSLATED)
+-- ADVANCED MAIZIK CROSSHAIR FOV & TRADITIONAL DRAWING ESP
+-- ==========================================================
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+FOVCircle.Thickness = 1.5
+FOVCircle.Filled = false
+FOVCircle.Transparency = 0.8
+FOVCircle.NumSides = 64
+
+-- 4 Reticle targeting indicators surrounding center point (Maizik Style)
+local ReticleLines = {
+    Top = Drawing.new("Line"), Bottom = Drawing.new("Line"),
+    Left = Drawing.new("Line"), Right = Drawing.new("Line")
+}
+for _, rLine in pairs(ReticleLines) do
+    rLine.Thickness = 2
+    rLine.Color = Color3.fromRGB(0, 255, 255)
+    rLine.Transparency = 0.9
+    rLine.Visible = false
+end
+
+local function createESP(player)
+    if player == LocalPlayer or ESP_Lines_Data[player] then return end
+    
+    local data = {
+        L1 = Drawing.new("Line"), L2 = Drawing.new("Line"), 
+        L3 = Drawing.new("Line"), L4 = Drawing.new("Line"),
+        Health = Drawing.new("Line"),
+        Tracer = Drawing.new("Line")
+    }
+
+    for _, line in pairs(data) do
+        line.Thickness = 1.5
+        line.Color = Color3.fromRGB(255, 0, 0)
+        line.Transparency = 1
+        line.Visible = false
+    end
+    data.Health.Thickness = 2 
+
+    ESP_Lines_Data[player] = data
+end
+
+-- ==========================================================
+-- CLASSIC UI FRAME BUILD (ENGLISH RE-TRANSLATED)
 -- ==========================================================
 local ScreenGui = Instance.new("ScreenGui", ParentGui)
 ScreenGui.Name = "Wangcaos_SplitMenu"
@@ -303,7 +340,7 @@ BarCorner.CornerRadius = UDim.new(0, 6)
 MakeDraggable(TitleBar, MainFrame)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
-TitleText.Text = "  wangcaos script (English Classic v15)"
+TitleText.Text = "  wangcaos script (Maizik Crosshair v16)"
 TitleText.TextColor3 = Color3.fromRGB(235, 235, 235)
 TitleText.Font = Enum.Font.SourceSansBold
 TitleText.TextSize = 13
@@ -322,7 +359,12 @@ CloseBtn.Position = UDim2.new(1, -26, 0.5, -10)
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 CloseBtn.MouseButton1Click:Connect(function() 
     TargetHighlight:Destroy()
+    FOVCircle:Remove()
+    for _, rLine in pairs(ReticleLines) do rLine:Remove() end
     for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
+    for _, data in pairs(ESP_Lines_Data) do
+        for _, line in pairs(data) do line:Remove() end
+    end
     ScreenGui:Destroy() 
 end)
 
@@ -367,7 +409,7 @@ local function CreateMenuRow(labelText, layoutOrder)
 end
 
 -- ==========================================================
--- INTERACTION & SELECTION HANDLING
+-- INTERACTION CONFIG BUTTON HOOKS
 -- ==========================================================
 local function ToggleVisual(btn, stroke, state)
     if state then
@@ -379,28 +421,28 @@ local function ToggleVisual(btn, stroke, state)
     end
 end
 
-local AimBtn, AimLabel, AimStroke = CreateMenuRow("Aimbot Tracking Target", 1)
+local AimBtn, AimLabel, AimStroke = CreateMenuRow("Aimbot Closest Crosshair", 1)
 ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 AimBtn.MouseButton1Click:Connect(function()
     Config.Aimbot_Enabled = not Config.Aimbot_Enabled
     ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 end)
 
-local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display FOV Radius (White)", 2)
+local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display Maizik Crosshair FOV", 2)
 ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 FovBtn.MouseButton1Click:Connect(function()
     Config.FOV_Enabled = not Config.FOV_Enabled
     ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 end)
 
-local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("ESP Red Box Framework", 3)
+local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("Drawing Box + Health + Tracer", 3)
 ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 EspBoxBtn.MouseButton1Click:Connect(function()
     Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
     ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 end)
 
-local ChamsBtn, ChamsLabel, ChamsStroke = CreateMenuRow("Chams Tag Info (Max 2000m)", 4)
+local ChamsBtn, ChamsLabel, ChamsStroke = CreateMenuRow("Chams Text Tags Information", 4)
 ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
 ChamsBtn.MouseButton1Click:Connect(function()
     Config.ESP_Chams_Enabled = not Config.ESP_Chams_Enabled
@@ -410,7 +452,7 @@ ChamsBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- English Trans Dropdown
+-- Target Mode Configuration Context Row
 local DropRow = Instance.new("Frame", ContentFrame)
 DropRow.Size = UDim2.new(1, 0, 0, 28)
 DropRow.BackgroundTransparency = 1
@@ -470,56 +512,60 @@ local function BuildOption(modeName)
 end
 BuildOption("None") BuildOption("Enemy") BuildOption("Everyone") BuildOption("Bot")
 
--- Left Bracket Hotkey Compatibility
+-- Left Bracket Toggle Configuration Setup
 UserInputService.InputBegan:Connect(function(i, p)
     if not p and i.KeyCode == Enum.KeyCode.LeftBracket then
-        Config.ESP_Chams_Enabled = not Config.ESP_Chams_Enabled
-        ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
-        if not Config.ESP_Chams_Enabled then
-            for _, p in pairs(Players:GetPlayers()) do CleanUpChams(p.Character) end
-        end
+        Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
+        ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
     end
 end)
 
--- Outer Drawing API FOV Base
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Thickness = 1.5
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-FOVCircle.NumSides = 64
-
-local function BuildESP(player)
-    if player == LocalPlayer or ESP_Data[player] then return end
-    local parts = {
-        Top = Drawing.new("Line"), Bottom = Drawing.new("Line"),
-        Left = Drawing.new("Line"), Right = Drawing.new("Line")
-    }
-    for _, line in pairs(parts) do
-        line.Thickness = 1.5
-        line.Color = Color3.fromRGB(255, 0, 0)
-        line.Transparency = 1
-        line.Visible = false
+Players.PlayerRemoving:Connect(function(player)
+    if ESP_Lines_Data[player] then
+        for _, line in pairs(ESP_Lines_Data[player]) do line:Remove() end
+        ESP_Lines_Data[player] = nil
     end
-    ESP_Data[player] = parts
-end
-
-Players.PlayerRemoving:Connect(function(p)
-    if ESP_Data[p] then for _, l in pairs(ESP_Data[p]) do l:Remove() end ESP_Data[p] = nil end
-    CleanUpChams(p.Character)
+    CleanUpChams(player.Character)
 end)
-Players.PlayerAdded:Connect(BuildESP)
-for _, v in pairs(Players:GetPlayers()) do BuildESP(v) end
+
+Players.PlayerAdded:Connect(function(p)
+    createESP(p)
+    ApplyChamsTag(p)
+end)
 
 -- ==========================================================
--- MAIN SYSTEM ITERATION RENDERING LOOP
+-- STEPPED RENDER PIPELINE CORE VÒNG LẶP LIÊN TỤC
 -- ==========================================================
 RunService.RenderStepped:Connect(function()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    -- Setup Advanced Maizik Crosshair Display Circle Framework
     FOVCircle.Position = center
     FOVCircle.Radius = Config.FOV_Radius
     FOVCircle.Visible = Config.FOV_Enabled 
 
+    if Config.FOV_Enabled then
+        local lineLength = 12
+        local gap = Config.FOV_Radius
+
+        ReticleLines.Top.From = Vector2.new(center.X, center.Y - gap)
+        ReticleLines.Top.To = Vector2.new(center.X, center.Y - gap + lineLength)
+
+        ReticleLines.Bottom.From = Vector2.new(center.X, center.Y + gap)
+        ReticleLines.Bottom.To = Vector2.new(center.X, center.Y + gap - lineLength)
+
+        ReticleLines.Left.From = Vector2.new(center.X - gap, center.Y)
+        ReticleLines.Left.To = Vector2.new(center.X - gap + lineLength, center.Y)
+
+        ReticleLines.Right.From = Vector2.new(center.X + gap, center.Y)
+        ReticleLines.Right.To = Vector2.new(center.X + gap - lineLength, center.Y)
+
+        for _, rLine in pairs(ReticleLines) do rLine.Visible = true end
+    else
+        for _, rLine in pairs(ReticleLines) do rLine.Visible = false end
+    end
+
+    -- Closest-to-Crosshair Aimbot Thread Logic Execution
     if Config.Aimbot_Enabled then
         if CurrentTarget and (not CurrentTarget.Parent or not LogicEngine.IsAlive(CurrentTarget.Parent)) then
             CurrentTarget = nil
@@ -546,38 +592,60 @@ RunService.RenderStepped:Connect(function()
         TargetHighlight.Adornee = nil
     end
 
-    -- Independent Traditional Box Framing Loop
-    for _, p in pairs(Players:GetPlayers()) do
-        local lines = ESP_Data[p]
-        if not lines then continue end
-        local char = p.Character
-        if Config.ESP_Box_Enabled and LogicEngine.IsAlive(char) then
+    -- Combined Layout Traditional Box Drawing Loop Execution Engine
+    for _, player in pairs(Players:GetPlayers()) do
+        local data = ESP_Lines_Data[player]
+        if not data then if player ~= LocalPlayer then createESP(player) end continue end
+
+        local char = player.Character
+        if Config.ESP_Box_Enabled and char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
             local root = char.HumanoidRootPart
+            local hum = char.Humanoid
             local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
+
             if onScreen then
-                local headPos = Camera:WorldToViewportPoint(char.Head.Position + Vector3.new(0, 0.5, 0))
+                local head = char:FindFirstChild("Head")
+                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                 local legPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+                
                 local h = math.abs(headPos.Y - legPos.Y)
                 local w = h / 2
                 local x, y = pos.X - w/2, pos.Y - h/2
 
-                lines.Top.From = Vector2.new(x, y) lines.Top.To = Vector2.new(x + w, y)
-                lines.Bottom.From = Vector2.new(x, y + h) lines.Bottom.To = Vector2.new(x + w, y + h)
-                lines.Left.From = Vector2.new(x, y) lines.Left.To = Vector2.new(x, y + h)
-                lines.Right.From = Vector2.new(x + w, y) lines.Right.To = Vector2.new(x + w, y + h)
+                -- Render Drawing Lines Frame Box Boundary
+                data.L1.From = Vector2.new(x, y)
+                data.L1.To = Vector2.new(x + w, y)
+                data.L2.From = Vector2.new(x + w, y)
+                data.L2.To = Vector2.new(x + w, y + h)
+                data.L3.From = Vector2.new(x + w, y + h)
+                data.L3.To = Vector2.new(x, y + h)
+                data.L4.From = Vector2.new(x, y + h)
+                data.L4.To = Vector2.new(x, y)
 
-                for _, l in pairs(lines) do l.Visible = true end
+                -- Dynamic Red Health Line Placement
+                local healthX = x - 2 
+                data.Health.From = Vector2.new(healthX, y + h)
+                data.Health.To = Vector2.new(healthX, y + h - (h * (hum.Health / hum.MaxHealth)))
+                data.Health.Color = Color3.fromRGB(255, 0, 0) 
+
+                -- Snap Tracer Alignment to Center Bottom Screen Line
+                data.Tracer.From = Vector2.new(x + w/2, y + h)
+                data.Tracer.To = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+
+                for _, line in pairs(data) do line.Visible = true end
             else
-                for _, l in pairs(lines) do l.Visible = false end
+                for _, line in pairs(data) do line.Visible = false end
             end
         else
-            for _, l in pairs(lines) do l.Visible = false end
+            for _, line in pairs(data) do line.Visible = false end
         end
     end
 end)
 
--- Fire Initial Loops across Active Sessions
-for _, p in pairs(Players:GetPlayers()) do ApplyESP(p) end
-Players.PlayerAdded:Connect(ApplyESP)
+-- Fire Initialization Hooks for Current Session Elements
+for _, v in pairs(Players:GetPlayers()) do 
+    createESP(v) 
+    ApplyChamsTag(v)
+end
 
-print("--- [Wangcaos Chams Update & English GUI Loaded!] ---")
+print("--- [Wangcaos Unified Version V16 - Maizik Reticle & Closest Target Engine Loaded] ---")

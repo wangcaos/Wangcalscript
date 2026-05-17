@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (MAX DISTANCE ESP)
+-- WANGCAOS PREMIUM CLIENT V3.2 - MINECRAFT FIGMA EDITION
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -15,7 +15,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION (UPDATED MAX DISTANCE TO 5000)
+-- 1. MASTER CONFIGURATION
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
@@ -33,7 +33,7 @@ local Config = {
     EspTracer = false,
     EspName = false,
     EspTransparency = 80,
-    MaxDistance = 5000, -- Đã tăng từ 500 lên 5000 để ESP quét xa toàn bản đồ
+    MaxDistance = 5000,
     
     SpeedToggle = false,
     WalkSpeed = 16,
@@ -58,7 +58,7 @@ end
 
 local SafeParent = GetSafeGui()
 if not SafeParent then
-    warn("[WANGCAOS] CRITICAL ERROR: Cannot find Safe Parent for GUI!")
+    warn("[WANGCAOS] CRITICAL ERROR: Cannot find Safe Parent!")
     return
 end
 
@@ -78,7 +78,7 @@ FOV_Drawing.Transparency = 0.7
 FOV_Drawing.Visible = false
 
 local Tracer_Cache = {}
-local Player_Visual_Cache = {}
+local Character_Cache = {}
 
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
@@ -100,19 +100,12 @@ local function ClearTracerObject(Player)
     end
 end
 
-local function CleanPlayerVisuals(Player)
-    local Data = Player_Visual_Cache[Player]
-    if Data then
-        pcall(function() if Data.Box then Data.Box:Destroy() end end)
-        pcall(function() if Data.Gui then Data.Gui:Destroy() end end)
-        Player_Visual_Cache[Player] = nil
-    end
-    if Player.Character then
-        local OldBox = Player.Character:FindFirstChild("BéBoxFill", true)
-        if OldBox then pcall(function() OldBox:Destroy() end) end
-        local OldTag = Player.Character:FindFirstChild("BéInfoTag", true)
-        if OldTag then pcall(function() OldTag:Destroy() end) end
-    end
+local function CleanCharacterVisuals(Character)
+    if not Character then return end
+    local OldBox = Character:FindFirstChild("BéBoxFill", true)
+    if OldBox then OldBox:Destroy() end
+    local OldTag = Character:FindFirstChild("BéInfoTag", true)
+    if OldTag then OldTag:Destroy() end
 end
 
 -- ==============================================================================
@@ -141,7 +134,7 @@ local function GetPlayerColor(Player)
     if Player.TeamColor ~= BrickColor.new("White") and Player.TeamColor ~= BrickColor.new("Medium stone grey") then
         return Player.TeamColor.Color
     end
-    return Color3.fromRGB(0, 255, 0)
+    return Color3.fromRGB(85, 255, 85)
 end
 
 local function GetEquippedTool(Character)
@@ -172,10 +165,9 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
--- ---[còn tiếp]---
--- ---[tiếp tục]---
+
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (FIGMA MINECRAFT HYBRID V3.1)
+-- 5. MINECRAFT FIGMA GUI CONSTRUCTION
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Minecraft_Figma_UI"
@@ -183,102 +175,145 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
+-- Logo Toggle Button (Hình vuông bo góc Minecraft)
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "MinecraftToggleLogo"
 ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleButton.Position = UDim2.new(0, 20, 0, 150)
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "W"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 22
-Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 10)
+ToggleButton.TextSize = 20
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 local LogoStroke = Instance.new("UIStroke", ToggleButton)
-LogoStroke.Color = Color3.fromRGB(90, 90, 90)
+LogoStroke.Color = Color3.fromRGB(60, 60, 60)
 LogoStroke.Thickness = 1.5
 
+-- Giao diện chính siêu mờ mịn giống hệt ảnh mẫu
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0.1
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17)
+MainFrame.BackgroundTransparency = 0.15
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -185)
-MainFrame.Size = UDim2.new(0, 550, 0, 370)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 600, 0, 400)
 MainFrame.Visible = Config.MenuVisible
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 local FrameStroke = Instance.new("UIStroke", MainFrame)
-FrameStroke.Color = Color3.fromRGB(60, 60, 60)
+FrameStroke.Color = Color3.fromRGB(45, 47, 50)
 FrameStroke.Thickness = 1.5
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
+-- Thanh điều hướng phía trên chứa các Tab (Combat, Player, Movement, Visuals, Misc)
+local TopNavBar = Instance.new("Frame")
+TopNavBar.Name = "TopNavBar"
+TopNavBar.Parent = MainFrame
+TopNavBar.BackgroundColor3 = Color3.fromRGB(23, 24, 26)
+TopNavBar.BackgroundTransparency = 0.3
+TopNavBar.Position = UDim2.new(0, 10, 0, 10)
+TopNavBar.Size = UDim2.new(1, -20, 0, 42)
+Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
+local TopStroke = Instance.new("UIStroke", TopNavBar)
+TopStroke.Color = Color3.fromRGB(38, 40, 43)
+TopStroke.Thickness = 1
 
-local HeaderBar = Instance.new("Frame")
-HeaderBar.Name = "HeaderBar"
-HeaderBar.Parent = MainFrame
-HeaderBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-HeaderBar.BackgroundTransparency = 1
-HeaderBar.Size = UDim2.new(1, 0, 0, 40)
+local TabLayout = Instance.new("UIListLayout", TopNavBar)
+TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Padding = UDim.new(0, 6)
+local TabPad = Instance.new("UIPadding", TopNavBar)
+TabPad.PaddingLeft = UDim.new(0, 6)
+TabPad.PaddingTop = UDim.new(0, 6)
 
-local ClientTitle = Instance.new("TextLabel")
-ClientTitle.Parent = HeaderBar
-ClientTitle.BackgroundTransparency = 1
-ClientTitle.Position = UDim2.new(0, 18, 0, 0)
-ClientTitle.Size = UDim2.new(0, 350, 1, 0)
-ClientTitle.Font = Enum.Font.GothamBold
-ClientTitle.Text = "WANGCAOS CLIENT // MONOLITHIC V3.1 (MAX ESP)"
-ClientTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-ClientTitle.TextSize = 13
-ClientTitle.TextXAlignment = Enum.TextXAlignment.Left
+-- Khung chứa nội dung các trang cấu hình
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Parent = MainFrame
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Position = UDim2.new(0, 15, 0, 65)
+ContentContainer.Size = UDim2.new(1, -30, 1, -80)
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Name = "CloseBtn"
-CloseBtn.Parent = HeaderBar
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -40, 0, 0)
-CloseBtn.Size = UDim2.new(0, 40, 1, 0)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
-CloseBtn.TextSize = 15
+local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
+local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
+local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
+local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
+local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
 
-local CreditFrame = Instance.new("Frame")
-CreditFrame.Name = "CreditFrame"
-CreditFrame.Parent = MainFrame
-CreditFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-CreditFrame.BackgroundTransparency = 0.3
-CreditFrame.Position = UDim2.new(0, 15, 1, -32)
-CreditFrame.Size = UDim2.new(1, -30, 0, 22)
-Instance.new("UICorner", CreditFrame).CornerRadius = UDim.new(0, 4)
-local CreditStroke = Instance.new("UIStroke", CreditFrame)
-CreditStroke.Color = Color3.fromRGB(45, 45, 45)
-CreditStroke.Thickness = 1
+local ActiveTabStroke = nil
 
-local CreditText = Instance.new("TextLabel")
-CreditText.Parent = CreditFrame
-CreditText.BackgroundTransparency = 1
-CreditText.Position = UDim2.new(0, 8, 0, 0)
-CreditText.Size = UDim2.new(1, -16, 1, 0)
-CreditText.Font = Enum.Font.Code
-CreditText.Text = "DEVELOPED BY WANGCAOS TEAM // CO-AUTHORED BY DAI CA WANG & CO"
-CreditText.TextColor3 = Color3.fromRGB(120, 120, 120)
-CreditText.TextSize = 10
-CreditText.TextXAlignment = Enum.TextXAlignment.Left
+for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage}) do
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.BorderSizePixel = 0
+    page.CanvasSize = UDim2.new(0, 0, 0, 450)
+    page.ScrollBarThickness = 2
+    page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
+    page.Visible = false
+    
+    local grid = Instance.new("UIGridLayout", page)
+    grid.CellSize = UDim2.new(0, 275, 0, 42)
+    grid.CellPadding = UDim2.new(0, 12, 0, 8)
+    grid.SortOrder = Enum.SortOrder.LayoutOrder
+end
+CombatPage.Visible = true
 
-local VersionText = Instance.new("TextLabel")
-VersionText.Parent = CreditFrame
-VersionText.BackgroundTransparency = 1
-VersionText.Position = UDim2.new(0, 0, 0, 0)
-VersionText.Size = UDim2.new(1, -8, 1, 0)
-VersionText.Font = Enum.Font.Code
-VersionText.Text = "STATUS: ACTIVE"
-VersionText.TextColor3 = Color3.fromRGB(85, 255, 85)
-VersionText.TextSize = 10
-VersionText.TextXAlignment = Enum.TextXAlignment.Right
+-- Hàm khởi tạo Tab theo phong cách Minecraft Client cao cấp
+local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
+    local TabBtn = Instance.new("TextButton", TopNavBar)
+    TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
+    TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
+    TabBtn.Size = UDim2.new(0, 110, 0, 30)
+    TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.LayoutOrder = Order
+    TabBtn.Text = IconText .. " " .. Name
+    TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 153, 158)
+    TabBtn.TextSize = 12
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    
+    local TStroke = Instance.new("UIStroke", TabBtn)
+    TStroke.Color = Color3.fromRGB(55, 57, 61)
+    TStroke.Thickness = 1
+    TStroke.Enabled = Order == 1
+    if Order == 1 then ActiveTabStroke = TStroke end
+    
+    TabBtn.MouseButton1Click:Connect(function()
+        CombatPage.Visible = false
+        PlayerPage.Visible = false
+        MovementPage.Visible = false
+        VisualPage.Visible = false
+        MiscPage.Visible = false
+        
+        for _, btn in pairs(TopNavBar:GetChildren()) do
+            if btn:IsA("TextButton") then
+                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                btn.BackgroundTransparency = 1
+                btn.TextColor3 = Color3.fromRGB(150, 153, 158)
+                btn.UIStroke.Enabled = false
+            end
+        end
+        
+        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37)
+        TabBtn.BackgroundTransparency = 0
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TStroke.Enabled = true
+        ActiveTabStroke = TStroke
+        TargetPage.Visible = true
+    end)
+end
 
--- DRAG LOGIC
+-- Khởi tạo chính xác 5 Tab như thiết kế Minecraft Figma đại ca gửi
+CreateMinecraftTab("Combat", "⚔", 1, CombatPage)
+CreateMinecraftTab("Player", "👤", 2, PlayerPage)
+CreateMinecraftTab("Movement", "🏃", 3, MovementPage)
+CreateMinecraftTab("Visuals", "👁", 4, VisualPage)
+CreateMinecraftTab("Misc", "⚙", 5, MiscPage)
+
+-- DRAG SYSTEM (Kéo thả menu mượt mà)
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
-    local dragSpeed = 0
     local dragStart = nil
     local startPos = nil
     DragHandle.InputBegan:Connect(function(input)
@@ -301,8 +336,8 @@ local function MakeDraggable(UIElement, DragHandle)
     end)
 end
 
+MakeDraggable(MainFrame, TopNavBar)
 MakeDraggable(ToggleButton, ToggleButton)
-MakeDraggable(MainFrame, HeaderBar)
 
 ToggleButton.MouseButton1Click:Connect(function()
     Config.MenuVisible = not Config.MenuVisible
@@ -318,117 +353,39 @@ end)
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 6. TABS & PAGES SYSTEM
+-- 6. DESIGN SYSTEM COMPONENTS (MINECRAFT STYLE SWITCH & SLIDER)
 -- ==============================================================================
-local TabNavBar = Instance.new("Frame")
-TabNavBar.Parent = MainFrame
-TabNavBar.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-TabNavBar.Position = UDim2.new(0, 15, 0, 45)
-TabNavBar.Size = UDim2.new(1, -30, 0, 36)
-Instance.new("UICorner", TabNavBar).CornerRadius = UDim.new(0, 6)
-
-local TabLayout = Instance.new("UIListLayout", TabNavBar)
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 8)
-local TabPad = Instance.new("UIPadding", TabNavBar)
-TabPad.PaddingLeft = UDim.new(0, 6)
-TabPad.PaddingTop = UDim.new(0, 4)
-
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Parent = MainFrame
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 15, 0, 92)
-ContentContainer.Size = UDim2.new(1, -30, 1, -140)
-
-local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
-local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
-local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
-
-for _, page in pairs({CombatPage, VisualPage, PlayerPage}) do
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 420)
-    page.ScrollBarThickness = 3
-    page.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 70)
-    page.Visible = false
-    local layout = Instance.new("UIListLayout", page)
-    layout.Padding = UDim.new(0, 8)
-end
-CombatPage.Visible = true
-
-local function CreateTab(Name, Order, TargetPage)
-    local TabBtn = Instance.new("TextButton", TabNavBar)
-    TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
-    TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 160, 0, 28)
-    TabBtn.Font = Enum.Font.GothamBold
-    TabBtn.LayoutOrder = Order
-    TabBtn.Text = Name:upper()
-    TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)
-    TabBtn.TextSize = 11
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-    
-    local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(85, 255, 85)
-    TabStroke.Enabled = Order == 1
-    
-    TabBtn.MouseButton1Click:Connect(function()
-        CombatPage.Visible = false
-        VisualPage.Visible = false
-        PlayerPage.Visible = false
-        
-        for _, btn in pairs(TabNavBar:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                btn.BackgroundTransparency = 1
-                btn.TextColor3 = Color3.fromRGB(140, 140, 140)
-                btn.UIStroke.Enabled = false
-            end
-        end
-        TabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        TabBtn.BackgroundTransparency = 0
-        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TabStroke.Enabled = true
-        TargetPage.Visible = true
-    end)
-end
-
-CreateTab("Combat", 1, CombatPage)
-CreateTab("Visuals", 2, VisualPage)
-CreateTab("Player", 3, PlayerPage)
-
--- ==============================================================================
--- 7. UI COMPONENTS (TOGGLES & SLIDERS)
--- ==============================================================================
-local function AddToggle(Page, LabelText, Key, Callback)
+local function AddMinecraftToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
-    TFrame.BackgroundTransparency = 1
-    TFrame.Size = UDim2.new(1, 0, 0, 36)
+    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    TFrame.BackgroundTransparency = 0.4
+    TFrame.Size = UDim2.new(0, 275, 0, 42)
+    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
+    local CompStroke = Instance.new("UIStroke", TFrame)
+    CompStroke.Color = Color3.fromRGB(35, 37, 40)
+    CompStroke.Thickness = 1
     
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 6, 0, 0)
-    Lbl.Size = UDim2.new(1, -70, 1, 0)
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(1, -60, 1, 0)
     Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText:upper()
-    Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
-    Lbl.TextSize = 11
+    Lbl.Text = LabelText
+    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
+    Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- Nút gạt bo tròn thanh mảnh đúng chuẩn ảnh mẫu
     local SwitchBg = Instance.new("Frame", TFrame)
-    SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(40, 80, 40) or Color3.fromRGB(32, 32, 32)
-    SwitchBg.Position = UDim2.new(1, -46, 0.5, -9)
-    SwitchBg.Size = UDim2.new(0, 36, 0, 18)
+    SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
+    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8)
+    SwitchBg.Size = UDim2.new(0, 32, 0, 16)
     Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
-    local SwStrk = Instance.new("UIStroke", SwitchBg)
-    SwStrk.Color = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(75, 75, 75)
 
     local Ball = Instance.new("Frame", SwitchBg)
-    Ball.BackgroundColor3 = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(160, 160, 160)
-    Ball.Position = Config[Key] and UDim2.new(1, -15, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-    Ball.Size = UDim2.new(0, 14, 0, 14)
+    Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+    Ball.Size = UDim2.new(0, 12, 0, 12)
     Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", TFrame)
@@ -438,47 +395,53 @@ local function AddToggle(Page, LabelText, Key, Callback)
 
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
-        TweenService:Create(Ball, TweenInfo.new(0.12), {
-            Position = Config[Key] and UDim2.new(1, -15, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
-            BackgroundColor3 = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(160, 160, 160)
+        TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+            Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
         }):Play()
-        TweenService:Create(SwitchBg, TweenInfo.new(0.12), {
-            BackgroundColor3 = Config[Key] and Color3.fromRGB(40, 80, 40) or Color3.fromRGB(32, 32, 32)
+        TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
         }):Play()
-        SwStrk.Color = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(75, 75, 75)
         if Callback then Callback(Config[Key]) end
     end)
 end
 
-local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
+local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
-    SFrame.BackgroundTransparency = 1
-    SFrame.Size = UDim2.new(1, 0, 0, 42)
+    SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    SFrame.BackgroundTransparency = 0.4
+    SFrame.Size = UDim2.new(0, 275, 0, 42)
+    Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 6)
+    local CompStroke = Instance.new("UIStroke", SFrame)
+    CompStroke.Color = Color3.fromRGB(35, 37, 40)
+    CompStroke.Thickness = 1
 
     local Lbl = Instance.new("TextLabel", SFrame)
     Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 6, 0, 2)
-    Lbl.Size = UDim2.new(1, -90, 0, 16)
+    Lbl.Position = UDim2.new(0, 10, 0, 4)
+    Lbl.Size = UDim2.new(1, -70, 0, 16)
     Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText:upper()
-    Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
+    Lbl.Text = LabelText
+    Lbl.TextColor3 = Color3.fromRGB(180, 183, 188)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- Số hiển thị màu xanh lá cây đậm chất hack giống giao diện mẫu
     local ValTxt = Instance.new("TextLabel", SFrame)
     ValTxt.BackgroundTransparency = 1
-    ValTxt.Position = UDim2.new(1, -80, 0, 2)
-    ValTxt.Size = UDim2.new(0, 75, 0, 16)
+    ValTxt.Position = UDim2.new(1, -65, 0, 4)
+    ValTxt.Size = UDim2.new(0, 55, 0, 16)
     ValTxt.Font = Enum.Font.GothamBold
     ValTxt.Text = tostring(Config[Key])
     ValTxt.TextColor3 = Color3.fromRGB(85, 255, 85)
     ValTxt.TextSize = 11
+    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
 
+    -- Thanh trượt (Slider) nằm ngang cực mảnh
     local Bar = Instance.new("Frame", SFrame)
-    Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50)
     Bar.BorderSizePixel = 0
-    Bar.Position = UDim2.new(0, 6, 0, 24)
-    Bar.Size = UDim2.new(1, -12, 0, 4)
+    Bar.Position = UDim2.new(0, 10, 0, 26)
+    Bar.Size = UDim2.new(1, -20, 0, 3)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
@@ -486,6 +449,13 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+
+    -- Nút tròn trượt nhỏ gọn tinh tế
+    local SliderBall = Instance.new("Frame", Fill)
+    SliderBall.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
+    SliderBall.Size = UDim2.new(0, 8, 0, 8)
+    Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", Bar)
     Btn.BackgroundTransparency = 1
@@ -510,32 +480,31 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
+
+-- Close Button ẩn ở góc phải của Menu Chính
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Parent = MainFrame
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Position = UDim2.new(1, -30, 0, 16)
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(120, 123, 128)
+CloseBtn.TextSize = 18
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 8. BUILD UI BINDINGS
+-- 7. BINDING FEATURES TO MINECRAFT PAGES
 -- ==============================================================================
-AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
-AddToggle(CombatPage, "Team Guard Filter", "TeamCheck")
-AddToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
-AddSlider(CombatPage, "Smoothing Factor", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
+-- [COMBAT PAGE]
+AddMinecraftToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
+AddMinecraftToggle(CombatPage, "Team Guard Filter", "TeamCheck")
+AddMinecraftToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
+AddMinecraftSlider(CombatPage, "Aimbot Smoothness", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
 
-AddToggle(VisualPage, "ESP Master Control", "EspMaster")
-AddToggle(VisualPage, "AlwaysOnTop Chams 3D", "EspBox")
-AddSlider(VisualPage, "Chams Opacity Power", 0, 100, "EspTransparency")
-AddToggle(VisualPage, "Bottom Center Tracers", "EspTracer")
-AddToggle(VisualPage, "Draw FOV Calibration", "FovCircle")
-AddSlider(VisualPage, "FOV Dynamic Radius", 30, 500, "FovRadius")
-AddToggle(VisualPage, "Dynamic Informative Tag", "EspName")
-
--- Thay đổi giới hạn Slider khoảng cách tối đa từ 500 lên 5000 studs để điều chỉnh linh hoạt
-AddSlider(VisualPage, "Max ESP Render Distance", 100, 5000, "MaxDistance")
-
-AddToggle(PlayerPage, "Velocity WalkSpeed Hack", "SpeedToggle")
-AddSlider(PlayerPage, "Custom Velocity Power", 16, 200, "WalkSpeed")
-AddToggle(PlayerPage, "Internal JumpPower Hack", "JumpToggle")
-AddSlider(PlayerPage, "Custom Jump Force", 50, 350, "JumpPower")
-AddToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
+-- [PLAYER PAGE]
+AddMinecraftToggle(PlayerPage, "FullBright (Render Ambient)", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
@@ -545,20 +514,34 @@ AddToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
     end
 end)
 
+-- [MOVEMENT PAGE]
+AddMinecraftToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle")
+AddMinecraftSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
+AddMinecraftToggle(MovementPage, "JumpPower Boost", "JumpToggle")
+AddMinecraftSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
+
+-- [VISUALS PAGE]
+AddMinecraftToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
+AddMinecraftToggle(VisualPage, "Render 3D Chams Box", "EspBox")
+AddMinecraftSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
+AddMinecraftToggle(VisualPage, "Snapline Tracers", "EspTracer")
+AddMinecraftToggle(VisualPage, "Informative Character Tags", "EspName")
+AddMinecraftSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
+
+-- [MISC PAGE]
+AddMinecraftToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
+AddMinecraftSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
+
 -- ==============================================================================
--- 9. ESP LOGIC PIPELINE (DYNAMIC SPAWN SAFE & LONG RANGE PROFILE)
+-- 8. CORE ESP RENDERING PIPELINE (DYNAMIC PROFILE)
 -- ==============================================================================
-local function RenderVisuals(Player)
-    if Player == LocalPlayer then return end
-    
-    CleanPlayerVisuals(Player)
-    
-    local Character = Player.Character
-    if not Character then return end
-    
+local function RenderVisuals(Player, Character)
+    if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
     local Head = Character:WaitForChild("Head", 5)
     if not Root or not Head then return end
+    
+    CleanCharacterVisuals(Character)
     
     local Box = Instance.new("BoxHandleAdornment")
     Box.Name = "BéBoxFill"
@@ -575,35 +558,29 @@ local function RenderVisuals(Player)
     Gui.Size = UDim2.new(0, 200, 0, 100)
     Gui.StudsOffset = Vector3.new(0, 4, 0)
     Gui.AlwaysOnTop = true
-    -- Bật thuộc tính MaxDistance cho BillboardGui để đồng bộ với thanh khoảng cách hệ thống
-    Gui.MaxDistance = Config.MaxDistance 
 
     local Label = Instance.new("TextLabel", Gui)
     Label.Size = UDim2.new(1, 0, 1, 0)
     Label.BackgroundTransparency = 1
     Label.Font = Enum.Font.Code
-    Label.TextSize = 14
+    Label.TextSize = 13
     Label.TextColor3 = Color3.fromRGB(255, 255, 255)
     Gui.Parent = Head
     
-    Player_Visual_Cache[Player] = { Box = Box, Gui = Gui, Label = Label }
+    Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, Player = Player }
 end
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end
-    
-    Player.CharacterAdded:Connect(function()
-        task.wait(0.2)
-        task.spawn(RenderVisuals, Player)
+    Player.CharacterAdded:Connect(function(Char)
+        task.spawn(RenderVisuals, Player, Char)
     end)
-    
-    if Player.Character then 
-        task.spawn(RenderVisuals, Player) 
-    end
+    if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 -- ==============================================================================
--- 10. RUNSERVICE LOOP (TỐI ƯU HÓA TẦM XA TOÀN BẢN ĐỒ)
+-- 9. RUNSERVICE TICK ENGINE (TỐI ƯU FPS TẦM XA)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -635,24 +612,16 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
         end
     end
 
-    for _, Player in pairs(Players:GetPlayers()) do
-        if Player == LocalPlayer then continue end
-        
-        local Data = Player_Visual_Cache[Player]
-        local Char = Player.Character
-        
-        if Data and Char and Char.Parent and IsAlive(Char) then
+    for Char, Data in pairs(Character_Cache) do
+        if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
-                local PColor = GetPlayerColor(Player)
+                local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
-                local Team = Player.Team and Player.Team.Name or "No Team"
+                local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
                 local Tool = GetEquippedTool(Char)
 
-                -- Cập nhật động khoảng cách hiển thị tối đa của Tag trên đầu
-                Data.Gui.MaxDistance = Config.MaxDistance
-
-                -- Render 3D Box (Kiểm tra điều kiện khoảng cách trước khi vẽ để tránh lag)
+                -- Render 3D Box Chams
                 if Config.EspBox and Dist <= Config.MaxDistance then
                     Data.Box.Visible = true
                     Data.Box.Color3 = PColor
@@ -661,18 +630,18 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Box.Visible = false
                 end
 
-                -- Render NameTag thông tin
+                -- Render Thẻ thông tin trên đầu
                 if Config.EspName and Dist <= Config.MaxDistance then
                     Data.Gui.Enabled = true
                     Data.Label.Visible = true
                     Data.Label.TextColor3 = PColor
-                    Data.Label.Text = string.format("%s (%dm)\n(%s)(%s)", Player.Name, Dist, Team, Tool)
+                    Data.Label.Text = string.format("%s (%dm)\n[%s] [%s]", Data.Player.Name, Dist, Team, Tool)
                 else
                     Data.Label.Visible = false
                 end
 
-                -- Render Line Tracer Tầm Xa
-                local Tracer = Tracer_Cache[Player]
+                -- Render Đường kẻ Tracer dưới chân màn hình lên người đối thủ
+                local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
@@ -689,22 +658,22 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
             else
                 Data.Box.Visible = false
                 Data.Label.Visible = false
-                if Tracer_Cache[Player] then Tracer_Cache[Player].Visible = false end
+                if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
             end
         else
-            if Tracer_Cache[Player] then Tracer_Cache[Player].Visible = false end
+            CleanCharacterVisuals(Char)
+            Character_Cache[Char] = nil
         end
     end
 end)
 
+-- CONNECTIONS MANAGEMENT
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
 end)
-
 Players.PlayerRemoving:Connect(function(Player)
     ClearTracerObject(Player)
-    CleanPlayerVisuals(Player)
 end)
 
 for _, P in pairs(Players:GetPlayers()) do
@@ -712,11 +681,12 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
+-- Hệ thống hủy script an toàn, khôi phục lại cài đặt gốc của game khi tắt hack
 CloseBtn.MouseButton1Click:Connect(function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
-    for _, P in pairs(Players:GetPlayers()) do CleanPlayerVisuals(P) end
+    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     Lighting.Ambient = Config.StoredAmbient
     Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
@@ -724,11 +694,11 @@ end)
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT",
-        Text = "LOAD THÀNH CÔNG!\nKHOẢNG CÁCH ESP ĐÃ ĐƯỢC MỞ RỘNG ĐẾN 5000 STUDS.",
-        Duration = 10
+        Title = "WANGCAOS MINECRAFT UI",
+        Text = "LOADED FIGMA COMPLEX LAYOUT SUCCESSFUL!",
+        Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - UPDATED BY WANG
+-- END OF SCRIPT - COMPLETED BY BE FOR DAI CA
 -- ==============================================================================

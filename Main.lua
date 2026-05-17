@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (WITH LOADING SCREEN)
+-- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (MAX DISTANCE ESP)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -15,12 +15,11 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION
+-- 1. MASTER CONFIGURATION (UPDATED MAX DISTANCE TO 5000)
 -- ==============================================================================
 local Config = {
-    MenuVisible = false, -- Khóa không cho mở luôn khi đang chạy giới thiệu
+    MenuVisible = true,
     MenuKeybind = Enum.KeyCode.LeftBracket,
-    IsLoading = true, -- Biến trạng thái kiểm soát loading bảo mật
     
     Aimbot = false,
     TeamCheck = true,
@@ -34,9 +33,7 @@ local Config = {
     EspTracer = false,
     EspName = false,
     EspTransparency = 80,
-    MaxDistance = 500,
-    
-    BgTransparency = 60,
+    MaxDistance = 5000, -- Đã tăng từ 500 lên 5000 để ESP quét xa toàn bản đồ
     
     SpeedToggle = false,
     WalkSpeed = 16,
@@ -81,7 +78,7 @@ FOV_Drawing.Transparency = 0.7
 FOV_Drawing.Visible = false
 
 local Tracer_Cache = {}
-local Character_Cache = {}
+local Player_Visual_Cache = {}
 
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
@@ -103,13 +100,21 @@ local function ClearTracerObject(Player)
     end
 end
 
-local function CleanCharacterVisuals(Character)
-    if not Character then return end
-    local OldBox = Character:FindFirstChild("BéBoxFill", true)
-    if OldBox then pcall(function() OldBox:Destroy() end) end
-    local OldTag = Character:FindFirstChild("BéInfoTag", true)
-    if OldTag then pcall(function() OldTag:Destroy() end) end
+local function CleanPlayerVisuals(Player)
+    local Data = Player_Visual_Cache[Player]
+    if Data then
+        pcall(function() if Data.Box then Data.Box:Destroy() end end)
+        pcall(function() if Data.Gui then Data.Gui:Destroy() end end)
+        Player_Visual_Cache[Player] = nil
+    end
+    if Player.Character then
+        local OldBox = Player.Character:FindFirstChild("BéBoxFill", true)
+        if OldBox then pcall(function() OldBox:Destroy() end) end
+        local OldTag = Player.Character:FindFirstChild("BéInfoTag", true)
+        if OldTag then pcall(function() OldTag:Destroy() end) end
+    end
 end
+
 -- ==============================================================================
 -- 4. MATH & TARGETING ENGINE
 -- ==============================================================================
@@ -167,9 +172,10 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (MAIN & LOGO FLIP)
+-- 5. GUI CONSTRUCTION (FIGMA MINECRAFT HYBRID V3.1)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Minecraft_Figma_UI"
@@ -187,7 +193,6 @@ ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "W"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.TextSize = 22
-ToggleButton.Visible = false -- Khóa ban đầu
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 10)
 local LogoStroke = Instance.new("UIStroke", ToggleButton)
 LogoStroke.Color = Color3.fromRGB(90, 90, 90)
@@ -197,37 +202,15 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0
+MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -185)
 MainFrame.Size = UDim2.new(0, 550, 0, 370)
-MainFrame.Visible = false -- Khóa ban đầu không cho hiển thị lúc chạy intro
+MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(60, 60, 60)
 FrameStroke.Thickness = 1.5
-
-local BackgroundImage = Instance.new("ImageLabel")
-BackgroundImage.Name = "GuiBackgroundImage"
-BackgroundImage.Parent = MainFrame
-BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
-BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxassetid://117916873602722"
-BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 0
-Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 12)
-
-local DarkOverlay = Instance.new("Frame")
-DarkOverlay.Name = "DarkOverlay"
-DarkOverlay.Parent = MainFrame
-DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
-DarkOverlay.Position = UDim2.new(0, 0, 0, 0)
-DarkOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-DarkOverlay.BackgroundTransparency = Config.BgTransparency / 100
-DarkOverlay.BorderSizePixel = 0
-DarkOverlay.ZIndex = 1
-Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 12)
 
 local HeaderBar = Instance.new("Frame")
 HeaderBar.Name = "HeaderBar"
@@ -235,18 +218,17 @@ HeaderBar.Parent = MainFrame
 HeaderBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 HeaderBar.BackgroundTransparency = 1
 HeaderBar.Size = UDim2.new(1, 0, 0, 40)
-HeaderBar.ZIndex = 2
+
 local ClientTitle = Instance.new("TextLabel")
 ClientTitle.Parent = HeaderBar
 ClientTitle.BackgroundTransparency = 1
 ClientTitle.Position = UDim2.new(0, 18, 0, 0)
 ClientTitle.Size = UDim2.new(0, 350, 1, 0)
 ClientTitle.Font = Enum.Font.GothamBold
-ClientTitle.Text = "WANGCAOS CLIENT // MONOLITHIC V3.1 (FIXED)"
+ClientTitle.Text = "WANGCAOS CLIENT // MONOLITHIC V3.1 (MAX ESP)"
 ClientTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClientTitle.TextSize = 13
 ClientTitle.TextXAlignment = Enum.TextXAlignment.Left
-ClientTitle.ZIndex = 2
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
@@ -258,11 +240,45 @@ CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
 CloseBtn.TextSize = 15
-CloseBtn.ZIndex = 2
+
+local CreditFrame = Instance.new("Frame")
+CreditFrame.Name = "CreditFrame"
+CreditFrame.Parent = MainFrame
+CreditFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+CreditFrame.BackgroundTransparency = 0.3
+CreditFrame.Position = UDim2.new(0, 15, 1, -32)
+CreditFrame.Size = UDim2.new(1, -30, 0, 22)
+Instance.new("UICorner", CreditFrame).CornerRadius = UDim.new(0, 4)
+local CreditStroke = Instance.new("UIStroke", CreditFrame)
+CreditStroke.Color = Color3.fromRGB(45, 45, 45)
+CreditStroke.Thickness = 1
+
+local CreditText = Instance.new("TextLabel")
+CreditText.Parent = CreditFrame
+CreditText.BackgroundTransparency = 1
+CreditText.Position = UDim2.new(0, 8, 0, 0)
+CreditText.Size = UDim2.new(1, -16, 1, 0)
+CreditText.Font = Enum.Font.Code
+CreditText.Text = "DEVELOPED BY WANGCAOS TEAM // CO-AUTHORED BY DAI CA WANG & CO"
+CreditText.TextColor3 = Color3.fromRGB(120, 120, 120)
+CreditText.TextSize = 10
+CreditText.TextXAlignment = Enum.TextXAlignment.Left
+
+local VersionText = Instance.new("TextLabel")
+VersionText.Parent = CreditFrame
+VersionText.BackgroundTransparency = 1
+VersionText.Position = UDim2.new(0, 0, 0, 0)
+VersionText.Size = UDim2.new(1, -8, 1, 0)
+VersionText.Font = Enum.Font.Code
+VersionText.Text = "STATUS: ACTIVE"
+VersionText.TextColor3 = Color3.fromRGB(85, 255, 85)
+VersionText.TextSize = 10
+VersionText.TextXAlignment = Enum.TextXAlignment.Right
 
 -- DRAG LOGIC
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
+    local dragSpeed = 0
     local dragStart = nil
     local startPos = nil
     DragHandle.InputBegan:Connect(function(input)
@@ -289,19 +305,18 @@ MakeDraggable(ToggleButton, ToggleButton)
 MakeDraggable(MainFrame, HeaderBar)
 
 ToggleButton.MouseButton1Click:Connect(function()
-    if Config.IsLoading then return end -- Đang chạy intro không cho nhấn nút logo
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
-    if Config.IsLoading then return end -- Tuyệt đối không cho bấm phím mở khi đang load giới thiệu
     if not processed and input.KeyCode == Config.MenuKeybind then
         Config.MenuVisible = not Config.MenuVisible
         MainFrame.Visible = Config.MenuVisible
     end
 end)
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 -- ==============================================================================
 -- 6. TABS & PAGES SYSTEM
 -- ==============================================================================
@@ -310,7 +325,6 @@ TabNavBar.Parent = MainFrame
 TabNavBar.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 TabNavBar.Position = UDim2.new(0, 15, 0, 45)
 TabNavBar.Size = UDim2.new(1, -30, 0, 36)
-TabNavBar.ZIndex = 2
 Instance.new("UICorner", TabNavBar).CornerRadius = UDim.new(0, 6)
 
 local TabLayout = Instance.new("UIListLayout", TabNavBar)
@@ -325,8 +339,7 @@ local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Position = UDim2.new(0, 15, 0, 92)
-ContentContainer.Size = UDim2.new(1, -30, 1, -110)
-ContentContainer.ZIndex = 2
+ContentContainer.Size = UDim2.new(1, -30, 1, -140)
 
 local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
@@ -336,15 +349,15 @@ for _, page in pairs({CombatPage, VisualPage, PlayerPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 400)
+    page.CanvasSize = UDim2.new(0, 0, 0, 420)
     page.ScrollBarThickness = 3
     page.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 70)
     page.Visible = false
-    page.ZIndex = 2
     local layout = Instance.new("UIListLayout", page)
     layout.Padding = UDim.new(0, 8)
 end
 CombatPage.Visible = true
+
 local function CreateTab(Name, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabNavBar)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
@@ -355,7 +368,6 @@ local function CreateTab(Name, Order, TargetPage)
     TabBtn.Text = Name:upper()
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)
     TabBtn.TextSize = 11
-    TabBtn.ZIndex = 2
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
@@ -394,7 +406,6 @@ local function AddToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundTransparency = 1
     TFrame.Size = UDim2.new(1, 0, 0, 36)
-    TFrame.ZIndex = 2
     
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
@@ -405,13 +416,11 @@ local function AddToggle(Page, LabelText, Key, Callback)
     Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
-    Lbl.ZIndex = 2
 
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(40, 80, 40) or Color3.fromRGB(32, 32, 32)
     SwitchBg.Position = UDim2.new(1, -46, 0.5, -9)
     SwitchBg.Size = UDim2.new(0, 36, 0, 18)
-    SwitchBg.ZIndex = 2
     Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
     local SwStrk = Instance.new("UIStroke", SwitchBg)
     SwStrk.Color = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(75, 75, 75)
@@ -420,14 +429,12 @@ local function AddToggle(Page, LabelText, Key, Callback)
     Ball.BackgroundColor3 = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(160, 160, 160)
     Ball.Position = Config[Key] and UDim2.new(1, -15, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
     Ball.Size = UDim2.new(0, 14, 0, 14)
-    Ball.ZIndex = 2
     Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", TFrame)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
-    Btn.ZIndex = 3
 
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
@@ -442,11 +449,11 @@ local function AddToggle(Page, LabelText, Key, Callback)
         if Callback then Callback(Config[Key]) end
     end)
 end
+
 local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundTransparency = 1
     SFrame.Size = UDim2.new(1, 0, 0, 42)
-    SFrame.ZIndex = 2
 
     local Lbl = Instance.new("TextLabel", SFrame)
     Lbl.BackgroundTransparency = 1
@@ -457,7 +464,6 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
-    Lbl.ZIndex = 2
 
     local ValTxt = Instance.new("TextLabel", SFrame)
     ValTxt.BackgroundTransparency = 1
@@ -467,29 +473,24 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     ValTxt.Text = tostring(Config[Key])
     ValTxt.TextColor3 = Color3.fromRGB(85, 255, 85)
     ValTxt.TextSize = 11
-    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
-    ValTxt.ZIndex = 2
 
     local Bar = Instance.new("Frame", SFrame)
     Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Bar.BorderSizePixel = 0
     Bar.Position = UDim2.new(0, 6, 0, 24)
     Bar.Size = UDim2.new(1, -12, 0, 4)
-    Bar.ZIndex = 2
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
     Fill.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
-    Fill.ZIndex = 2
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", Bar)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
-    Btn.ZIndex = 3
 
     local Dragging = false
     Btn.InputBegan:Connect(function(input)
@@ -509,7 +510,11 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
+-- ==============================================================================
+-- 8. BUILD UI BINDINGS
+-- ==============================================================================
 AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -519,13 +524,12 @@ AddToggle(VisualPage, "ESP Master Control", "EspMaster")
 AddToggle(VisualPage, "AlwaysOnTop Chams 3D", "EspBox")
 AddSlider(VisualPage, "Chams Opacity Power", 0, 100, "EspTransparency")
 AddToggle(VisualPage, "Bottom Center Tracers", "EspTracer")
-AddToggle(VisualPage, "Dynamic Informative Tag", "EspName")
 AddToggle(VisualPage, "Draw FOV Calibration", "FovCircle")
 AddSlider(VisualPage, "FOV Dynamic Radius", 30, 500, "FovRadius")
+AddToggle(VisualPage, "Dynamic Informative Tag", "EspName")
 
-AddSlider(VisualPage, "Menu Opacity Dark (60%)", 0, 100, "BgTransparency", function(val)
-    DarkOverlay.BackgroundTransparency = val / 100
-end)
+-- Thay đổi giới hạn Slider khoảng cách tối đa từ 500 lên 5000 studs để điều chỉnh linh hoạt
+AddSlider(VisualPage, "Max ESP Render Distance", 100, 5000, "MaxDistance")
 
 AddToggle(PlayerPage, "Velocity WalkSpeed Hack", "SpeedToggle")
 AddSlider(PlayerPage, "Custom Velocity Power", 16, 200, "WalkSpeed")
@@ -540,115 +544,21 @@ AddToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
+
 -- ==============================================================================
--- 8. INTRO LOADING SCREEN FRAME GENERATION
+-- 9. ESP LOGIC PIPELINE (DYNAMIC SPAWN SAFE & LONG RANGE PROFILE)
 -- ==============================================================================
-local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Name = "IntroLoadingFrame"
-LoadingFrame.Parent = ScreenGui
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-LoadingFrame.Position = UDim2.new(0.5, -175, 0.5, -60)
-LoadingFrame.Size = UDim2.new(0, 350, 0, 120)
-LoadingFrame.ZIndex = 5
-Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 10)
-local LoadStroke = Instance.new("UIStroke", LoadingFrame)
-LoadStroke.Color = Color3.fromRGB(70, 70, 70)
-LoadStroke.Thickness = 1.2
-
-local LoadTitle = Instance.new("TextLabel", LoadingFrame)
-LoadTitle.BackgroundTransparency = 1
-LoadTitle.Position = UDim2.new(0, 0, 0, 20)
-LoadTitle.Size = UDim2.new(1, 0, 0, 22)
-LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Text = "WANGCAOS CLIENT // INITIALIZING"
-LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadTitle.TextSize = 13
-LoadTitle.ZIndex = 5
-
-local StatusText = Instance.new("TextLabel", LoadingFrame)
-StatusText.BackgroundTransparency = 1
-StatusText.Position = UDim2.new(0, 20, 0, 50)
-StatusText.Size = UDim2.new(1, -40, 0, 16)
-StatusText.Font = Enum.Font.Gotham
-StatusText.Text = "Connecting to security protocols... 0%"
-StatusText.TextColor3 = Color3.fromRGB(150, 150, 150)
-StatusText.TextSize = 11
-StatusText.TextXAlignment = Enum.TextXAlignment.Left
-StatusText.ZIndex = 5
-
-local TrackBar = Instance.new("Frame", LoadingFrame)
-TrackBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TrackBar.Position = UDim2.new(0, 20, 0, 75)
-TrackBar.Size = UDim2.new(1, -40, 0, 6)
-TrackBar.ZIndex = 5
-Instance.new("UICorner", TrackBar).CornerRadius = UDim.new(1, 0)
-
-local ProgressBar = Instance.new("Frame", TrackBar)
-ProgressBar.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
-ProgressBar.Size = UDim2.new(0, 0, 1, 0)
-ProgressBar.ZIndex = 5
-Instance.new("UICorner", ProgressBar).CornerRadius = UDim.new(1, 0)
-
--- FUNCTION TO SIMULATE THE PIPELINE LOAD
-local function RunIntroLoadingSequence()
-    local Stages = {
-        "Connecting to safety protocols...",
-        "Bypassing internal workspace check...",
-        "Injecting Figma Frame pipeline...",
-        "Structuring Monolithic Core v3.1...",
-        "Assembling Aimbot & ESP Cache structures...",
-        "Applying system configuration layout...",
-        "WANGCAOS Engine active!"
-    }
+local function RenderVisuals(Player)
+    if Player == LocalPlayer then return end
     
-    for i = 0, 100, 2 do
-        task.wait(0.04) -- Tốc độ chạy thanh loading mượt mà tinh tế
-        local stageIdx = math.clamp(math.floor((i / 100) * #Stages) + 1, 1, #Stages)
-        StatusText.Text = Stages[stageIdx] .. " " .. tostring(i) .. "%"
-        ProgressBar.Size = UDim2.new(i / 100, 0, 1, 0)
-    end
+    CleanPlayerVisuals(Player)
     
-    StatusText.Text = "Authorized successfully!"
-    task.wait(0.5)
+    local Character = Player.Character
+    if not Character then return end
     
-    -- Hiệu ứng ẩn mượt mà toàn bộ màn hình loading
-    TweenService:Create(LoadingFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(LoadTitle, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
-    TweenService:Create(StatusText, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
-    TweenService:Create(TrackBar, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(ProgressBar, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(LoadStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
-    
-    task.wait(0.4)
-    LoadingFrame:Destroy()
-    
-    -- BẮT ĐẦU MỞ KHÓA VÀ CHO PHÉP HIỂN THỊ MENU CHÍNH SAU KHI LOAD XONG
-    Config.IsLoading = false
-    Config.MenuVisible = true
-    MainFrame.Visible = true
-    ToggleButton.Visible = true
-    
-    -- Thông báo hệ thống xác nhận kích hoạt thành công
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "WANGCAOS CLIENT",
-            Text = "LOAD THÀNH CÔNG!\nBẤM [ ĐỂ ẨN/HIỆN MENU HOẶC DÙNG NÚT W TRÊN MÀN HÌNH.",
-            Duration = 10
-        })
-    end)
-end
-
-task.spawn(RunIntroLoadingSequence)
--- ==============================================================================
--- 9. ESP LOGIC PIPELINE (OPTIMIZED)
--- ==============================================================================
-local function RenderVisuals(Player, Character)
-    if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
     local Head = Character:WaitForChild("Head", 5)
     if not Root or not Head then return end
-    
-    CleanCharacterVisuals(Character)
     
     local Box = Instance.new("BoxHandleAdornment")
     Box.Name = "BéBoxFill"
@@ -665,6 +575,8 @@ local function RenderVisuals(Player, Character)
     Gui.Size = UDim2.new(0, 200, 0, 100)
     Gui.StudsOffset = Vector3.new(0, 4, 0)
     Gui.AlwaysOnTop = true
+    -- Bật thuộc tính MaxDistance cho BillboardGui để đồng bộ với thanh khoảng cách hệ thống
+    Gui.MaxDistance = Config.MaxDistance 
 
     local Label = Instance.new("TextLabel", Gui)
     Label.Size = UDim2.new(1, 0, 1, 0)
@@ -674,22 +586,24 @@ local function RenderVisuals(Player, Character)
     Label.TextColor3 = Color3.fromRGB(255, 255, 255)
     Gui.Parent = Head
     
-    Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, Player = Player }
+    Player_Visual_Cache[Player] = { Box = Box, Gui = Gui, Label = Label }
 end
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end
     
-    Player.CharacterAdded:Connect(function(Char)
-        RenderVisuals(Player, Char)
+    Player.CharacterAdded:Connect(function()
+        task.wait(0.2)
+        task.spawn(RenderVisuals, Player)
     end)
     
     if Player.Character then 
-        RenderVisuals(Player, Player.Character) 
+        task.spawn(RenderVisuals, Player) 
     end
 end
+
 -- ==============================================================================
--- 10. RUNSERVICE LOOP (THE ENGINE CORE)
+-- 10. RUNSERVICE LOOP (TỐI ƯU HÓA TẦM XA TOÀN BẢN ĐỒ)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -721,16 +635,25 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
         end
     end
 
-    for Char, Data in pairs(Character_Cache) do
-        if Char and Char.Parent and IsAlive(Char) and Players:FindFirstChild(Data.Player.Name) then
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player == LocalPlayer then continue end
+        
+        local Data = Player_Visual_Cache[Player]
+        local Char = Player.Character
+        
+        if Data and Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
-                local PColor = GetPlayerColor(Data.Player)
+                local PColor = GetPlayerColor(Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
-                local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
+                local Team = Player.Team and Player.Team.Name or "No Team"
                 local Tool = GetEquippedTool(Char)
 
-                if Config.EspBox then
+                -- Cập nhật động khoảng cách hiển thị tối đa của Tag trên đầu
+                Data.Gui.MaxDistance = Config.MaxDistance
+
+                -- Render 3D Box (Kiểm tra điều kiện khoảng cách trước khi vẽ để tránh lag)
+                if Config.EspBox and Dist <= Config.MaxDistance then
                     Data.Box.Visible = true
                     Data.Box.Color3 = PColor
                     Data.Box.Transparency = Config.EspTransparency / 100
@@ -738,17 +661,19 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Box.Visible = false
                 end
 
+                -- Render NameTag thông tin
                 if Config.EspName and Dist <= Config.MaxDistance then
                     Data.Gui.Enabled = true
                     Data.Label.Visible = true
                     Data.Label.TextColor3 = PColor
-                    Data.Label.Text = string.format("%s (%dm)\n(%s)(%s)", Data.Player.Name, Dist, Team, Tool)
+                    Data.Label.Text = string.format("%s (%dm)\n(%s)(%s)", Player.Name, Dist, Team, Tool)
                 else
                     Data.Label.Visible = false
                 end
 
-                local Tracer = Tracer_Cache[Data.Player]
-                if Tracer and Config.EspTracer then
+                -- Render Line Tracer Tầm Xa
+                local Tracer = Tracer_Cache[Player]
+                if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
                         Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -764,14 +689,10 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
             else
                 Data.Box.Visible = false
                 Data.Label.Visible = false
-                if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
+                if Tracer_Cache[Player] then Tracer_Cache[Player].Visible = false end
             end
         else
-            CleanCharacterVisuals(Char)
-            if Data.Player and Tracer_Cache[Data.Player] then
-                Tracer_Cache[Data.Player].Visible = false
-            end
-            Character_Cache[Char] = nil
+            if Tracer_Cache[Player] then Tracer_Cache[Player].Visible = false end
         end
     end
 end)
@@ -782,13 +703,8 @@ Players.PlayerAdded:Connect(function(Player)
 end)
 
 Players.PlayerRemoving:Connect(function(Player)
-    for Char, Data in pairs(Character_Cache) do
-        if Data.Player == Player then
-            CleanCharacterVisuals(Char)
-            Character_Cache[Char] = nil
-        end
-    end
     ClearTracerObject(Player)
+    CleanPlayerVisuals(Player)
 end)
 
 for _, P in pairs(Players:GetPlayers()) do
@@ -800,8 +716,19 @@ CloseBtn.MouseButton1Click:Connect(function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
-    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
+    for _, P in pairs(Players:GetPlayers()) do CleanPlayerVisuals(P) end
     Lighting.Ambient = Config.StoredAmbient
     Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
 end)
+
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "WANGCAOS CLIENT",
+        Text = "LOAD THÀNH CÔNG!\nKHOẢNG CÁCH ESP ĐÃ ĐƯỢC MỞ RỘNG ĐẾN 5000 STUDS.",
+        Duration = 10
+    })
+end)
+-- ==============================================================================
+-- END OF SCRIPT - UPDATED BY WANG
+-- ==============================================================================

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.2 - MINECRAFT FIGMA EDITION
+-- WANGCAOS PREMIUM CLIENT V3.3 - FIXED FIXED CENTER FOV & AIM ENGINE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -70,11 +70,11 @@ end
 -- 3. CACHE & MEMORY ALLOCATION
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Color3.fromRGB(255, 255, 255)
+FOV_Drawing.Color = Color3.fromRGB(85, 255, 85) -- Chuyển sang màu xanh lá Minecraft cho đẹp
 FOV_Drawing.Thickness = 1.5
 FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
-FOV_Drawing.Transparency = 0.7
+FOV_Drawing.Transparency = 0.8
 FOV_Drawing.Visible = false
 
 local Tracer_Cache = {}
@@ -109,7 +109,7 @@ local function CleanCharacterVisuals(Character)
 end
 
 -- ==============================================================================
--- 4. MATH & TARGETING ENGINE
+-- 4. MATH & TARGETING ENGINE (FIXED ABSOLUTE CENTER TARGETING)
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -143,6 +143,7 @@ local function GetEquippedTool(Character)
 end
 
 local function GetClosestPlayerToCrosshair()
+    -- Lấy chính xác tọa độ trung tâm màn hình thực tế (Không phụ thuộc cấu trúc UI)
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ClosestTarget = nil
     local MaxDist = Config.FovRadius
@@ -154,6 +155,7 @@ local function GetClosestPlayerToCrosshair()
             if Head then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Head.Position)
                 if OnScreen and CheckWallOcclusion(Head, Player.Character) then
+                    -- Tính toán khoảng cách từ mục tiêu đến điểm chính giữa màn hình
                     local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
                     if Dist < MaxDist then
                         MaxDist = Dist
@@ -165,7 +167,8 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 -- ==============================================================================
 -- 5. MINECRAFT FIGMA GUI CONSTRUCTION
 -- ==============================================================================
@@ -175,7 +178,6 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
--- Logo Toggle Button (Hình vuông bo góc Minecraft)
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "MinecraftToggleLogo"
 ToggleButton.Parent = ScreenGui
@@ -192,7 +194,6 @@ local LogoStroke = Instance.new("UIStroke", ToggleButton)
 LogoStroke.Color = Color3.fromRGB(60, 60, 60)
 LogoStroke.Thickness = 1.5
 
--- Giao diện chính siêu mờ mịn giống hệt ảnh mẫu
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -206,9 +207,7 @@ Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(45, 47, 50)
 FrameStroke.Thickness = 1.5
--- ---[còn tiếp]---
--- ---[tiếp tục]---
--- Thanh điều hướng phía trên chứa các Tab (Combat, Player, Movement, Visuals, Misc)
+
 local TopNavBar = Instance.new("Frame")
 TopNavBar.Name = "TopNavBar"
 TopNavBar.Parent = MainFrame
@@ -229,7 +228,6 @@ local TabPad = Instance.new("UIPadding", TopNavBar)
 TabPad.PaddingLeft = UDim.new(0, 6)
 TabPad.PaddingTop = UDim.new(0, 6)
 
--- Khung chứa nội dung các trang cấu hình
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -241,8 +239,6 @@ local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
 local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
-
-local ActiveTabStroke = nil
 
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
@@ -260,7 +256,6 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
 end
 CombatPage.Visible = true
 
--- Hàm khởi tạo Tab theo phong cách Minecraft Client cao cấp
 local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TopNavBar)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
@@ -277,7 +272,6 @@ local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
     TStroke.Thickness = 1
     TStroke.Enabled = Order == 1
-    if Order == 1 then ActiveTabStroke = TStroke end
     
     TabBtn.MouseButton1Click:Connect(function()
         CombatPage.Visible = false
@@ -299,19 +293,17 @@ local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
         TabBtn.BackgroundTransparency = 0
         TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         TStroke.Enabled = true
-        ActiveTabStroke = TStroke
         TargetPage.Visible = true
     end)
 end
 
--- Khởi tạo chính xác 5 Tab như thiết kế Minecraft Figma đại ca gửi
 CreateMinecraftTab("Combat", "⚔", 1, CombatPage)
 CreateMinecraftTab("Player", "👤", 2, PlayerPage)
 CreateMinecraftTab("Movement", "🏃", 3, MovementPage)
 CreateMinecraftTab("Visuals", "👁", 4, VisualPage)
 CreateMinecraftTab("Misc", "⚙", 5, MiscPage)
 
--- DRAG SYSTEM (Kéo thả menu mượt mà)
+-- DRAG SYSTEM
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
     local dragStart = nil
@@ -353,7 +345,7 @@ end)
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 6. DESIGN SYSTEM COMPONENTS (MINECRAFT STYLE SWITCH & SLIDER)
+-- 6. DESIGN SYSTEM COMPONENTS
 -- ==============================================================================
 local function AddMinecraftToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
@@ -375,7 +367,6 @@ local function AddMinecraftToggle(Page, LabelText, Key, Callback)
     Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Nút gạt bo tròn thanh mảnh đúng chuẩn ảnh mẫu
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
     SwitchBg.Position = UDim2.new(1, -45, 0.5, -8)
@@ -425,7 +416,6 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Số hiển thị màu xanh lá cây đậm chất hack giống giao diện mẫu
     local ValTxt = Instance.new("TextLabel", SFrame)
     ValTxt.BackgroundTransparency = 1
     ValTxt.Position = UDim2.new(1, -65, 0, 4)
@@ -436,7 +426,6 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     ValTxt.TextSize = 11
     ValTxt.TextXAlignment = Enum.TextXAlignment.Right
 
-    -- Thanh trượt (Slider) nằm ngang cực mảnh
     local Bar = Instance.new("Frame", SFrame)
     Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50)
     Bar.BorderSizePixel = 0
@@ -450,7 +439,6 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
 
-    -- Nút tròn trượt nhỏ gọn tinh tế
     local SliderBall = Instance.new("Frame", Fill)
     SliderBall.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
@@ -481,7 +469,6 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
--- Close Button ẩn ở góc phải của Menu Chính
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = MainFrame
@@ -497,14 +484,12 @@ CloseBtn.TextSize = 18
 -- ==============================================================================
 -- 7. BINDING FEATURES TO MINECRAFT PAGES
 -- ==============================================================================
--- [COMBAT PAGE]
 AddMinecraftToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddMinecraftToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddMinecraftToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
 AddMinecraftSlider(CombatPage, "Aimbot Smoothness", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
 
--- [PLAYER PAGE]
-AddMinecraftToggle(PlayerPage, "FullBright (Render Ambient)", "FullBright", function(state)
+AddMinecraftToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
@@ -514,13 +499,11 @@ AddMinecraftToggle(PlayerPage, "FullBright (Render Ambient)", "FullBright", func
     end
 end)
 
--- [MOVEMENT PAGE]
 AddMinecraftToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle")
 AddMinecraftSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
 AddMinecraftToggle(MovementPage, "JumpPower Boost", "JumpToggle")
 AddMinecraftSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
--- [VISUALS PAGE]
 AddMinecraftToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
 AddMinecraftToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddMinecraftSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
@@ -528,12 +511,11 @@ AddMinecraftToggle(VisualPage, "Snapline Tracers", "EspTracer")
 AddMinecraftToggle(VisualPage, "Informative Character Tags", "EspName")
 AddMinecraftSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
--- [MISC PAGE]
 AddMinecraftToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddMinecraftSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 
 -- ==============================================================================
--- 8. CORE ESP RENDERING PIPELINE (DYNAMIC PROFILE)
+-- 8. CORE ESP RENDERING PIPELINE
 -- ==============================================================================
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
@@ -578,15 +560,16 @@ local function MonitorPlayer(Player)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
 -- ---[còn tiếp]---
--- ---[tiếp tục]---
+-- ---[tiếp tục Burg]---
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (TỐI ƯU FPS TẦM XA)
+-- 9. RUNSERVICE TICK ENGINE (CRITICAL FIXED CENTER FOV & AIM DISTANCE)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
-    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    -- KHÓA CỨNG TÂM CỦA VÒNG TRÒN FOV LUÔN Ở CHÍNH GIỮA MÀN HÌNH MÁY TÍNH
+    local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
     if Config.FovCircle then
-        FOV_Drawing.Position = Center
+        FOV_Drawing.Position = ScreenCenter -- Cập nhật liên tục tâm FOV theo điểm chết trung tâm màn hình
         FOV_Drawing.Radius = Config.FovRadius
         FOV_Drawing.Visible = true
     else
@@ -621,7 +604,6 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                 local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
                 local Tool = GetEquippedTool(Char)
 
-                -- Render 3D Box Chams
                 if Config.EspBox and Dist <= Config.MaxDistance then
                     Data.Box.Visible = true
                     Data.Box.Color3 = PColor
@@ -630,7 +612,6 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Box.Visible = false
                 end
 
-                -- Render Thẻ thông tin trên đầu
                 if Config.EspName and Dist <= Config.MaxDistance then
                     Data.Gui.Enabled = true
                     Data.Label.Visible = true
@@ -640,12 +621,11 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Label.Visible = false
                 end
 
-                -- Render Đường kẻ Tracer dưới chân màn hình lên người đối thủ
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
-                        Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        Tracer.From = ScreenCenter -- Tracers xuất phát từ chính giữa tâm màn hình
                         Tracer.To = Vector2.new(Leg.X, Leg.Y)
                         Tracer.Color = PColor
                         Tracer.Visible = true
@@ -667,7 +647,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- CONNECTIONS MANAGEMENT
+-- SYSTEM HOOKS
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
@@ -681,7 +661,6 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
--- Hệ thống hủy script an toàn, khôi phục lại cài đặt gốc của game khi tắt hack
 CloseBtn.MouseButton1Click:Connect(function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
@@ -694,11 +673,11 @@ end)
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS MINECRAFT UI",
-        Text = "LOADED FIGMA COMPLEX LAYOUT SUCCESSFUL!",
-        Duration = 7
+        Title = "WANGCAOS CLIENT V3.3",
+        Text = "ĐÃ ĐỒNG BỘ KHÓA CỨNG TÂM FOV GIỮA MÀN HÌNH!",
+        Duration = 6
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - COMPLETED BY BE FOR DAI CA
+-- END OF SCRIPT - POWERED BY BE FOR DAI CA
 -- ==============================================================================

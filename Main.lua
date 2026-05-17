@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.8 - MILLENNIAL CELEBRATION EDITION
+-- WANGCAOS PREMIUM CLIENT V4.0 - WHITE CROSSHAIR & FOV SYSTEM UPDATE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -24,7 +24,8 @@ local Config = {
     Aimbot = false,
     TeamCheck = true,
     WallCheck = true,
-    Smoothness = 0.2,
+    Smoothness = 5, -- Thang đo trực quan từ 0 đến 10
+    TargetPart = "Head", -- "Head" (Đầu) hoặc "HumanoidRootPart" (Thân)
     
     EspMaster = false,
     FovCircle = false,
@@ -32,7 +33,7 @@ local Config = {
     CrosshairDot = true,
     EspBox = false,
     EspTracer = false,
-    TracerMode = "Bottom", -- CHẾ ĐỘ TRACER MỚI: "Center" (Tâm màn hình) hoặc "Bottom" (Đáy màn hình)
+    TracerMode = "Bottom", -- "Center" hoặc "Bottom"
     EspName = false,
     EspTransparency = 80,
     MaxDistance = 5000,
@@ -69,10 +70,10 @@ for _, old in pairs(SafeParent:GetChildren()) do
 end
 
 -- ==============================================================================
--- 3. DRAWING MEMORY ALLOCATION
+-- 3. DRAWING MEMORY ALLOCATION (ĐÃ ĐỔI SANG MÀU TRẮNG THEO LỆNH ĐẠI CA)
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Color3.fromRGB(85, 255, 85)
+FOV_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Chuyển thành Màu trắng
 FOV_Drawing.Thickness = 1.5
 FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
@@ -80,7 +81,7 @@ FOV_Drawing.Transparency = 0.8
 FOV_Drawing.Visible = false
 
 local Dot_Drawing = Drawing.new("Circle")
-Dot_Drawing.Color = Color3.fromRGB(255, 85, 85)
+Dot_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Chuyển thành Màu trắng
 Dot_Drawing.Thickness = 1
 Dot_Drawing.Radius = 3
 Dot_Drawing.NumSides = 16
@@ -145,7 +146,7 @@ local function GetPlayerColor(Player)
     if Player.TeamColor ~= BrickColor.new("White") and Player.TeamColor ~= BrickColor.new("Medium stone grey") then
         return Player.TeamColor.Color
     end
-    return Color3.fromRGB(85, 255, 85)
+    return Color3.fromRGB(255, 255, 255)
 end
 
 local function GetEquippedTool(Character)
@@ -161,14 +162,15 @@ local function GetClosestPlayerToCrosshair()
     for _, Player in pairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
             if Config.TeamCheck and Player.Team == LocalPlayer.Team then continue end
-            local Head = Player.Character:FindFirstChild("Head")
-            if Head then
-                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Head.Position)
-                if OnScreen and CheckWallOcclusion(Head, Player.Character) then
+            
+            local TargetPartInstance = Player.Character:FindFirstChild(Config.TargetPart)
+            if TargetPartInstance then
+                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(TargetPartInstance.Position)
+                if OnScreen and CheckWallOcclusion(TargetPartInstance, Player.Character) then
                     local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
                     if Dist < MaxDist then
                         MaxDist = Dist
-                        ClosestTarget = Head
+                        ClosestTarget = TargetPartInstance
                     end
                 end
             end
@@ -179,7 +181,7 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (PREMIUM FIGMA HYBRID LAYOUT)
+-- 5. GUI CONSTRUCTION (PREMIUM FIGMA LAYOUT PACK)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -373,7 +375,7 @@ end)
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 6. DESIGN SYSTEM COMPONENTS (INTERACTIVE UI HANDLERS)
+-- 6. DESIGN SYSTEM COMPONENTS (INTERACTIVE HANDLERS)
 -- ==============================================================================
 local function AddPremiumToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
@@ -450,7 +452,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     ValTxt.Size = UDim2.new(0, 55, 0, 16)
     ValTxt.Font = Enum.Font.GothamBold
     ValTxt.Text = tostring(Config[Key])
-    ValTxt.TextColor3 = Color3.fromRGB(85, 255, 85)
+    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255) -- Giá trị hiển thị màu trắng sang trọng
     ValTxt.TextSize = 11
     ValTxt.TextXAlignment = Enum.TextXAlignment.Right
 
@@ -462,7 +464,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
-    Fill.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
+    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Cục trượt chuyển sang màu trắng thanh lịch
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
@@ -497,7 +499,48 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
--- TÍNH NĂNG MỚI: NÚT CHUYỂN CHẾ ĐỘ TRACER (CENTER / BOTTOM)
+local function AddHitboxSelector(Page)
+    local HFrame = Instance.new("Frame", Page)
+    HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    HFrame.BackgroundTransparency = 0.4
+    HFrame.Size = UDim2.new(0, 275, 0, 42)
+    Instance.new("UICorner", HFrame).CornerRadius = UDim.new(0, 6)
+    local CompStroke = Instance.new("UIStroke", HFrame)
+    CompStroke.Color = Color3.fromRGB(35, 37, 40)
+    CompStroke.Thickness = 1
+
+    local Lbl = Instance.new("TextLabel", HFrame)
+    Lbl.BackgroundTransparency = 1
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Font = Enum.Font.Gotham
+    Lbl.Text = "Aimbot Target Hitbox"
+    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
+    Lbl.TextSize = 12
+    Lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local HitboxBtn = Instance.new("TextButton", HFrame)
+    HitboxBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
+    HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12)
+    HitboxBtn.Size = UDim2.new(0, 105, 0, 24)
+    HitboxBtn.Font = Enum.Font.GothamBold
+    HitboxBtn.Text = Config.TargetPart == "Head" and "HEAD" or "TORSO"
+    HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    HitboxBtn.TextSize = 11
+    Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65)
+
+    HitboxBtn.MouseButton1Click:Connect(function()
+        if Config.TargetPart == "Head" then
+            Config.TargetPart = "HumanoidRootPart"
+            HitboxBtn.Text = "TORSO"
+        else
+            Config.TargetPart = "Head"
+            HitboxBtn.Text = "HEAD"
+        end
+    end)
+end
+
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -524,7 +567,7 @@ local function AddTracerModeSelector(Page)
     ModeBtn.Size = UDim2.new(0, 105, 0, 24)
     ModeBtn.Font = Enum.Font.GothamBold
     ModeBtn.Text = Config.TracerMode:upper()
-    ModeBtn.TextColor3 = Color3.fromRGB(85, 255, 85)
+    ModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ModeBtn.TextSize = 11
     Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4)
     Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
@@ -555,7 +598,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
     TitleLbl.Size = UDim2.new(1, -20, 0, 16)
     TitleLbl.Font = Enum.Font.GothamBold
     TitleLbl.Text = Title
-    TitleLbl.TextColor3 = Color3.fromRGB(85, 255, 85)
+    TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLbl.TextSize = 12
     TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -572,12 +615,13 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 7. REGISTRATION OF FEATURES & PHONG BAT 1K+ CREDITS PACK
+-- 7. REGISTRATION OF FEATURES & OFFICIAL CREDITS PACK
 -- ==============================================================================
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
-AddPremiumSlider(CombatPage, "Aimbot Smoothness", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
+AddPremiumSlider(CombatPage, "Aimbot Smoothness", 0, 10, "Smoothness")
+AddHitboxSelector(CombatPage)
 
 AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
     if state then
@@ -598,18 +642,18 @@ AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
-AddTracerModeSelector(VisualPage) -- ĐƯA NÚT CHỌN CHẾ ĐỘ TÂM/ĐÁY VÀO TRANG VISUALS
+AddTracerModeSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
-AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
+-- KHU VỰC BẬT TÂM VÀ FOV TRẮNG SIÊU ĐẸP
+AddPremiumToggle(MiscPage, "Draw Silent FOV Circle (White)", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
-AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
+AddPremiumToggle(MiscPage, "Crosshair Center Dot (White)", "CrosshairDot")
 
--- TRANG GIỚI THIỆU PHÔNG BẠT SIÊU CẤP THEO YÊU CẦU CỦA ĐẠI CA WANG
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V3.8")
-AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)") -- Sửa thành 1k+ siêu hoành tráng
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V4.0")
+AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
 
 -- ==============================================================================
@@ -660,15 +704,17 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (DYNAMIC SNAPLINE TRACER MODES)
+-- 9. RUNSERVICE TICK ENGINE (WHITE DESIGN ORIENTED RENDERING)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
+    -- ENGINE ĐỒ HỌA ĐỒNG BỘ MÀU TRẮNG HOÀN TOÀN CHO FOV VÀ TÂM
     if Config.FovCircle then
         FOV_Drawing.Position = ScreenCenter
         FOV_Drawing.Radius = Config.FovRadius
+        FOV_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Bảo đảm luôn giữ màu trắng tinh tế
         FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
@@ -676,6 +722,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
 
     if Config.CrosshairDot then
         Dot_Drawing.Position = ScreenCenter
+        Dot_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Bảo đảm giữ màu trắng tinh tế
         Dot_Drawing.Visible = true
     else
         Dot_Drawing.Visible = false
@@ -696,7 +743,11 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Aimbot then
         local Target = GetClosestPlayerToCrosshair()
         if Target then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), Config.Smoothness)
+            local LerpFactor = 1
+            if Config.Smoothness > 0 then
+                LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1)
+            end
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
         end
     end
 
@@ -726,12 +777,10 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Label.Visible = false
                 end
 
-                -- XỬ LÝ HỆ THỐNG TRACER ĐA CHẾ ĐỘ THEO LỆNH CỦA ĐẠI CA WANG
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
-                        -- Lựa chọn điểm xuất phát dựa vào cấu hình TracerMode
                         if Config.TracerMode == "Center" then
                             Tracer.From = ScreenCenter
                         else
@@ -783,7 +832,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- THÔNG BÁO CHẠY THÀNH CÔNG ĐÃ ĐƯỢC LƯỢC BỎ CHỮ MINECRAFT FIGMA
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "WANGCAOS CLIENT PREMIUM",

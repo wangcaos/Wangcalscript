@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (FIXED GUI)
+-- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (FIXED GUI & ESP & BG)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -46,7 +46,7 @@ local Config = {
 }
 
 -- ==============================================================================
--- 2. SECURE GUI PARENTING (FIXED GUI NOT OPENING)
+-- 2. SECURE GUI PARENTING
 -- ==============================================================================
 local function GetSafeGui()
     local success, hui = pcall(function() return gethui() end)
@@ -103,9 +103,9 @@ end
 local function CleanCharacterVisuals(Character)
     if not Character then return end
     local OldBox = Character:FindFirstChild("BéBoxFill", true)
-    if OldBox then OldBox:Destroy() end
+    if OldBox then pcall(function() OldBox:Destroy() end) end
     local OldTag = Character:FindFirstChild("BéInfoTag", true)
-    if OldTag then OldTag:Destroy() end
+    if OldTag then pcall(function() OldTag:Destroy() end) end
 end
 -- ==============================================================================
 -- 4. MATH & TARGETING ENGINE
@@ -166,53 +166,6 @@ local function GetClosestPlayerToCrosshair()
 end
 
 -- ==============================================================================
--- ESP MONITOR FUNCTION FOR VISUALS
--- ==============================================================================
-local function MonitorPlayer(Player)
-    local function SetupCharacterVisuals(Character)
-        if not Character then return end
-        Character:WaitForChild("HumanoidRootPart", 10)
-        Character:WaitForChild("Head", 10)
-        
-        local Root = Character:FindFirstChild("HumanoidRootPart")
-        local Head = Character:FindFirstChild("Head")
-        if not Root or not Head then return end
-
-        CleanCharacterVisuals(Character)
-
-        local Box = Instance.new("BoxHandleAdornment")
-        Box.Name = "BéBoxFill"
-        Box.Parent = Root
-        Box.Adornee = Root
-        Box.AlwaysOnTop = true
-        Box.ZIndex = 5
-        Box.Size = Vector3.new(4, 6, 4)
-        Box.Transparency = 1 - (Config.EspTransparency / 100)
-        Box.Visible = false
-
-        local Gui = Instance.new("BillboardGui")
-        Gui.Name = "BéInfoTag"
-        Gui.Adornee = Head
-        Gui.Size = UDim2.new(0, 200, 0, 100)
-        Gui.StudsOffset = Vector3.new(0, 4, 0)
-        Gui.AlwaysOnTop = true
-
-        local Label = Instance.new("TextLabel", Gui)
-        Label.Size = UDim2.new(1, 0, 1, 0)
-        Label.BackgroundTransparency = 1
-        Label.Font = Enum.Font.Code
-        Label.TextSize = 13
-        Label.TextStrokeTransparency = 0
-        Label.TextColor3 = Color3.new(1, 1, 1)
-        Gui.Parent = Head
-        
-        Character_Cache[Character] = {Box = Box, Label = Label, Gui = Gui, Root = Root}
-    end
-
-    Player.CharacterAdded:Connect(SetupCharacterVisuals)
-    if Player.Character then task.spawn(SetupCharacterVisuals, Player.Character) end
-end
--- ==============================================================================
 -- 5. GUI CONSTRUCTION (FIGMA MINECRAFT HYBRID V3.1)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
@@ -240,7 +193,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0.1
+MainFrame.BackgroundTransparency = 1 -- Trong suốt để lộ ảnh nền phía dưới
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -185)
 MainFrame.Size = UDim2.new(0, 550, 0, 370)
@@ -250,13 +203,37 @@ local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(60, 60, 60)
 FrameStroke.Thickness = 1.5
 
+-- THÊM ẢNH NỀN THEO YÊU CẦU CỦA ĐẠI CA
+local BackgroundImage = Instance.new("ImageLabel")
+BackgroundImage.Name = "GuiBackgroundImage"
+BackgroundImage.Parent = MainFrame
+BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
+BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
+BackgroundImage.BackgroundTransparency = 1
+BackgroundImage.Image = "rbxassetid://117916873602722"
+BackgroundImage.ScaleType = Enum.ScaleType.Crop
+BackgroundImage.ZIndex = 0
+Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 12)
+
+-- Lớp phủ làm tối nền 60%
+local DarkOverlay = Instance.new("Frame")
+DarkOverlay.Name = "DarkOverlay"
+DarkOverlay.Parent = MainFrame
+DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
+DarkOverlay.Position = UDim2.new(0, 0, 0, 0)
+DarkOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+DarkOverlay.BackgroundTransparency = 0.6 -- Độ tối 60%
+DarkOverlay.BorderSizePixel = 0
+DarkOverlay.ZIndex = 1
+Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 12)
+
 local HeaderBar = Instance.new("Frame")
 HeaderBar.Name = "HeaderBar"
 HeaderBar.Parent = MainFrame
 HeaderBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 HeaderBar.BackgroundTransparency = 1
 HeaderBar.Size = UDim2.new(1, 0, 0, 40)
-
+HeaderBar.ZIndex = 2
 local ClientTitle = Instance.new("TextLabel")
 ClientTitle.Parent = HeaderBar
 ClientTitle.BackgroundTransparency = 1
@@ -267,6 +244,7 @@ ClientTitle.Text = "WANGCAOS CLIENT // MONOLITHIC V3.1 (FIXED)"
 ClientTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClientTitle.TextSize = 13
 ClientTitle.TextXAlignment = Enum.TextXAlignment.Left
+ClientTitle.ZIndex = 2
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
@@ -278,10 +256,12 @@ CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
 CloseBtn.TextSize = 15
+CloseBtn.ZIndex = 2
 
 -- DRAG LOGIC (Header & Toggle Button)
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
+    local dragSpeed = 0
     local dragStart = nil
     local startPos = nil
     DragHandle.InputBegan:Connect(function(input)
@@ -311,6 +291,14 @@ ToggleButton.MouseButton1Click:Connect(function()
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Config.MenuKeybind then
+        Config.MenuVisible = not Config.MenuVisible
+        MainFrame.Visible = Config.MenuVisible
+    end
+end)
+
 -- ==============================================================================
 -- 6. TABS & PAGES SYSTEM
 -- ==============================================================================
@@ -319,6 +307,7 @@ TabNavBar.Parent = MainFrame
 TabNavBar.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 TabNavBar.Position = UDim2.new(0, 15, 0, 45)
 TabNavBar.Size = UDim2.new(1, -30, 0, 36)
+TabNavBar.ZIndex = 2
 Instance.new("UICorner", TabNavBar).CornerRadius = UDim.new(0, 6)
 
 local TabLayout = Instance.new("UIListLayout", TabNavBar)
@@ -334,6 +323,7 @@ ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Position = UDim2.new(0, 15, 0, 92)
 ContentContainer.Size = UDim2.new(1, -30, 1, -110)
+ContentContainer.ZIndex = 2
 
 local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
@@ -347,11 +337,11 @@ for _, page in pairs({CombatPage, VisualPage, PlayerPage}) do
     page.ScrollBarThickness = 3
     page.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 70)
     page.Visible = false
+    page.ZIndex = 2
     local layout = Instance.new("UIListLayout", page)
     layout.Padding = UDim.new(0, 8)
 end
 CombatPage.Visible = true
-
 local function CreateTab(Name, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabNavBar)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
@@ -362,6 +352,7 @@ local function CreateTab(Name, Order, TargetPage)
     TabBtn.Text = Name:upper()
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)
     TabBtn.TextSize = 11
+    TabBtn.ZIndex = 2
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
@@ -372,6 +363,7 @@ local function CreateTab(Name, Order, TargetPage)
         CombatPage.Visible = false
         VisualPage.Visible = false
         PlayerPage.Visible = false
+        
         for _, btn in pairs(TabNavBar:GetChildren()) do
             if btn:IsA("TextButton") then
                 btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -391,6 +383,7 @@ end
 CreateTab("Combat", 1, CombatPage)
 CreateTab("Visuals", 2, VisualPage)
 CreateTab("Player", 3, PlayerPage)
+
 -- ==============================================================================
 -- 7. UI COMPONENTS (TOGGLES & SLIDERS)
 -- ==============================================================================
@@ -398,6 +391,7 @@ local function AddToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundTransparency = 1
     TFrame.Size = UDim2.new(1, 0, 0, 36)
+    TFrame.ZIndex = 2
     
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
@@ -408,11 +402,13 @@ local function AddToggle(Page, LabelText, Key, Callback)
     Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    Lbl.ZIndex = 2
 
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(40, 80, 40) or Color3.fromRGB(32, 32, 32)
     SwitchBg.Position = UDim2.new(1, -46, 0.5, -9)
     SwitchBg.Size = UDim2.new(0, 36, 0, 18)
+    SwitchBg.ZIndex = 2
     Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
     local SwStrk = Instance.new("UIStroke", SwitchBg)
     SwStrk.Color = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(75, 75, 75)
@@ -421,12 +417,14 @@ local function AddToggle(Page, LabelText, Key, Callback)
     Ball.BackgroundColor3 = Config[Key] and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(160, 160, 160)
     Ball.Position = Config[Key] and UDim2.new(1, -15, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
     Ball.Size = UDim2.new(0, 14, 0, 14)
+    Ball.ZIndex = 2
     Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", TFrame)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
+    Btn.ZIndex = 3
 
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
@@ -441,11 +439,11 @@ local function AddToggle(Page, LabelText, Key, Callback)
         if Callback then Callback(Config[Key]) end
     end)
 end
-
 local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundTransparency = 1
     SFrame.Size = UDim2.new(1, 0, 0, 42)
+    SFrame.ZIndex = 2
 
     local Lbl = Instance.new("TextLabel", SFrame)
     Lbl.BackgroundTransparency = 1
@@ -456,6 +454,7 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     Lbl.TextColor3 = Color3.fromRGB(210, 210, 210)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    Lbl.ZIndex = 2
 
     local ValTxt = Instance.new("TextLabel", SFrame)
     ValTxt.BackgroundTransparency = 1
@@ -466,24 +465,28 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     ValTxt.TextColor3 = Color3.fromRGB(85, 255, 85)
     ValTxt.TextSize = 11
     ValTxt.TextXAlignment = Enum.TextXAlignment.Right
+    ValTxt.ZIndex = 2
 
     local Bar = Instance.new("Frame", SFrame)
     Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Bar.BorderSizePixel = 0
     Bar.Position = UDim2.new(0, 6, 0, 24)
     Bar.Size = UDim2.new(1, -12, 0, 4)
+    Bar.ZIndex = 2
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
     Fill.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
+    Fill.ZIndex = 2
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", Bar)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
+    Btn.ZIndex = 3
 
     local Dragging = false
     Btn.InputBegan:Connect(function(input)
@@ -492,146 +495,195 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     Btn.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local ratio = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
             local val = math.floor(Min + (Max - Min) * ratio)
-            Config[Key] = val
             Fill.Size = UDim2.new(ratio, 0, 1, 0)
             ValTxt.Text = tostring(val)
+            Config[Key] = val
             if Callback then Callback(val) end
         end
     end)
 end
--- ==============================================================================
--- 8. HOOKING INTERFACES WITH CONFIG KEYMAP
--- ==============================================================================
-AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil)
-AddToggle(CombatPage, "Team Check Target Filter", "TeamCheck", nil)
-AddToggle(CombatPage, "Wall Check Occlusion", "WallCheck", nil)
-AddSlider(CombatPage, "Aimbot Smoothness Weights", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 10 end)
 
-AddToggle(VisualPage, "Master ESP Activation", "EspMaster", nil)
-AddToggle(VisualPage, "Show Center Crosshair FOV Circle", "FovCircle", nil)
-AddSlider(VisualPage, "Crosshair FOV Radius Scope", 30, 400, "FovRadius", nil)
-AddToggle(VisualPage, "Draw 3D Box Adornments", "EspBox", nil)
-AddToggle(VisualPage, "Draw Snap Tracers Alignment", "EspTracer", nil)
-AddToggle(VisualPage, "Display Overhead Identity Tags", "EspName", nil)
-AddSlider(VisualPage, "ESP Visual Object Opacity", 10, 100, "EspTransparency", nil)
-AddSlider(VisualPage, "Max Rendering Vector Distance", 100, 3000, "MaxDistance", nil)
+-- ==============================================================================
+-- 8. BUILD UI BINDINGS
+-- ==============================================================================
+AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
+AddToggle(CombatPage, "Team Guard Filter", "TeamCheck")
+AddToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
+AddSlider(CombatPage, "Smoothing Factor", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
 
-AddToggle(PlayerPage, "Speed Enhancement Modifications", "SpeedToggle", nil)
-AddSlider(PlayerPage, "Custom Character WalkSpeed Limit", 16, 250, "WalkSpeed", nil)
-AddToggle(PlayerPage, "Jump Power Multiplier Tweaks", "JumpToggle", nil)
-AddSlider(PlayerPage, "Custom Character JumpPower Limit", 50, 350, "JumpPower", nil)
-AddToggle(PlayerPage, "Full Bright Ambient Override", "FullBright", function(val)
-    if not val then
+AddToggle(VisualPage, "ESP Master Control", "EspMaster")
+AddToggle(VisualPage, "AlwaysOnTop Chams 3D", "EspBox")
+AddSlider(VisualPage, "Chams Opacity Power", 0, 100, "EspTransparency")
+AddToggle(VisualPage, "Bottom Center Tracers", "EspTracer")
+AddToggle(VisualPage, "Dynamic Informative Tag", "EspName")
+AddToggle(VisualPage, "Draw FOV Calibration", "FovCircle")
+AddSlider(VisualPage, "FOV Dynamic Radius", 30, 500, "FovRadius")
+
+AddToggle(PlayerPage, "Velocity WalkSpeed Hack", "SpeedToggle")
+AddSlider(PlayerPage, "Custom Velocity Power", 16, 200, "WalkSpeed")
+AddToggle(PlayerPage, "Internal JumpPower Hack", "JumpToggle")
+AddSlider(PlayerPage, "Custom Jump Force", 50, 350, "JumpPower")
+AddToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
+    if state then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    else
         Lighting.Ambient = Config.StoredAmbient
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
-
+-- =====================================================================
+-- 9. ESP LOGIC PIPELINE (OPTIMIZED)
 -- ==============================================================================
--- 9. CORE MASTER RUNTIME EXECUTION LOOP
+local function RenderVisuals(Player, Character)
+    if not Character or not Character.Parent then return end
+    local Root = Character:WaitForChild("HumanoidRootPart", 5)
+    local Head = Character:WaitForChild("Head", 5)
+    if not Root or not Head then return end
+    
+    CleanCharacterVisuals(Character)
+    
+    local Box = Instance.new("BoxHandleAdornment")
+    Box.Name = "BéBoxFill"
+    Box.Parent = Root
+    Box.Adornee = Root
+    Box.AlwaysOnTop = true
+    Box.ZIndex = 10
+    Box.Size = Vector3.new(4, 6, 4)
+    Box.Visible = false
+
+    local Gui = Instance.new("BillboardGui")
+    Gui.Name = "BéInfoTag"
+    Gui.Adornee = Head
+    Gui.Size = UDim2.new(0, 200, 0, 100)
+    Gui.StudsOffset = Vector3.new(0, 4, 0)
+    Gui.AlwaysOnTop = true
+
+    local Label = Instance.new("TextLabel", Gui)
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Font = Enum.Font.Code
+    Label.TextSize = 14
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Gui.Parent = Head
+    
+    Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, Player = Player }
+end
+
+local function MonitorPlayer(Player)
+    if Player == LocalPlayer then return end
+    
+    Player.CharacterAdded:Connect(function(Char)
+        RenderVisuals(Player, Char)
+    end)
+    
+    if Player.Character then 
+        RenderVisuals(Player, Player.Character) 
+    end
+end
+-- ==============================================================================
+-- 10. RUNSERVICE LOOP (THE ENGINE CORE)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
-    -- Fullbright processing logic
-    if Config.FullBright then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    end
-
-    -- LocalPlayer physics parameters checks
-    local MyChar = LocalPlayer.Character
-    if IsAlive(MyChar) then
-        local Hum = MyChar:FindFirstChildOfClass("Humanoid")
-        if Hum then
-            if Config.SpeedToggle then Hum.WalkSpeed = Config.WalkSpeed end
-            if Config.JumpToggle then Hum.JumpPower = Config.JumpPower end
-        end
-    end
-
-    -- FOV circle adjustment drawing metrics
-    if Config.FovCircle and Config.MenuVisible then
+    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    if Config.FovCircle then
+        FOV_Drawing.Position = Center
         FOV_Drawing.Radius = Config.FovRadius
-        FOV_Drawing.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
     end
 
-    -- Aimbot calculation operations
-    if Config.Aimbot then
-        local TargetHead = GetClosestPlayerToCrosshair()
-        if TargetHead then
-            local TargetPos = TargetHead.Position
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TargetPos), Config.Smoothness)
+    local MyChar = LocalPlayer.Character
+    if IsAlive(MyChar) then
+        local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
+        if MyHum then
+            if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
+            if Config.JumpToggle then
+                MyHum.UseJumpPower = true
+                MyHum.JumpPower = Config.JumpPower
+            end
         end
     end
 
-    -- Visual rendering caching routines
-    for _, Player in pairs(Players:GetPlayers()) do
-        local Data = Character_Cache[Player.Character]
-        local Tracer = Tracer_Cache[Player]
-        
-        if Data and IsAlive(Player.Character) then
-            local Char = Player.Character
-            local Root = Data.Root
-            local Dist = math.floor((Root.Position - (MyChar and MyChar:FindFirstChild("HumanoidRootPart") and MyChar.HumanoidRootPart.Position or Vector3.new())).Magnitude)
-            
-            if Config.EspMaster and Dist <= Config.MaxDistance then
-                local PColor = GetPlayerColor(Player)
-                
-                -- Rendering Box Visuals Adornments
+    if Config.Aimbot then
+        local Target = GetClosestPlayerToCrosshair()
+        if Target then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), Config.Smoothness)
+        end
+    end
+
+    for Char, Data in pairs(Character_Cache) do
+        if Char and Char.Parent and IsAlive(Char) and Players:FindFirstChild(Data.Player.Name) then
+            local Root = Char:FindFirstChild("HumanoidRootPart")
+            if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
+                local PColor = GetPlayerColor(Data.Player)
+                local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
+                local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
+                local Tool = GetEquippedTool(Char)
+
                 if Config.EspBox then
-                    Data.Box.Color3 = PColor
-                    Data.Box.Transparency = 1 - (Config.EspTransparency / 100)
                     Data.Box.Visible = true
+                    Data.Box.Color3 = PColor
+                    Data.Box.Transparency = Config.EspTransparency / 100
                 else
                     Data.Box.Visible = false
                 end
-                
-                -- Rendering Overhead Tags Text labels
-                if Config.EspName then
-                    Data.Label.TextColor3 = PColor
-                    Data.Label.Text = string.format("%s\nDIST: %dm\nGEAR: %s", Player.Name:upper(), Dist, GetEquippedTool(Char):upper())
+
+                if Config.EspName and Dist <= Config.MaxDistance then
+                    Data.Gui.Enabled = true
                     Data.Label.Visible = true
+                    Data.Label.TextColor3 = PColor
+                    Data.Label.Text = string.format("%s (%dm)\n(%s)(%s)", Data.Player.Name, Dist, Team, Tool)
                 else
                     Data.Label.Visible = false
                 end
-                
-                -- Rendering Snap Line Tracers Overlay
-                if Config.EspTracer and Tracer then
-                    local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+
+                local Tracer = Tracer_Cache[Data.Player]
+                if Tracer and Config.EspTracer then
+                    local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
                         Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                        Tracer.To = Vector2.new(ScreenPos.X, ScreenPos.Y)
+                        Tracer.To = Vector2.new(Leg.X, Leg.Y)
                         Tracer.Color = PColor
                         Tracer.Visible = true
                     else
                         Tracer.Visible = false
                     end
-                elseif Tracer then Tracer.Visible = false end
+                elseif Tracer then 
+                    Tracer.Visible = false 
+                end
             else
                 Data.Box.Visible = false
                 Data.Label.Visible = false
-                if Tracer then Tracer.Visible = false end
+                if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
             end
-        elseif Player.Character then
-            CleanCharacterVisuals(Player.Character)
-            Character_Cache[Player.Character] = nil
+        else
+            CleanCharacterVisuals(Char)
+            if Data.Player and Tracer_Cache[Data.Player] then
+                Tracer_Cache[Data.Player].Visible = false
+            end
+            Character_Cache[Char] = nil
         end
     end
 end)
-
--- Dynamic initialization hooks setup
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
 end)
 
 Players.PlayerRemoving:Connect(function(Player)
+    for Char, Data in pairs(Character_Cache) do
+        if Data.Player == Player then
+            CleanCharacterVisuals(Char)
+            Character_Cache[Char] = nil
+        end
+    end
     ClearTracerObject(Player)
 end)
 
@@ -640,7 +692,6 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
--- Close context connection handle hook
 CloseBtn.MouseButton1Click:Connect(function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
@@ -651,11 +702,10 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- THÔNG BÁO XÁC NHẬN CHẠY THÀNH CÔNG
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "WANGCAOS CLIENT",
-        Text = "LOAD THÀNH CÔNG...",
-        Duration = 4
+        Text = "LOAD THÀNH CÔNG!\nBẤM [ ĐỂ ẨN/HIỆN MENU HOẶC DÙNG NÚT W TRÊN MÀN HÌNH.",
+        Duration = 10
     })
 end)

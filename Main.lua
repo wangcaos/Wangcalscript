@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.6 - CREDITS & FOV UPDATE EDITION
+-- WANGCAOS PREMIUM CLIENT V3.8 - MILLENNIAL CELEBRATION EDITION
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -27,10 +27,12 @@ local Config = {
     Smoothness = 0.2,
     
     EspMaster = false,
-    FovCircle = false, -- Có thể Bật/Tắt linh hoạt theo yêu cầu của đại ca
+    FovCircle = false,
     FovRadius = 120,
+    CrosshairDot = true,
     EspBox = false,
     EspTracer = false,
+    TracerMode = "Bottom", -- CHẾ ĐỘ TRACER MỚI: "Center" (Tâm màn hình) hoặc "Bottom" (Đáy màn hình)
     EspName = false,
     EspTransparency = 80,
     MaxDistance = 5000,
@@ -63,7 +65,7 @@ if not SafeParent then
 end
 
 for _, old in pairs(SafeParent:GetChildren()) do
-    if old.Name == "Wangcaos_Minecraft_Figma_UI" then old:Destroy() end
+    if old.Name == "Wangcaos_Premium_Figma_UI" then old:Destroy() end
 end
 
 -- ==============================================================================
@@ -76,6 +78,15 @@ FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
 FOV_Drawing.Transparency = 0.8
 FOV_Drawing.Visible = false
+
+local Dot_Drawing = Drawing.new("Circle")
+Dot_Drawing.Color = Color3.fromRGB(255, 85, 85)
+Dot_Drawing.Thickness = 1
+Dot_Drawing.Radius = 3
+Dot_Drawing.NumSides = 16
+Dot_Drawing.Filled = true
+Dot_Drawing.Transparency = 1
+Dot_Drawing.Visible = false
 
 local Tracer_Cache = {}
 local Character_Cache = {}
@@ -168,16 +179,16 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (MINECRAFT TOP BAR & NEW CREDITS TAB)
+-- 5. GUI CONSTRUCTION (PREMIUM FIGMA HYBRID LAYOUT)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Wangcaos_Minecraft_Figma_UI"
+ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "MinecraftToggleLogo"
+ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui
 ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ToggleButton.BackgroundTransparency = 0.2
@@ -254,7 +265,7 @@ local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
 local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
-local CreditsPage = Instance.new("ScrollingFrame", ContentContainer) -- Trang giới thiệu tác giả mới
+local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
 
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
@@ -272,11 +283,11 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
 end
 CombatPage.Visible = true
 
-local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
+local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 90, 0, 30)
+    TabBtn.Size = UDim2.new(0, 88, 0, 30)
     TabBtn.Font = Enum.Font.GothamBold
     TabBtn.LayoutOrder = Order
     TabBtn.Text = IconText .. " " .. Name
@@ -314,12 +325,12 @@ local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
     end)
 end
 
-CreateMinecraftTab("Combat", "⚔", 1, CombatPage)
-CreateMinecraftTab("Player", "👤", 2, PlayerPage)
-CreateMinecraftTab("Movement", "🏃", 3, MovementPage)
-CreateMinecraftTab("Visuals", "👁", 4, VisualPage)
-CreateMinecraftTab("Misc", "⚙", 5, MiscPage)
-CreateMinecraftTab("Credits", "👑", 6, CreditsPage) -- Thêm tab Credits lên đầu thanh công cụ
+CreatePremiumTab("Combat", "⚔", 1, CombatPage)
+CreatePremiumTab("Player", "👤", 2, PlayerPage)
+CreatePremiumTab("Movement", "🏃", 3, MovementPage)
+CreatePremiumTab("Visuals", "👁", 4, VisualPage)
+CreatePremiumTab("Misc", "⚙", 5, MiscPage)
+CreatePremiumTab("Credits", "👑", 6, CreditsPage)
 
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
@@ -362,9 +373,9 @@ end)
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 6. DESIGN SYSTEM COMPONENTS (TOGGLES & SLIDERS)
+-- 6. DESIGN SYSTEM COMPONENTS (INTERACTIVE UI HANDLERS)
 -- ==============================================================================
-local function AddMinecraftToggle(Page, LabelText, Key, Callback)
+local function AddPremiumToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
     TFrame.BackgroundTransparency = 0.4
@@ -413,7 +424,7 @@ local function AddMinecraftToggle(Page, LabelText, Key, Callback)
     end)
 end
 
-local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
+local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
     SFrame.BackgroundTransparency = 0.4
@@ -486,8 +497,49 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
--- HÀM THÊM HỘP THÔNG TIN TRONG TAB GIỚI THIỆU (CREDITS)
-local function AddMinecraftCreditBox(Page, Title, Description)
+-- TÍNH NĂNG MỚI: NÚT CHUYỂN CHẾ ĐỘ TRACER (CENTER / BOTTOM)
+local function AddTracerModeSelector(Page)
+    local MFrame = Instance.new("Frame", Page)
+    MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    MFrame.BackgroundTransparency = 0.4
+    MFrame.Size = UDim2.new(0, 275, 0, 42)
+    Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
+    local CompStroke = Instance.new("UIStroke", MFrame)
+    CompStroke.Color = Color3.fromRGB(35, 37, 40)
+    CompStroke.Thickness = 1
+
+    local Lbl = Instance.new("TextLabel", MFrame)
+    Lbl.BackgroundTransparency = 1
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Font = Enum.Font.Gotham
+    Lbl.Text = "Tracer Origin Mode"
+    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
+    Lbl.TextSize = 12
+    Lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local ModeBtn = Instance.new("TextButton", MFrame)
+    ModeBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
+    ModeBtn.Position = UDim2.new(1, -115, 0.5, -12)
+    ModeBtn.Size = UDim2.new(0, 105, 0, 24)
+    ModeBtn.Font = Enum.Font.GothamBold
+    ModeBtn.Text = Config.TracerMode:upper()
+    ModeBtn.TextColor3 = Color3.fromRGB(85, 255, 85)
+    ModeBtn.TextSize = 11
+    Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
+
+    ModeBtn.MouseButton1Click:Connect(function()
+        if Config.TracerMode == "Bottom" then
+            Config.TracerMode = "Center"
+        else
+            Config.TracerMode = "Bottom"
+        end
+        ModeBtn.Text = Config.TracerMode:upper()
+    end)
+end
+
+local function AddPremiumCreditBox(Page, Title, Description)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30)
     CFrame.BackgroundTransparency = 0.3
@@ -520,14 +572,14 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 7. BINDING FEATURES TO PAGES & BUILDING CREDITS INFO
+-- 7. REGISTRATION OF FEATURES & PHONG BAT 1K+ CREDITS PACK
 -- ==============================================================================
-AddMinecraftToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
-AddMinecraftToggle(CombatPage, "Team Guard Filter", "TeamCheck")
-AddMinecraftToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
-AddMinecraftSlider(CombatPage, "Aimbot Smoothness", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
+AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
+AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
+AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
+AddPremiumSlider(CombatPage, "Aimbot Smoothness", 1, 10, "Smoothness", function(val) Config.Smoothness = val / 20 end)
 
-AddMinecraftToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
+AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
@@ -537,27 +589,28 @@ AddMinecraftToggle(PlayerPage, "FullBright Environment", "FullBright", function(
     end
 end)
 
-AddMinecraftToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle")
-AddMinecraftSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
-AddMinecraftToggle(MovementPage, "JumpPower Boost", "JumpToggle")
-AddMinecraftSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
+AddPremiumToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle")
+AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
+AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle")
+AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
--- TÍNH NĂNG UPDATE: TẬP HỢP CÀI ĐẶT FOV VÀO ĐÚNG TRANG VISUALS CHO TIỆN QUẢN LÝ
-AddMinecraftToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
-AddMinecraftToggle(VisualPage, "Render 3D Chams Box", "EspBox")
-AddMinecraftSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
-AddMinecraftToggle(VisualPage, "Snapline Tracers", "EspTracer")
-AddMinecraftToggle(VisualPage, "Informative Character Tags", "EspName")
-AddMinecraftSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
+AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
+AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
+AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
+AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
+AddTracerModeSelector(VisualPage) -- ĐƯA NÚT CHỌN CHẾ ĐỘ TÂM/ĐÁY VÀO TRANG VISUALS
+AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
+AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
-AddMinecraftToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
-AddMinecraftSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
+AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
+AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
+AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
 
--- HIỂN THỊ THÔNG TIN ĐỘC QUYỀN TRÊN MỤC GIỚI THIỆU (CREDITS) THEO Ý ĐẠI CA WANG
-AddMinecraftCreditBox(CreditsPage, "Lead Developer", "Đại ca Wang")
-AddMinecraftCreditBox(CreditsPage, "Active Users", "20+ Players and counting!")
-AddMinecraftCreditBox(CreditsPage, "Build Version", "Premium V3.6 (Minecraft Figma)")
-AddMinecraftCreditBox(CreditsPage, "Design Style", "Figma Hybrid UI Framework")
+-- TRANG GIỚI THIỆU PHÔNG BẠT SIÊU CẤP THEO YÊU CẦU CỦA ĐẠI CA WANG
+AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V3.8")
+AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)") -- Sửa thành 1k+ siêu hoành tráng
+AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
 
 -- ==============================================================================
 -- 8. CORE ESP RENDERING PIPELINE
@@ -607,18 +660,25 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (DYNAMIC FOV CONTROL LOOP)
+-- 9. RUNSERVICE TICK ENGINE (DYNAMIC SNAPLINE TRACER MODES)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
-    -- TÍNH NĂNG UPDATE: KIỂM TRA ĐIỀU KIỆN ĐỂ BẬT/TẮT HOÀN TOÀN TÂM HÌNH TRÒN FOV
     if Config.FovCircle then
         FOV_Drawing.Position = ScreenCenter
         FOV_Drawing.Radius = Config.FovRadius
         FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
+    end
+
+    if Config.CrosshairDot then
+        Dot_Drawing.Position = ScreenCenter
+        Dot_Drawing.Visible = true
+    else
+        Dot_Drawing.Visible = false
     end
 
     local MyChar = LocalPlayer.Character
@@ -666,11 +726,17 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Label.Visible = false
                 end
 
+                -- XỬ LÝ HỆ THỐNG TRACER ĐA CHẾ ĐỘ THEO LỆNH CỦA ĐẠI CA WANG
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
-                        Tracer.From = ScreenCenter
+                        -- Lựa chọn điểm xuất phát dựa vào cấu hình TracerMode
+                        if Config.TracerMode == "Center" then
+                            Tracer.From = ScreenCenter
+                        else
+                            Tracer.From = ScreenBottom
+                        end
                         Tracer.To = Vector2.new(Leg.X, Leg.Y)
                         Tracer.Color = PColor
                         Tracer.Visible = true
@@ -692,7 +758,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- SYSTEM HOOKS & INIT
+-- SYSTEM HOOKS
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
@@ -709,6 +775,7 @@ end
 CloseBtn.MouseButton1Click:Connect(function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
+    pcall(function() Dot_Drawing:Remove() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     Lighting.Ambient = Config.StoredAmbient
@@ -716,12 +783,12 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- THÔNG BÁO TIN VUI: KHẲNG ĐỊNH CHỦ QUYỀN KHI CHẠY SCRIPT
+-- THÔNG BÁO CHẠY THÀNH CÔNG ĐÃ ĐƯỢC LƯỢC BỎ CHỮ MINECRAFT FIGMA
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS PREMIUM V3.6",
-        Text = "Script này đã được thực hiện bởi Wang!",
-        Duration = 6
+        Title = "WANGCAOS CLIENT PREMIUM",
+        Text = "Script này đã được thực hiện bởi Wang! Nhấn [ để Ẩn/Hiện.",
+        Duration = 7
     })
 end)
 -- ==============================================================================

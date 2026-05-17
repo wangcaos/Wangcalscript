@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS ADVANCED HYBRID V3 - BOX ADORNMENT & CHAMS UPDATE
+-- WANGCAOS ADVANCED HYBRID V3 - INTEGRATED SYSTEM (2026 COMPLETE VERSION)
 -- ==============================================================================
 
 local Players = game:GetService("Players")
@@ -11,7 +11,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Cấu hình Master tích hợp hệ thống Chams Hộp Đặc theo ý đại ca
+-- Cấu hình Master tích hợp hệ thống kiểm soát độ mờ Chams
 local Config = {
     CurrentTab = "Combat",
     Aimbot = false,
@@ -19,13 +19,15 @@ local Config = {
     WallCheck = true,
     Smoothness = 0.2,
     
-    -- Visuals Matrix New Remake
+    -- Visuals Matrix Dynamic Setup
     EspMaster = false,
     FovCircle = false,
     FovRadius = 120,
-    EspBox = false,      -- Bật/Tắt Hộp Đặc (BéBoxFill)
-    EspTracer = false,   -- Đường kẻ tâm chân
-    EspName = false,     -- Bật/Tắt Bảng Chữ Đỉnh Đầu (BéInfoTag)
+    EspBox = false,              -- Bật/Tắt Hộp Đặc (BéBoxFill)
+    EspTracer = false,           -- Đường kẻ tâm chân
+    EspName = false,             -- Bật/Tắt Bảng Chữ Đỉnh Đầu (BéInfoTag)
+    EspTransparency = 80,        -- Độ mờ mặc định 80% (Tương đương 0.8)
+    MaxDistance = 500,           -- Khoảng cách hiển thị tối đa
     
     -- Khống chế thuộc tính di chuyển
     SpeedToggle = false,
@@ -117,8 +119,9 @@ local SafeParent = GetSafeGui()
 for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Minecraft_Figma_UI" then old:Destroy() end
 end
+
 -- ==============================================================================
--- 3. CORE ESP INFRASTRUCTURE - BOX ADORNMENT & BILLBOARD TAG GENERATOR
+-- 3. CORE ESP INFRASTRUCTURE - ALWAYS-ON-TOP BOX & BILLBOARD TAG
 -- ==============================================================================
 
 local Tracer_Cache = {}
@@ -140,7 +143,7 @@ local function ClearTracerObject(Player)
     end
 end
 
--- Hàm khởi tạo và xử lý đồng bộ cấu trúc Adornment + Billboard cho từng Player
+-- Khởi tạo và liên kết dữ liệu Chams nhìn xuyên tường cho từng Player
 local function SetupAdornmentESP(Player)
     if Player == LocalPlayer then return end
 
@@ -149,19 +152,19 @@ local function SetupAdornmentESP(Player)
         local Head = Character:WaitForChild("Head", 15)
         if not Root or not Head then return end
 
-        -- Khởi tạo hoặc dọn dẹp Box Hộp Đặc 3D (20% màu)
+        -- Khởi tạo Hộp Đặc 3D nhìn xuyên tường (Cực nhẹ máy)
         if Root:FindFirstChild("BéBoxFill") then Root["BéBoxFill"]:Destroy() end
         local Box = Instance.new("BoxHandleAdornment")
         Box.Name = "BéBoxFill"
         Box.Parent = Root
         Box.Adornee = Root
-        Box.AlwaysOnTop = true
-        Box.ZIndex = 5
+        Box.AlwaysOnTop = true -- BẮT BUỘC NHÌN XUYÊN TƯỜNG KHÔNG BỊ CHE KHUẤT
+        Box.ZIndex = 10
         Box.Size = Vector3.new(4, 6, 4)
-        Box.Transparency = 0.8
+        Box.Transparency = Config.EspTransparency / 100
         Box.Visible = false
 
-        -- Khởi tạo hoặc dọn dẹp Bảng Chữ Thông Tin Đỉnh Đầu
+        -- Khởi tạo Bảng Chữ Thông Tin Đỉnh Đầu xuyên tường
         if Head:FindFirstChild("BéInfoTag") then Head["BéInfoTag"]:Destroy() end
         local Gui = Instance.new("BillboardGui")
         Gui.Name = "BéInfoTag"
@@ -180,7 +183,7 @@ local function SetupAdornmentESP(Player)
         Label.TextColor3 = Color3.new(1, 1, 1)
         Gui.Parent = Head
 
-        -- Vòng lặp lắng nghe Render để đồng bộ hóa trạng thái theo Menu Config
+        -- Vòng lặp cập nhật trạng thái RenderStepped real-time
         local RenderConn
         RenderConn = RunService.RenderStepped:Connect(function()
             if not Character.Parent or not Root.Parent or not Head.Parent then
@@ -198,16 +201,17 @@ local function SetupAdornmentESP(Player)
                 local TeamName = Player.Team and Player.Team.Name or "No Team"
                 local ToolName = GetEquippedTool(Character)
 
-                -- Đồng bộ trạng thái Hộp Đặc 3D theo Menu Toggle
+                -- 1. Xử lý hiển thị Hộp Đặc & Cập nhật độ mờ động từ thanh Slider Menu
                 if Config.EspBox then
                     Box.Visible = true
                     Box.Color3 = PlayerColor
+                    Box.Transparency = Config.EspTransparency / 100
                 else
                     Box.Visible = false
                 end
 
-                -- Đồng bộ trạng thái Bảng chữ Thông tin Đỉnh Đầu theo Menu Toggle
-                if Config.EspName then
+                -- 2. Xử lý hiển thị Bảng Thông Tin Đỉnh Đầu trong phạm vi quét
+                if Config.EspName and Distance <= Config.MaxDistance then
                     Gui.Enabled = true
                     Label.Visible = true
                     Label.TextColor3 = PlayerColor
@@ -217,7 +221,7 @@ local function SetupAdornmentESP(Player)
                     Gui.Enabled = false
                 end
                 
-                -- Xử lý đường kẻ Tracer chân đồng bộ bằng Vector Drawing
+                -- 3. Xử lý đường kẻ Tracer chân bằng Vector Drawing gốc màn hình
                 local TracerLine = Tracer_Cache[Player]
                 if TracerLine then
                     if Config.EspTracer then
@@ -246,6 +250,7 @@ local function SetupAdornmentESP(Player)
     Player.CharacterAdded:Connect(CoreSetup)
     if Player.Character then CoreSetup(Player.Character) end
 end
+
 -- ==============================================================================
 -- 4. MINECRAFT HUD DESIGN - HORIZONTAL TAB CONTROL & DRAG LOGIC
 -- ==============================================================================
@@ -256,7 +261,6 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
--- Nút mở Menu hình tròn cố định riêng biệt chống trượt kẹt
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "MinecraftToggleLogo"
 ToggleButton.Parent = ScreenGui
@@ -272,7 +276,6 @@ local LogoStroke = Instance.new("UIStroke", ToggleButton)
 LogoStroke.Color = Color3.fromRGB(80, 80, 80)
 LogoStroke.Thickness = 1.2
 
--- Cơ chế Kéo Thả cho nút bật tắt Logo
 local btnDragging = false
 local btnDragStart, btnStartPos
 ToggleButton.InputBegan:Connect(function(input)
@@ -294,7 +297,6 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- KHUNG MENU CHÍNH STYLE FIGMA MINECRAFT CLIENT
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -309,7 +311,6 @@ local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(50, 50, 50)
 FrameStroke.Thickness = 1.2
 
--- Thanh tiêu đề Header điều khiển Drag chính của Menu
 local HeaderBar = Instance.new("Frame")
 HeaderBar.Name = "HeaderBar"
 HeaderBar.Parent = MainFrame
@@ -328,7 +329,6 @@ ClientTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClientTitle.TextSize = 13
 ClientTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút đóng góc trên bên phải thanh Header
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = HeaderBar
@@ -340,7 +340,6 @@ CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.TextSize = 14
 
--- Cơ chế Kéo Thả độc lập cho Khung Giao Diện tại HeaderBar
 local frameDragging = false
 local frameDragStart, frameStartPos
 HeaderBar.InputBegan:Connect(function(input)
@@ -366,7 +365,6 @@ ToggleButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- THANH CHỨA TABS TÙY CHỌN ĐẶT NGANG PHÍA TRÊN
 local TabNavBar = Instance.new("Frame")
 TabNavBar.Name = "TabNavBar"
 TabNavBar.Parent = MainFrame
@@ -385,7 +383,6 @@ TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 TabLayout.Padding = UDim.new(0, 6)
 
--- Content Container quản lý lật trang nội dung
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
 ContentContainer.Parent = MainFrame
@@ -402,7 +399,7 @@ for _, page in pairs({CombatPage, VisualPage, PlayerPage, AboutPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 280)
+    page.CanvasSize = UDim2.new(0, 0, 0, 310)
     page.ScrollBarThickness = 3
     page.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
     page.Visible = false
@@ -412,6 +409,7 @@ for _, page in pairs({CombatPage, VisualPage, PlayerPage, AboutPage}) do
     pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 end
 CombatPage.Visible = true
+
 -- ==============================================================================
 -- 5. MINECRAFT STYLED UI COMPONENTS (CAPSULE BUTTONS & MINIMAL SLIDERS)
 -- ==============================================================================
@@ -465,7 +463,6 @@ CreateFigmaTab("Visuals", 2, VisualPage)
 CreateFigmaTab("Player", 3, PlayerPage)
 CreateFigmaTab("About", 4, AboutPage)
 
--- Thiết kế nút Toggle dẹt ngang kèm Switch chấm tròn di chuyển phong cách Figma Client
 local function AddMinecraftToggle(ParentPage, LabelText, ConfigKey, Callback)
     local ToggleFrame = Instance.new("Frame")
     ToggleFrame.Parent = ParentPage
@@ -522,7 +519,6 @@ local function AddMinecraftToggle(ParentPage, LabelText, ConfigKey, Callback)
     end)
 end
 
--- Thiết kế thanh chạy Slider vạch kẻ ngang tối giản
 local function AddMinecraftSlider(ParentPage, LabelText, Min, Max, ConfigKey, Callback)
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Parent = ParentPage
@@ -597,7 +593,6 @@ local function AddMinecraftSlider(ParentPage, LabelText, Min, Max, ConfigKey, Ca
     end)
 end
 
--- Đấu nối trực tiếp hệ thống cấu hình vào các trang menu tương tác
 AddMinecraftToggle(CombatPage, "Enable Head Aimbot", "Aimbot")
 AddMinecraftToggle(CombatPage, "Team Check", "TeamCheck")
 AddMinecraftToggle(CombatPage, "Wall Check", "WallCheck")
@@ -605,18 +600,19 @@ AddMinecraftSlider(CombatPage, "Lock Smoothness", 1, 10, "Smoothness", function(
     Config.Smoothness = val / 20
 end)
 
--- Gán nhãn điều khiển tương ứng cấu trúc Adornment mới của đại ca
 AddMinecraftToggle(VisualPage, "Visual Master Switch", "EspMaster")
 AddMinecraftToggle(VisualPage, "Show FOV Circle", "FovCircle")
 AddMinecraftSlider(VisualPage, "Fov Circle Radius", 30, 500, "FovRadius")
-AddMinecraftToggle(VisualPage, "Corner ESP Boxes", "EspBox")     -- Bật tắt Hộp Đặc 3D
-AddMinecraftToggle(VisualPage, "Bottom Foot Tracers", "EspTracer") -- Bật tắt Tracer chân Drawing
-AddMinecraftToggle(VisualPage, "Identity Name Text", "EspName")   -- Bật tắt Bảng thông tin động
+AddMinecraftToggle(VisualPage, "Corner ESP Boxes", "EspBox")
+AddMinecraftSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency") -- THANH TRƯỢT ĐỘ MỜ CHAMS XUYÊN TƯỜNG
+AddMinecraftToggle(VisualPage, "Bottom Foot Tracers", "EspTracer")
+AddMinecraftToggle(VisualPage, "Identity Name Text", "EspName")
 
 AddMinecraftToggle(PlayerPage, "Override WalkSpeed", "SpeedToggle")
 AddMinecraftSlider(PlayerPage, "Speed Custom Power", 16, 150, "WalkSpeed")
 AddMinecraftToggle(PlayerPage, "Override JumpPower", "JumpToggle")
 AddMinecraftSlider(PlayerPage, "Jump Custom Power", 50, 250, "JumpPower")
+
 -- ==============================================================================
 -- 6. DISCORD INFO PANEL DESIGN & MASTER CONNECTION OPERATION SYSTEM
 -- ==============================================================================
@@ -678,7 +674,6 @@ CopyLinkBtn.MouseButton1Click:Connect(function()
     CopyLinkBtn.Text = InviteLink
 end)
 
--- Phím tắt nhanh [ giúp đại ca ẩn/hiện nhanh Menu UI Figma
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.LeftBracket then
         MainFrame.Visible = not MainFrame.Visible
@@ -687,7 +682,6 @@ end)
 
 local MasterConnection = nil
 
--- Dọn dẹp bộ nhớ và hủy bỏ kết nối khi click nút X đóng Client
 CloseBtn.MouseButton1Click:Connect(function()
     if MasterConnection then MasterConnection:Disconnect() end
     FOV_Drawing.Visible = false
@@ -711,7 +705,6 @@ end)
 MasterConnection = RunService.RenderStepped:Connect(function()
     local ViewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    -- Xử lý vòng tròn FOV Safe Circle
     if Config.FovCircle then
         FOV_Drawing.Position = ViewportCenter
         FOV_Drawing.Radius = Config.FovRadius
@@ -720,7 +713,6 @@ MasterConnection = RunService.RenderStepped:Connect(function()
         FOV_Drawing.Visible = false
     end
 
-    -- Khống chế thuộc tính WalkSpeed và JumpPower của đại ca
     local MyChar = LocalPlayer.Character
     if MyChar and IsAlive(MyChar) then
         local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
@@ -733,7 +725,6 @@ MasterConnection = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Khóa cứng tâm mượt vào ĐẦU thực thể (HEAD AIMBOT ENGINE)
     if Config.Aimbot then
         local TargetHead = GetClosestHeadToCrosshair()
         if TargetHead then
@@ -743,7 +734,6 @@ MasterConnection = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Quản lý vòng đời gia nhập phòng của người chơi để vẽ đồ họa
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     SetupAdornmentESP(Player)
@@ -761,6 +751,5 @@ for _, Player in pairs(Players:GetPlayers()) do
 end
 
 print("================================================================")
-print("--- [WANGCAOS ADVANCED V3 CLIENT CHAMS UPDATED COMPLETELY] ---")
-print("--- [BOX ADORNMENT & BILLBOARD TAG FULLY OPERATED] ---")
+print("--- [WANGCAOS ADVANCED V3 CLIENT INITIALIZED COMPLETE] ---")
 print("================================================================")

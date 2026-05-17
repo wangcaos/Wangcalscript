@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V4.0 - WHITE CROSSHAIR & FOV SYSTEM UPDATE
+-- WANGCAOS PREMIUM CLIENT V4.1 - HOTFIX: TEAM CHECK & ESP COLOR PIPELINE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -22,10 +22,10 @@ local Config = {
     MenuKeybind = Enum.KeyCode.LeftBracket,
     
     Aimbot = false,
-    TeamCheck = true,
+    TeamCheck = true, -- Đã được sửa lỗi bộ lọc không aim ai
     WallCheck = true,
-    Smoothness = 5, -- Thang đo trực quan từ 0 đến 10
-    TargetPart = "Head", -- "Head" (Đầu) hoặc "HumanoidRootPart" (Thân)
+    Smoothness = 5,
+    TargetPart = "Head",
     
     EspMaster = false,
     FovCircle = false,
@@ -33,7 +33,7 @@ local Config = {
     CrosshairDot = true,
     EspBox = false,
     EspTracer = false,
-    TracerMode = "Bottom", -- "Center" hoặc "Bottom"
+    TracerMode = "Bottom",
     EspName = false,
     EspTransparency = 80,
     MaxDistance = 5000,
@@ -70,10 +70,10 @@ for _, old in pairs(SafeParent:GetChildren()) do
 end
 
 -- ==============================================================================
--- 3. DRAWING MEMORY ALLOCATION (ĐÃ ĐỔI SANG MÀU TRẮNG THEO LỆNH ĐẠI CA)
+-- 3. DRAWING MEMORY ALLOCATION
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Chuyển thành Màu trắng
+FOV_Drawing.Color = Color3.fromRGB(255, 255, 255)
 FOV_Drawing.Thickness = 1.5
 FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
@@ -81,7 +81,7 @@ FOV_Drawing.Transparency = 0.8
 FOV_Drawing.Visible = false
 
 local Dot_Drawing = Drawing.new("Circle")
-Dot_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Chuyển thành Màu trắng
+Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
 Dot_Drawing.Thickness = 1
 Dot_Drawing.Radius = 3
 Dot_Drawing.NumSides = 16
@@ -121,13 +121,37 @@ local function CleanCharacterVisuals(Character)
 end
 
 -- ==============================================================================
--- 4. TARGETING ENGINE
+-- 4. SMART TEAM ALGORITHM V2 (FIXED ESP AND AIMBOT LOCK ISSUES)
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
     local Hum = Character:FindFirstChildOfClass("Humanoid")
     if not Hum or Hum.Health <= 0 then return false end
     return true
+end
+
+-- HÀM THÔNG MINH KIỂM TRA ĐỒNG ĐỘI CHUẨN XÁC, KHÔNG BỊ KẸT KHI GAME KHÔNG CÓ TEAM
+local function IsTeammate(Player)
+    if not Config.TeamCheck then return false end
+    
+    -- Nếu game có hệ thống Team chuẩn của Roblox
+    if Player.Team and LocalPlayer.Team then
+        if Player.Team == LocalPlayer.Team then
+            return true
+        else
+            return false
+        end
+    end
+    
+    -- Nếu game ẩn Team nhưng dùng hệ thống màu sắc TeamColor
+    if Player.TeamColor and LocalPlayer.TeamColor then
+        if Player.TeamColor == LocalPlayer.TeamColor and Player.TeamColor.Name ~= "White" and Player.TeamColor.Name ~= "Medium stone grey" then
+            return true
+        end
+    end
+    
+    -- Mặc định nếu không thuộc các trường hợp phân đội trên thì coi như đối thủ để không bị lỗi đứng im aimbot
+    return false
 end
 
 local function CheckWallOcclusion(TargetPart, Character)
@@ -141,12 +165,13 @@ local function CheckWallOcclusion(TargetPart, Character)
     return Result == nil
 end
 
+-- SỬA LỖI ĐỔ MÀU ESP PHÂN BIỆT TEAM ĐỊCH / TEAM TA RÕ RÀNG
 local function GetPlayerColor(Player)
-    if Player.Team then return Player.TeamColor.Color end
-    if Player.TeamColor ~= BrickColor.new("White") and Player.TeamColor ~= BrickColor.new("Medium stone grey") then
-        return Player.TeamColor.Color
+    if IsTeammate(Player) then
+        return Color3.fromRGB(0, 170, 255) -- Đồng đội: Màu Xanh Dương mát mắt
+    else
+        return Color3.fromRGB(255, 50, 50) -- Kẻ địch: Màu Đỏ Rực rỡ nổi bật
     end
-    return Color3.fromRGB(255, 255, 255)
 end
 
 local function GetEquippedTool(Character)
@@ -161,7 +186,8 @@ local function GetClosestPlayerToCrosshair()
 
     for _, Player in pairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
-            if Config.TeamCheck and Player.Team == LocalPlayer.Team then continue end
+            -- Áp dụng thuật toán vá lỗi kiểm tra đội mới
+            if IsTeammate(Player) then continue end
             
             local TargetPartInstance = Player.Character:FindFirstChild(Config.TargetPart)
             if TargetPartInstance then
@@ -452,7 +478,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     ValTxt.Size = UDim2.new(0, 55, 0, 16)
     ValTxt.Font = Enum.Font.GothamBold
     ValTxt.Text = tostring(Config[Key])
-    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255) -- Giá trị hiển thị màu trắng sang trọng
+    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
     ValTxt.TextSize = 11
     ValTxt.TextXAlignment = Enum.TextXAlignment.Right
 
@@ -464,7 +490,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Cục trượt chuyển sang màu trắng thanh lịch
+    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
@@ -646,18 +672,17 @@ AddTracerModeSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
--- KHU VỰC BẬT TÂM VÀ FOV TRẮNG SIÊU ĐẸP
 AddPremiumToggle(MiscPage, "Draw Silent FOV Circle (White)", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Dot (White)", "CrosshairDot")
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V4.0")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Hotfix V4.1")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
 
 -- ==============================================================================
--- 8. CORE ESP RENDERING PIPELINE
+-- 8. CORE ESP RENDERING PIPELINE (INTEGRATED SMART COLOR DETECT)
 -- ==============================================================================
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
@@ -704,17 +729,16 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (WHITE DESIGN ORIENTED RENDERING)
+-- 9. RUNSERVICE TICK ENGINE (DYNAMIC RESOLUTION FOR TEAM HOTFIX)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
-    -- ENGINE ĐỒ HỌA ĐỒNG BỘ MÀU TRẮNG HOÀN TOÀN CHO FOV VÀ TÂM
     if Config.FovCircle then
         FOV_Drawing.Position = ScreenCenter
         FOV_Drawing.Radius = Config.FovRadius
-        FOV_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Bảo đảm luôn giữ màu trắng tinh tế
+        FOV_Drawing.Color = Color3.fromRGB(255, 255, 255)
         FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
@@ -722,7 +746,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
 
     if Config.CrosshairDot then
         Dot_Drawing.Position = ScreenCenter
-        Dot_Drawing.Color = Color3.fromRGB(255, 255, 255) -- Bảo đảm giữ màu trắng tinh tế
+        Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
         Dot_Drawing.Visible = true
     else
         Dot_Drawing.Visible = false
@@ -755,6 +779,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
         if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
+                -- Lấy màu sắc động phân chia Đội địch / Đội ta rõ ràng không lo lỗi
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
                 local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
@@ -835,7 +860,7 @@ end)
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "WANGCAOS CLIENT PREMIUM",
-        Text = "Script này đã được thực hiện bởi Wang! Nhấn [ để Ẩn/Hiện.",
+        Text = "Bản vá lỗi Team Check & ESP Màu đã cập nhật thành công!",
         Duration = 7
     })
 end)

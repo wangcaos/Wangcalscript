@@ -12,7 +12,7 @@ local Config = {
     AimbotMode = "Everyone", -- "None", "Enemy", "Everyone", "Bot"
     FOV_Enabled = true,       
     FOV_Radius = 140,         
-    ESP_Box_Enabled = false,   -- Toggle for Drawing Box + Tracer + Health Line
+    ESP_Box_Enabled = false,   -- Toggle for Corner Box + Tracer + Health Line
     ESP_Chams_Enabled = false, -- Toggle for Information Head Tags
     SnapSpeed = 0.85,         
     SwitchDelay = 0.05,
@@ -251,7 +251,7 @@ local function ApplyChamsTag(Player)
 end
 
 -- ==========================================================
--- TRADITIONAL DRAWING FOV & ESP OVERLAY ENGINE
+-- SOLID CIRLCE FOV & CORNER ESP OVERLAY ENGINE
 -- ==========================================================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
@@ -263,16 +263,19 @@ FOVCircle.NumSides = 64
 local function createESP(player)
     if player == LocalPlayer or ESP_Lines_Data[player] then return end
     
+    -- 8 Lines for 4 Corners (TopLeft, TopRight, BottomLeft, BottomRight)
     local data = {
-        L1 = Drawing.new("Line"), L2 = Drawing.new("Line"), 
-        L3 = Drawing.new("Line"), L4 = Drawing.new("Line"),
+        TL1 = Drawing.new("Line"), TL2 = Drawing.new("Line"),
+        TR1 = Drawing.new("Line"), TR2 = Drawing.new("Line"),
+        BL1 = Drawing.new("Line"), BL2 = Drawing.new("Line"),
+        BR1 = Drawing.new("Line"), BR2 = Drawing.new("Line"),
         Health = Drawing.new("Line"),
         Tracer = Drawing.new("Line")
     }
 
     for _, line in pairs(data) do
         line.Thickness = 1.5
-        line.Color = Color3.fromRGB(255, 0, 0)
+        line.Color = Color3.fromRGB(0, 255, 150) -- Default clean sleek light-green/cyan color
         line.Transparency = 1
         line.Visible = false
     end
@@ -326,7 +329,7 @@ BarCorner.CornerRadius = UDim.new(0, 6)
 MakeDraggable(TitleBar, MainFrame)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
-TitleText.Text = "  wangcaos script (Perfect Circle v17)"
+TitleText.Text = "  wangcaos script (Corner ESP & Circle FOV)"
 TitleText.TextColor3 = Color3.fromRGB(235, 235, 235)
 TitleText.Font = Enum.Font.SourceSansBold
 TitleText.TextSize = 13
@@ -420,7 +423,7 @@ FovBtn.MouseButton1Click:Connect(function()
     ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 end)
 
-local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("Drawing Box + Health + Tracer", 3)
+local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("Corner ESP Box + Health + Tracer", 3)
 ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 EspBoxBtn.MouseButton1Click:Connect(function()
     Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
@@ -519,7 +522,7 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 -- ==========================================================
--- STEPPED RENDER PIPELINE CORE LAYER
+-- STEPPED RENDER PIPELINE CORE LAYER VÒNG LẶP LIÊN TỤC
 -- ==========================================================
 RunService.RenderStepped:Connect(function()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -575,19 +578,36 @@ RunService.RenderStepped:Connect(function()
                 local h = math.abs(headPos.Y - legPos.Y)
                 local w = h / 2
                 local x, y = pos.X - w/2, pos.Y - h/2
+                
+                -- Dynamic Corner Length calculation based on size
+                local lineLength = w / 3
 
-                -- Render Drawing Lines Frame Box Boundary
-                data.L1.From = Vector2.new(x, y)
-                data.L1.To = Vector2.new(x + w, y)
-                data.L2.From = Vector2.new(x + w, y)
-                data.L2.To = Vector2.new(x + w, y + h)
-                data.L3.From = Vector2.new(x + w, y + h)
-                data.L3.To = Vector2.new(x, y + h)
-                data.L4.From = Vector2.new(x, y + h)
-                data.L4.To = Vector2.new(x, y)
+                -- Top-Left Corner Lines
+                data.TL1.From = Vector2.new(x, y)
+                data.TL1.To = Vector2.new(x + lineLength, y)
+                data.TL2.From = Vector2.new(x, y)
+                data.TL2.To = Vector2.new(x, y + lineLength)
 
-                -- Dynamic Red Health Line Placement SÁT BOX
-                local healthX = x - 2 
+                -- Top-Right Corner Lines
+                data.TR1.From = Vector2.new(x + w, y)
+                data.TR1.To = Vector2.new(x + w - lineLength, y)
+                data.TR2.From = Vector2.new(x + w, y)
+                data.TR2.To = Vector2.new(x + w, y + lineLength)
+
+                -- Bottom-Left Corner Lines
+                data.BL1.From = Vector2.new(x, y + h)
+                data.BL1.To = Vector2.new(x + lineLength, y + h)
+                data.BL2.From = Vector2.new(x, y + h)
+                data.BL2.To = Vector2.new(x, y + h - lineLength)
+
+                -- Bottom-Right Corner Lines
+                data.BR1.From = Vector2.new(x + w, y + h)
+                data.BR1.To = Vector2.new(x + w - lineLength, y + h)
+                data.BR2.From = Vector2.new(x + w, y + h)
+                data.BR2.To = Vector2.new(x + w, y + h - lineLength)
+
+                -- Dynamic Red Health Line Placement SÁT CẠNH TRÁI CORNER
+                local healthX = x - 3 
                 data.Health.From = Vector2.new(healthX, y + h)
                 data.Health.To = Vector2.new(healthX, y + h - (h * (hum.Health / hum.MaxHealth)))
                 data.Health.Color = Color3.fromRGB(255, 0, 0) 
@@ -595,6 +615,7 @@ RunService.RenderStepped:Connect(function()
                 -- Snap Tracer Alignment to Center Bottom Screen Line
                 data.Tracer.From = Vector2.new(x + w/2, y + h)
                 data.Tracer.To = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                data.Tracer.Color = Color3.fromRGB(255, 0, 0) -- Tracer color back to requested red
 
                 for _, line in pairs(data) do line.Visible = true end
             else
@@ -612,4 +633,4 @@ for _, v in pairs(Players:GetPlayers()) do
     ApplyChamsTag(v)
 end
 
-print("--- [Wangcaos Unified Version V17 - Perfect Circle FOV Verified] ---")
+print("--- [Wangcaos Unified Version V18 - Modern Corner ESP & Circle FOV Loaded] ---")

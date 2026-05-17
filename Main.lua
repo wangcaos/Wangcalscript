@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM - REWRITTEN FIX VERSION (CORE ENGINE)
+-- WANGCAOS SUPER UNIFIED - ESP/AIM/CHAMS & ABOUT DISCORD FIX
 -- ==============================================================================
 
 local Players = game:GetService("Players")
@@ -7,37 +7,52 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
--- Cấu hình rút gọn tối đa - Tập trung Core cũ đại ca yêu cầu
+-- ==============================================================================
+-- 1. MASTER CONFIGURATION (CORE OLD REQUESTS)
+-- ==============================================================================
 local Config = {
     Aimbot = false,
     TeamCheck = true,
     WallCheck = true,
-    FovEnabled = true,
+    Smoothness = 0.2, -- Aimbot Speed
+    
+    -- Visuals ESP MASTER开关
+    EspMaster = false,
+    FovCircle = false, -- FOV vòng tròn
     FovRadius = 120,
-    Smoothness = 0.25, -- Tốc độ khóa tâm mượt mà
-    WalkSpeed = 16,
-    JumpPower = 50,
+    EspBox = false,   -- Khung góc Corner
+    EspTracer = false, -- Đường kẻ tâm
+    EspName = false,   -- Tên
+    EspChams = false,  -- Chams xuyên tường
+    
+    -- Movement MASTER开关
     SpeedToggle = false,
-    JumpToggle = false
+    WalkSpeed = 16,
+    JumpToggle = false,
+    JumpPower = 50
 }
 
--- Hệ thống lưu trữ ESP Vector 2D cũ
-local ESP_Data = {}
+-- Caching data cho hệ thống Drawing Vector
+local ESP_Cache = {}
 
--- Khởi tạo vòng tròn FOV chuẩn Drawing
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Thickness = 1.5
-FOVCircle.NumSides = 64
-FOVCircle.Filled = false
-FOVCircle.Transparency = 0.8
-FOVCircle.Visible = false
+-- Khởi tạo vòng tròn FOV chuẩn Drawing Vector
+local FOV_Drawing = Drawing.new("Circle")
+FOV_Drawing.Color = Color3.fromRGB(255, 255, 255)
+FOV_Drawing.Thickness = 1.5
+FOV_Drawing.NumSides = 64
+FOV_Drawing.Filled = false
+FOV_Drawing.Transparency = 0.8
+FOV_Drawing.Visible = false
 
--- Hàm kiểm tra thực thể sống
+-- ==============================================================================
+-- 2. CORE UTILITIES & TARGET FILTERING
+-- ==============================================================================
 local function IsAlive(Character)
     if not Character then return false end
     local Hum = Character:FindFirstChildOfClass("Humanoid")
@@ -45,21 +60,19 @@ local function IsAlive(Character)
     return true
 end
 
--- Hàm check tường chuẩn xác bằng Raycast
-local function CheckWall(TargetPart, Character)
+local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck then return true end
     local Origin = Camera.CFrame.Position
     local Direction = TargetPart.Position - Origin
     local Params = RaycastParams.new()
     Params.FilterType = Enum.RaycastFilterType.Exclude
     Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
-    
     local Result = workspace:Raycast(Origin, Direction, Params)
     return Result == nil
 end
 
--- Tìm kiếm mục tiêu gần tâm chuột nhất (Ưu tiên HEAD)
-local function GetClosestHead()
+-- Tìm mục tiêu gần tâm chuột nhất (Ưu tiên HEAD)
+local function GetClosestHeadToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ClosestTarget = nil
     local MaxDist = Config.FovRadius
@@ -71,7 +84,7 @@ local function GetClosestHead()
             local Head = Player.Character:FindFirstChild("Head")
             if Head then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Head.Position)
-                if OnScreen and CheckWall(Head, Player.Character) then
+                if OnScreen and CheckWallOcclusion(Head, Player.Character) then
                     local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
                     if Dist < MaxDist then
                         MaxDist = Dist
@@ -84,7 +97,9 @@ local function GetClosestHead()
     return ClosestTarget
 end
 
--- Tìm kiếm phân vùng chứa GUI an toàn chống chặn trên HyperOS
+-- ==============================================================================
+-- 3. SAFE GUI INJECTION & CLEANUP
+-- ==============================================================================
 local function GetSafeGui()
     if gethui then return gethui() end
     local success, core = pcall(function() return CoreGui end)
@@ -94,19 +109,152 @@ end
 
 local SafeParent = GetSafeGui()
 for _, old in pairs(SafeParent:GetChildren()) do
-    if old.Name == "Wangcaos_Fixed_Menu" then old:Destroy() end
+    if old.Name == "Wangcaos_SuperUnified_Menu" then old:Destroy() end
+end
+-- ==============================================================================
+-- 4. ESP VECTOR INFRASTRUCTURE (CORNER BOX, TRACER, NAME DRAWING)
+-- ==============================================================================
+
+local function CreatePlayerESP(Player)
+    if ESP_Cache[Player] then return end
+    
+    local CoreLines = {
+        Box_TL1 = Drawing.new("Line"), Box_TL2 = Drawing.new("Line"),
+        Box_TR1 = Drawing.new("Line"), Box_TR2 = Drawing.new("Line"),
+        Box_BL1 = Drawing.new("Line"), Box_BL2 = Drawing.new("Line"),
+        Box_BR1 = Drawing.new("Line"), Box_BR2 = Drawing.new("Line"),
+        Tracer = Drawing.new("Line"),
+        Name = Drawing.new("Text")
+    }
+    
+    -- Gán thuộc tính đồ họa nền tảng cho Drawing Objects
+    for Name, Obj in pairs(CoreLines) do
+        if string.find(Name, "Box_") then
+            Obj.Thickness = 1.5
+            Obj.Color = Color3.fromRGB(100, 255, 100)
+        elseif Name == "Tracer" then
+            Obj.Thickness = 1.2
+            Obj.Color = Color3.fromRGB(100, 100, 255)
+        elseif Name == "Name" then
+            Obj.Size = 14
+            Obj.Center = true
+            Obj.Outline = true
+            Obj.OutlineColor = Color3.fromRGB(0, 0, 0)
+            Obj.Color = Color3.fromRGB(255, 255, 255)
+        end
+        Obj.Transparency = 1
+        Obj.Visible = false
+    end
+    
+    ESP_Cache[Player] = CoreLines
 end
 
+local function ClearPlayerESP(Player)
+    if ESP_Cache[Player] then
+        for _, Obj in pairs(ESP_Cache[Player]) do
+            Obj:Remove()
+        end
+        ESP_Cache[Player] = nil
+    end
+end
+
+-- Vòng lặp xử lý vẽ dữ liệu màn hình động cho từng Player
+local function ProcessRenderESP(Player, Elements)
+    local Char = Player.Character
+    if not Config.EspMaster or not Char or not IsAlive(Char) then
+        for _, Obj in pairs(Elements) do Obj.Visible = false end
+        return
+    end
+    
+    local RootPart = Char:FindFirstChild("HumanoidRootPart")
+    local Head = Char:FindFirstChild("Head")
+    if not RootPart or not Head then
+        for _, Obj in pairs(Elements) do Obj.Visible = false end
+        return
+    end
+    
+    local RootPos, OnScreen = Camera:WorldToViewportPoint(RootPart.Position)
+    if not OnScreen then
+        for _, Obj in pairs(Elements) do Obj.Visible = false end
+        return
+    end
+    
+    -- Trích xuất tọa độ 2 chiều từ không gian 3D
+    local HeadPos = Camera:WorldToViewportPoint(Head.Position + Vector3.new(0, 0.5, 0))
+    local LegPos = Camera:WorldToViewportPoint(RootPart.Position - Vector3.new(0, 3, 0))
+    
+    local BoxHeight = math.abs(HeadPos.Y - LegPos.Y)
+    local BoxWidth = BoxHeight / 2
+    local Box_X = RootPos.X - BoxWidth / 2
+    local Box_Y = RootPos.Y - BoxHeight / 2
+    local CornerLen = BoxWidth / 3
+    
+    -- XỬ LÝ RENDERING KHUNG GÓC (CORNER BOX)
+    if Config.EspBox then
+        Elements.Box_TL1.From = Vector2.new(Box_X, Box_Y) Elements.Box_TL1.To = Vector2.new(Box_X + CornerLen, Box_Y)
+        Elements.Box_TL2.From = Vector2.new(Box_X, Box_Y) Elements.Box_TL2.To = Vector2.new(Box_X, Box_Y + CornerLen)
+        
+        Elements.Box_TR1.From = Vector2.new(Box_X + BoxWidth, Box_Y) Elements.Box_TR1.To = Vector2.new(Box_X + BoxWidth - CornerLen, Box_Y)
+        Elements.Box_TR2.From = Vector2.new(Box_X + BoxWidth, Box_Y) Elements.Box_TR2.To = Vector2.new(Box_X + BoxWidth, Box_Y + CornerLen)
+        
+        Elements.Box_BL1.From = Vector2.new(Box_X, Box_Y + BoxHeight) Elements.Box_BL1.To = Vector2.new(Box_X + CornerLen, Box_Y + BoxHeight)
+        Elements.Box_BL2.From = Vector2.new(Box_X, Box_Y + BoxHeight) Elements.Box_BL2.To = Vector2.new(Box_X, Box_Y + BoxHeight - CornerLen)
+        
+        Elements.Box_BR1.From = Vector2.new(Box_X + BoxWidth, Box_Y + BoxHeight) Elements.Box_BR1.To = Vector2.new(Box_X + BoxWidth - CornerLen, Box_Y + BoxHeight)
+        Elements.Box_BR2.From = Vector2.new(Box_X + BoxWidth, Box_Y + BoxHeight) Elements.Box_BR2.To = Vector2.new(Box_X + BoxWidth, Box_Y + BoxHeight - CornerLen)
+        
+        for Name, Obj in pairs(Elements) do if string.find(Name, "Box_") then Obj.Visible = true end end
+    else
+        for Name, Obj in pairs(Elements) do if string.find(Name, "Box_") then Obj.Visible = false end end
+    end
+    
+    -- XỬ LÝ RENDERING TÊN (NAME TAG)
+    if Config.EspName then
+        Elements.Name.Position = Vector2.new(Box_X + BoxWidth / 2, Box_Y - 16)
+        Elements.Name.Text = Player.Name
+        Elements.Name.Visible = true
+    else
+        Elements.Name.Visible = false
+    end
+    
+    -- XỬ LÝ RENDERING ĐƯỜNG KẺ TÂM CHUỘT (TRACER)
+    if Config.EspTracer then
+        Elements.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+        Elements.Tracer.To = Vector2.new(RootPos.X, RootPos.Y)
+        Elements.Tracer.Visible = true
+    else
+        Elements.Tracer.Visible = false
+    end
+    
+    -- XỬ LÝ KHỐI MÀU XUYÊN TƯỜNG (CHAMS)
+    local TargetHighlight = Char:FindFirstChild("WangUnifiedChams")
+    if Config.EspChams then
+        if not TargetHighlight then
+            local NewChams = Instance.new("Highlight")
+            NewChams.Name = "WangUnifiedChams"
+            NewChams.FillColor = Color3.fromRGB(255, 50, 50)
+            NewChams.OutlineColor = Color3.fromRGB(255, 255, 255)
+            NewChams.FillTransparency = 0.5
+            NewChams.OutlineTransparency = 0
+            NewChams.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            NewChams.Parent = Char
+        else
+            TargetHighlight.Enabled = true
+        end
+    else
+        if TargetHighlight then TargetHighlight.Enabled = false end
+    end
+end
 -- ==============================================================================
--- FIX LỖI DI CHUYỂN: Tách biệt hoàn toàn Logic Drag của TopBar và Nút Toggle Mobile
+-- 5. FIXED DRAG INTERACTION - SCREEN MASTER GUI INFRASTRUCTURE
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Wangcaos_Fixed_Menu"
+ScreenGui.Name = "Wangcaos_SuperUnified_Menu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
--- 1. NÚT LOGO BẬT/TẮT (Chống trượt khi click trên Mobile và PC)
+-- Logo mở Menu (Được cố định trục riêng, tuyệt đối không bị trượt khi nhấn)
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "FixedToggleLogo"
 ToggleButton.Parent = ScreenGui
@@ -118,11 +266,12 @@ ToggleButton.Text = "W"
 ToggleButton.TextColor3 = Color3.fromRGB(100, 255, 100)
 ToggleButton.TextSize = 22
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(1, 0)
+
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 ToggleStroke.Color = Color3.fromRGB(100, 255, 100)
 ToggleStroke.Thickness = 1.5
 
--- Logic Kéo Thả RIÊNG BIỆT cho Nút Bật/Tắt (Không gây trượt hay mất click)
+-- Cơ chế Kéo Thả độc lập cho nút Logo bật/tắt
 local btnDragging = false
 local btnDragStart, btnStartPos
 ToggleButton.InputBegan:Connect(function(input)
@@ -144,7 +293,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- 2. KHUNG CHÍNH MENU GUI
+-- Khung chính chứa toàn bộ Layout UI Library
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -154,11 +303,12 @@ MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
 MainFrame.Size = UDim2.new(0, 350, 0, 250)
 MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(45, 45, 45)
 MainStroke.Thickness = 1.5
 
--- Thanh Tiêu Đề TopBar (Chỉ kéo thả MainFrame tại đây)
+-- Thanh bar tiêu đề phía trên (Chỉ cho phép kéo thả toàn bộ khung tại đây)
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Parent = MainFrame
@@ -173,12 +323,12 @@ TitleText.BackgroundTransparency = 1
 TitleText.Position = UDim2.new(0, 12, 0, 0)
 TitleText.Size = UDim2.new(1, -50, 1, 0)
 TitleText.Font = Enum.Font.SourceSansBold
-TitleText.Text = "wangcaos script | V2 Fixed"
+TitleText.Text = "WANGCAOS PRIVATE | CORE V2"
 TitleText.TextColor3 = Color3.fromRGB(240, 240, 240)
 TitleText.TextSize = 14
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Logic Kéo Thả RIÊNG BIỆT cho MainFrame thông qua TopBar
+-- Cơ chế Kéo Thả độc lập cho MainFrame thông qua thanh TopBar
 local frameDragging = false
 local frameDragStart, frameStartPos
 TopBar.InputBegan:Connect(function(input)
@@ -200,12 +350,11 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Nút tắt/mở tương tác khi bấm Logo
 ToggleButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- 3. HỆ THỐNG PHÂN CHIA TABS (Khóa chặt không cho nhảy vị trí hay di chuyển lệch)
+-- Phân vùng kiến trúc quản lý Tabs
 local TabBar = Instance.new("Frame")
 TabBar.Name = "TabBar"
 TabBar.Parent = MainFrame
@@ -223,28 +372,32 @@ MainContent.Size = UDim2.new(1, -100, 1, -30)
 local TabListLayout = Instance.new("UIListLayout", TabBar)
 TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Tạo các container trang
+-- Tạo vùng chứa dữ liệu cho 4 trang danh mục chính
 local CombatPage = Instance.new("ScrollingFrame", MainContent)
+local VisualPage = Instance.new("ScrollingFrame", MainContent)
 local PlayerPage = Instance.new("ScrollingFrame", MainContent)
+local AboutPage = Instance.new("ScrollingFrame", MainContent)
 
-for _, page in pairs({CombatPage, PlayerPage}) do
+for _, page in pairs({CombatPage, VisualPage, PlayerPage, AboutPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 300)
+    page.CanvasSize = UDim2.new(0, 0, 0, 320)
     page.ScrollBarThickness = 2
     page.Visible = false
+    
     local pageLayout = Instance.new("UIListLayout", page)
     pageLayout.Padding = UDim.new(0, 6)
     pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    
     local pagePadding = Instance.new("UIPadding", page)
     pagePadding.PaddingTop = UDim.new(0, 8)
     pagePadding.PaddingLeft = UDim.new(0, 8)
     pagePadding.PaddingRight = UDim.new(0, 8)
 end
-CombatPage.Visible = true -- Mặc định trang đầu mở
+CombatPage.Visible = true
 -- ==============================================================================
--- 4. HỆ THỐNG PHÂN TÁCH TABS VÀ TẠO NUT BUTTON/TOGGLE CHUẨN KHÔNG BỊ TRƯỢT
+-- 6. UI LIBRARY ELEMENTS CREATION ENGINE (TOGGLE, SLIDER & ABOUT LINK)
 -- ==============================================================================
 
 local function CreateTabButton(Name, Order, PageTarget)
@@ -258,11 +411,13 @@ local function CreateTabButton(Name, Order, PageTarget)
     TabBtn.LayoutOrder = Order
     TabBtn.Text = Name
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(160, 160, 160)
-    TabBtn.TextSize = 14
+    TabBtn.TextSize = 13
 
     TabBtn.MouseButton1Click:Connect(function()
         CombatPage.Visible = false
+        VisualPage.Visible = false
         PlayerPage.Visible = false
+        AboutPage.Visible = false
         for _, btn in pairs(TabBar:GetChildren()) do
             if btn:IsA("TextButton") then
                 btn.TextColor3 = Color3.fromRGB(160, 160, 160)
@@ -274,9 +429,10 @@ local function CreateTabButton(Name, Order, PageTarget)
 end
 
 CreateTabButton("Aimbot", 1, CombatPage)
-CreateTabButton("Player", 2, PlayerPage)
+CreateTabButton("Visuals", 2, VisualPage)
+CreateTabButton("Player", 3, PlayerPage)
+CreateTabButton("About", 4, AboutPage)
 
--- Khung Render các nút Toggle/Slider đa dụng
 local function AddToggle(ParentPage, LabelText, ConfigKey, Callback)
     local ToggleFrame = Instance.new("Frame")
     ToggleFrame.Parent = ParentPage
@@ -390,23 +546,93 @@ local function AddSlider(ParentPage, LabelText, Min, Max, ConfigKey, Callback)
     end)
 end
 
--- Điền tính năng chuyên biệt của nhóm Aimbot
-AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
-AddToggle(CombatPage, "Team Check (Ignore Team)", "TeamCheck")
-AddToggle(CombatPage, "Wall Check (Ignore Walls)", "WallCheck")
-AddToggle(CombatPage, "Show FOV Safe Circle", "FovEnabled")
-AddSlider(CombatPage, "FOV Capture Radius", 30, 500, "FovRadius")
+-- ==============================================================================
+-- 7. FILLING CONTROLS INTO RESPECTIVE PAGES
+-- ==============================================================================
 
--- Điền tính năng chuyên biệt của nhóm Player Movement
+-- Tab Aimbot Lock Đầu
+AddToggle(CombatPage, "Enable Head Aimbot", "Aimbot")
+AddToggle(CombatPage, "Team Check (Ignore Allies)", "TeamCheck")
+AddToggle(CombatPage, "Wall Check (Ignore Obstacles)", "WallCheck")
+AddSlider(CombatPage, "Lock Smoothness Engine", 1, 10, "Smoothness", function(val)
+    Config.Smoothness = val / 20 -- Quy đổi mượt từ 0.05 đến 0.5
+end)
+
+-- Tab Visuals (Khôi phục toàn bộ các mục vẽ cũ)
+AddToggle(VisualPage, "Visual Master Switch", "EspMaster")
+AddToggle(VisualPage, "Show FOV Safe Circle", "FovCircle")
+AddSlider(VisualPage, "Adjust FOV Radius Circle", 30, 500, "FovRadius")
+AddToggle(VisualPage, "Enable Corner Boxes ESP", "EspBox")
+AddToggle(VisualPage, "Enable Bottom Tracers Line", "EspTracer")
+AddToggle(VisualPage, "Enable Identity Text Name", "EspName")
+AddToggle(VisualPage, "Enable 3D Xray Body Chams", "EspChams")
+
+-- Tab Player Movement 
 AddToggle(PlayerPage, "Override WalkSpeed", "SpeedToggle")
-AddSlider(PlayerPage, "Custom Speed Power", 16, 150, "WalkSpeed")
+AddSlider(PlayerPage, "Speed Custom Power", 16, 150, "WalkSpeed")
 AddToggle(PlayerPage, "Override JumpPower", "JumpToggle")
-AddSlider(PlayerPage, "Custom Jump Power", 50, 250, "JumpPower")
+AddSlider(PlayerPage, "Jump Custom Power", 50, 250, "JumpPower")
 -- ==============================================================================
--- 5. ENGINE KHÓA CỨNG ĐẦU (HEAD AIMBOT) & ĐỒNG BỘ HIỂN THỊ VÒNG TRÒN FOV
+-- 8. ABOUT DESIGN (DISCORD SYSTEM) & CENTRAL PIPELINE LOGIC
 -- ==============================================================================
 
--- Nút xóa Script khẩn cấp để dọn bộ nhớ (Đóng đè lên thanh TopBar)
+-- Thiết kế giao diện thông tin bản quyền và tích hợp Link sao chép
+local InfoText = Instance.new("TextLabel")
+InfoText.Parent = AboutPage
+InfoText.BackgroundTransparency = 1
+InfoText.Size = UDim2.new(1, 0, 0, 60)
+InfoText.Font = Enum.Font.SourceSansBold
+InfoText.Text = "Wangcaos Premium Hub\nPhiên Bản Tối Ưu Hóa Sửa Lỗi 2026\nĐại ca sử dụng vui vẻ!"
+InfoText.TextColor3 = Color3.fromRGB(200, 200, 200)
+InfoText.TextSize = 14
+InfoText.TextYAlignment = Enum.TextYAlignment.Center
+
+local DiscordFrame = Instance.new("Frame")
+DiscordFrame.Parent = AboutPage
+DiscordFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+DiscordFrame.BorderSizePixel = 0
+DiscordFrame.Size = UDim2.new(1, 0, 0, 50)
+Instance.new("UICorner", DiscordFrame).CornerRadius = UDim.new(0, 4)
+
+local DiscordLabel = Instance.new("TextLabel")
+DiscordLabel.Parent = DiscordFrame
+DiscordLabel.BackgroundTransparency = 1
+DiscordLabel.Position = UDim2.new(0, 8, 0, 4)
+DiscordLabel.Size = UDim2.new(1, -16, 0, 16)
+DiscordLabel.Font = Enum.Font.SourceSans
+DiscordLabel.Text = "Cộng Đồng Discord chính thức:"
+DiscordLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+DiscordLabel.TextSize = 12
+DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local LinkBtn = Instance.new("TextButton")
+LinkBtn.Parent = DiscordFrame
+LinkBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+LinkBtn.Position = UDim2.new(0, 8, 0, 22)
+LinkBtn.Size = UDim2.new(1, -16, 0, 22)
+LinkBtn.Font = Enum.Font.SourceSansBold
+LinkBtn.Text = "https://discord.gg/GmDYZEGSE"
+LinkBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+LinkBtn.TextSize = 13
+Instance.new("UICorner", LinkBtn).CornerRadius = UDim.new(0, 4)
+
+-- Cơ chế tự động sao chép link khi click trên mọi loại Executor thiết bị
+LinkBtn.MouseButton1Click:Connect(function()
+    local TargetLink = "https://discord.gg/GmDYZEGSE"
+    if setclipboard then
+        setclipboard(TargetLink)
+        LinkBtn.Text = "Đã Sao Chép Vào Bộ Nhớ!"
+    elseif toclipboard then
+        toclipboard(TargetLink)
+        LinkBtn.Text = "Đã Sao Chép Vào Bộ Nhớ!"
+    else
+        LinkBtn.Text = "Vui lòng tự bôi đen copy link"
+    end
+    task.wait(2)
+    LinkBtn.Text = TargetLink
+end)
+
+-- Nút thoát dọn dẹp bộ nhớ khẩn cấp trên thanh tiêu đề
 local CloseMenuBtn = Instance.new("TextButton")
 CloseMenuBtn.Name = "CloseMenuBtn"
 CloseMenuBtn.Parent = MainFrame.TopBar
@@ -419,62 +645,84 @@ CloseMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseMenuBtn.TextSize = 12
 Instance.new("UICorner", CloseMenuBtn).CornerRadius = UDim.new(0, 4)
 
-local RunningConnection = nil
+local MasterLoopConnection = nil
 
 CloseMenuBtn.MouseButton1Click:Connect(function()
-    if RunningConnection then RunningConnection:Disconnect() end
-    FOVCircle.Visible = false
-    FOVCircle:Remove()
+    if MasterLoopConnection then MasterLoopConnection:Disconnect() end
+    FOV_Drawing.Visible = false
+    FOV_Drawing:Remove()
+    for _, Player in pairs(Players:GetPlayers()) do
+        ClearPlayerESP(Player)
+        if Player.Character then
+            local Tag = Player.Character:FindFirstChild("WangUnifiedChams")
+            if Tag then Tag:Destroy() end
+        end
+    end
     ScreenGui:Destroy()
 end)
 
--- VÒNG LẶP ENGINE CHÍNH - Xử lý mượt không đè dữ liệu hay đứng hình GUI
-RunningConnection = RunService.RenderStepped:Connect(function()
-    local CenterPoint = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+-- ==============================================================================
+-- 9. CENTRAL RENDERSTEPPED LOOP MANAGEMENT PIPELINE
+-- ==============================================================================
+MasterLoopConnection = RunService.RenderStepped:Connect(function()
+    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    -- Xử lý hiển thị chuẩn xác vòng tròn FOV theo tọa độ màn hình
-    if Config.FovEnabled and MainFrame.Visible == false then
-        FOVCircle.Position = CenterPoint
-        FOVCircle.Radius = Config.FovRadius
-        FOVCircle.Visible = true
-    elseif Config.FovEnabled and MainFrame.Visible == true then
-        -- Vẫn giữ hiển thị FOV khi mở menu (Đã fix lỗi bị tàng hình)
-        FOVCircle.Position = CenterPoint
-        FOVCircle.Radius = Config.FovRadius
-        FOVCircle.Visible = true
+    -- Xử lý hiển thị vòng tròn FOV chuẩn không bị tàng hình
+    if Config.FovCircle then
+        FOV_Drawing.Position = Center
+        FOV_Drawing.Radius = Config.FovRadius
+        FOV_Drawing.Visible = true
     else
-        FOVCircle.Visible = false
+        FOV_Drawing.Visible = false
     end
 
-    -- Xử lý can thiệp thông số nhân vật (WalkSpeed & JumpPower)
-    local Character = LocalPlayer.Character
-    if Character and IsAlive(Character) then
-        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-        if Humanoid then
-            if Config.SpeedToggle then
-                Humanoid.WalkSpeed = Config.WalkSpeed
-            end
+    -- Xử lý can thiệp thuộc tính nhân vật WalkSpeed / JumpPower
+    local Char = LocalPlayer.Character
+    if Char and IsAlive(Char) then
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
+        if Hum then
+            if Config.SpeedToggle then Hum.WalkSpeed = Config.WalkSpeed end
             if Config.JumpToggle then
-                Humanoid.UseJumpPower = true
-                Humanoid.JumpPower = Config.JumpPower
+                Hum.UseJumpPower = true
+                Hum.JumpPower = Config.JumpPower
             end
         end
     end
 
-    -- XỬ LÝ LOCK AIMBOT TRỰC TIẾP VÀO ĐẦU (HEAD) - BẰNG PHƯƠNG PHÁP XOAY CAMERA CŨ
+    -- Xử lý khóa tâm mượt vào ĐẦU (HEAD AIMBOT ENGINE)
     if Config.Aimbot then
-        local TargetHead = GetClosestHead()
+        local TargetHead = GetClosestHeadToCrosshair()
         if TargetHead then
-            -- Tính toán ma trận CFrame hướng thẳng camera vào vị trí Head của mục tiêu
-            local TargetLook = CFrame.new(Camera.CFrame.Position, TargetHead.Position)
-            
-            -- Thực hiện ép góc quay Camera dựa theo hệ số mượt Smoothness cũ
-            Camera.CFrame = Camera.CFrame:Lerp(TargetLook, Config.Smoothness)
+            local TargetCFrame = CFrame.new(Camera.CFrame.Position, TargetHead.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(TargetCFrame, Config.Smoothness)
+        end
+    end
+
+    -- Xử lý render Vector Visuals ESP màn hình cho từng thực thể người chơi
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            local Elements = ESP_Cache[Player]
+            if Elements then
+                pcall(ProcessRenderESP, Player, Elements)
+            end
         end
     end
 end)
 
+-- Quản lý lắng nghe vòng đời kết nối thực thể phòng đấu
+Players.PlayerAdded:Connect(function(Player)
+    CreatePlayerESP(Player)
+end)
+
+Players.PlayerRemoving:Connect(function(Player)
+    ClearPlayerESP(Player)
+end)
+
+for _, Player in pairs(Players:GetPlayers()) do
+    if Player ~= LocalPlayer then CreatePlayerESP(Player) end
+end
+
 print("================================================================")
-print("--- [WANGCAOS REWRITTEN ENGINE LOADED SUCCESSFULLY] ---")
-print("--- [FIXED: FOV VISIBILITY / HEAD LOCK / ANTI-SLIDE GUI] ---")
+print("--- [WANGCAOS PRIVATE FIXED SCRIPT INITIALIZED 100%] ---")
+print("--- [AIMBOT HEAD / FOV CIRCLE / ALL VISUALS RE-CONNECTED] ---")
 print("================================================================")

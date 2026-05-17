@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (FIXED GUI & ESP & BG)
+-- WANGCAOS PREMIUM CLIENT V3.1 - MONOLITHIC EDITION (WITH LOADING SCREEN)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -18,8 +18,9 @@ local Camera = workspace.CurrentCamera
 -- 1. MASTER CONFIGURATION
 -- ==============================================================================
 local Config = {
-    MenuVisible = true,
+    MenuVisible = false, -- Khóa không cho mở luôn khi đang chạy giới thiệu
     MenuKeybind = Enum.KeyCode.LeftBracket,
+    IsLoading = true, -- Biến trạng thái kiểm soát loading bảo mật
     
     Aimbot = false,
     TeamCheck = true,
@@ -34,6 +35,8 @@ local Config = {
     EspName = false,
     EspTransparency = 80,
     MaxDistance = 500,
+    
+    BgTransparency = 60,
     
     SpeedToggle = false,
     WalkSpeed = 16,
@@ -166,7 +169,7 @@ local function GetClosestPlayerToCrosshair()
 end
 
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (FIGMA MINECRAFT HYBRID V3.1)
+-- 5. GUI CONSTRUCTION (MAIN & LOGO FLIP)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Minecraft_Figma_UI"
@@ -184,6 +187,7 @@ ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "W"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.TextSize = 22
+ToggleButton.Visible = false -- Khóa ban đầu
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 10)
 local LogoStroke = Instance.new("UIStroke", ToggleButton)
 LogoStroke.Color = Color3.fromRGB(90, 90, 90)
@@ -193,17 +197,16 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 1 -- Trong suốt để lộ ảnh nền phía dưới
+MainFrame.BackgroundTransparency = 0
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -185)
 MainFrame.Size = UDim2.new(0, 550, 0, 370)
-MainFrame.Visible = Config.MenuVisible
+MainFrame.Visible = false -- Khóa ban đầu không cho hiển thị lúc chạy intro
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(60, 60, 60)
 FrameStroke.Thickness = 1.5
 
--- THÊM ẢNH NỀN THEO YÊU CẦU CỦA ĐẠI CA
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Name = "GuiBackgroundImage"
 BackgroundImage.Parent = MainFrame
@@ -215,14 +218,13 @@ BackgroundImage.ScaleType = Enum.ScaleType.Crop
 BackgroundImage.ZIndex = 0
 Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 12)
 
--- Lớp phủ làm tối nền 60%
 local DarkOverlay = Instance.new("Frame")
 DarkOverlay.Name = "DarkOverlay"
 DarkOverlay.Parent = MainFrame
 DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
 DarkOverlay.Position = UDim2.new(0, 0, 0, 0)
 DarkOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-DarkOverlay.BackgroundTransparency = 0.6 -- Độ tối 60%
+DarkOverlay.BackgroundTransparency = Config.BgTransparency / 100
 DarkOverlay.BorderSizePixel = 0
 DarkOverlay.ZIndex = 1
 Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 12)
@@ -258,10 +260,9 @@ CloseBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
 CloseBtn.TextSize = 15
 CloseBtn.ZIndex = 2
 
--- DRAG LOGIC (Header & Toggle Button)
+-- DRAG LOGIC
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
-    local dragSpeed = 0
     local dragStart = nil
     local startPos = nil
     DragHandle.InputBegan:Connect(function(input)
@@ -288,11 +289,13 @@ MakeDraggable(ToggleButton, ToggleButton)
 MakeDraggable(MainFrame, HeaderBar)
 
 ToggleButton.MouseButton1Click:Connect(function()
+    if Config.IsLoading then return end -- Đang chạy intro không cho nhấn nút logo
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
+    if Config.IsLoading then return end -- Tuyệt đối không cho bấm phím mở khi đang load giới thiệu
     if not processed and input.KeyCode == Config.MenuKeybind then
         Config.MenuVisible = not Config.MenuVisible
         MainFrame.Visible = Config.MenuVisible
@@ -507,9 +510,6 @@ local function AddSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
--- ==============================================================================
--- 8. BUILD UI BINDINGS
--- ==============================================================================
 AddToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -522,6 +522,10 @@ AddToggle(VisualPage, "Bottom Center Tracers", "EspTracer")
 AddToggle(VisualPage, "Dynamic Informative Tag", "EspName")
 AddToggle(VisualPage, "Draw FOV Calibration", "FovCircle")
 AddSlider(VisualPage, "FOV Dynamic Radius", 30, 500, "FovRadius")
+
+AddSlider(VisualPage, "Menu Opacity Dark (60%)", 0, 100, "BgTransparency", function(val)
+    DarkOverlay.BackgroundTransparency = val / 100
+end)
 
 AddToggle(PlayerPage, "Velocity WalkSpeed Hack", "SpeedToggle")
 AddSlider(PlayerPage, "Custom Velocity Power", 16, 200, "WalkSpeed")
@@ -536,7 +540,106 @@ AddToggle(PlayerPage, "FullBright Environmental", "FullBright", function(state)
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
--- =====================================================================
+-- ==============================================================================
+-- 8. INTRO LOADING SCREEN FRAME GENERATION
+-- ==============================================================================
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Name = "IntroLoadingFrame"
+LoadingFrame.Parent = ScreenGui
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+LoadingFrame.Position = UDim2.new(0.5, -175, 0.5, -60)
+LoadingFrame.Size = UDim2.new(0, 350, 0, 120)
+LoadingFrame.ZIndex = 5
+Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 10)
+local LoadStroke = Instance.new("UIStroke", LoadingFrame)
+LoadStroke.Color = Color3.fromRGB(70, 70, 70)
+LoadStroke.Thickness = 1.2
+
+local LoadTitle = Instance.new("TextLabel", LoadingFrame)
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Position = UDim2.new(0, 0, 0, 20)
+LoadTitle.Size = UDim2.new(1, 0, 0, 22)
+LoadTitle.Font = Enum.Font.GothamBold
+LoadTitle.Text = "WANGCAOS CLIENT // INITIALIZING"
+LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadTitle.TextSize = 13
+LoadTitle.ZIndex = 5
+
+local StatusText = Instance.new("TextLabel", LoadingFrame)
+StatusText.BackgroundTransparency = 1
+StatusText.Position = UDim2.new(0, 20, 0, 50)
+StatusText.Size = UDim2.new(1, -40, 0, 16)
+StatusText.Font = Enum.Font.Gotham
+StatusText.Text = "Connecting to security protocols... 0%"
+StatusText.TextColor3 = Color3.fromRGB(150, 150, 150)
+StatusText.TextSize = 11
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.ZIndex = 5
+
+local TrackBar = Instance.new("Frame", LoadingFrame)
+TrackBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TrackBar.Position = UDim2.new(0, 20, 0, 75)
+TrackBar.Size = UDim2.new(1, -40, 0, 6)
+TrackBar.ZIndex = 5
+Instance.new("UICorner", TrackBar).CornerRadius = UDim.new(1, 0)
+
+local ProgressBar = Instance.new("Frame", TrackBar)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
+ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+ProgressBar.ZIndex = 5
+Instance.new("UICorner", ProgressBar).CornerRadius = UDim.new(1, 0)
+
+-- FUNCTION TO SIMULATE THE PIPELINE LOAD
+local function RunIntroLoadingSequence()
+    local Stages = {
+        "Connecting to safety protocols...",
+        "Bypassing internal workspace check...",
+        "Injecting Figma Frame pipeline...",
+        "Structuring Monolithic Core v3.1...",
+        "Assembling Aimbot & ESP Cache structures...",
+        "Applying system configuration layout...",
+        "WANGCAOS Engine active!"
+    }
+    
+    for i = 0, 100, 2 do
+        task.wait(0.04) -- Tốc độ chạy thanh loading mượt mà tinh tế
+        local stageIdx = math.clamp(math.floor((i / 100) * #Stages) + 1, 1, #Stages)
+        StatusText.Text = Stages[stageIdx] .. " " .. tostring(i) .. "%"
+        ProgressBar.Size = UDim2.new(i / 100, 0, 1, 0)
+    end
+    
+    StatusText.Text = "Authorized successfully!"
+    task.wait(0.5)
+    
+    -- Hiệu ứng ẩn mượt mà toàn bộ màn hình loading
+    TweenService:Create(LoadingFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoadTitle, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+    TweenService:Create(StatusText, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+    TweenService:Create(TrackBar, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(ProgressBar, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoadStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
+    
+    task.wait(0.4)
+    LoadingFrame:Destroy()
+    
+    -- BẮT ĐẦU MỞ KHÓA VÀ CHO PHÉP HIỂN THỊ MENU CHÍNH SAU KHI LOAD XONG
+    Config.IsLoading = false
+    Config.MenuVisible = true
+    MainFrame.Visible = true
+    ToggleButton.Visible = true
+    
+    -- Thông báo hệ thống xác nhận kích hoạt thành công
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "WANGCAOS CLIENT",
+            Text = "LOAD THÀNH CÔNG!\nBẤM [ ĐỂ ẨN/HIỆN MENU HOẶC DÙNG NÚT W TRÊN MÀN HÌNH.",
+            Duration = 10
+        })
+    end)
+end
+
+task.spawn(RunIntroLoadingSequence)
+-- ==============================================================================
 -- 9. ESP LOGIC PIPELINE (OPTIMIZED)
 -- ==============================================================================
 local function RenderVisuals(Player, Character)
@@ -672,6 +775,7 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
@@ -700,12 +804,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     Lighting.Ambient = Config.StoredAmbient
     Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
-end)
-
-pcall(function()
-    StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT",
-        Text = "LOAD THÀNH CÔNG!\nBẤM [ ĐỂ ẨN/HIỆN MENU HOẶC DÙNG NÚT W TRÊN MÀN HÌNH.",
-        Duration = 10
-    })
 end)

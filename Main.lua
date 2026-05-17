@@ -10,12 +10,14 @@ local Camera = workspace.CurrentCamera
 local Config = {
     Aimbot_Enabled = false,
     AimbotMode = "Everyone", -- "None", "Enemy", "Everyone", "Bot"
-    FOV_Enabled = true,       
+    Wallhack_Enabled = false, -- Toggle for Aimbot Wallhack (Bypass Raycast)
+    FOV_Enabled = false,      -- Turned off by default as requested
     FOV_Radius = 140,         
     ESP_Box_Enabled = false,   -- Toggle for Corner Box + Tracer + Health Line
     ESP_Chams_Enabled = false, -- Toggle for Information Head Tags
     SnapSpeed = 0.85,         
     SwitchDelay = 0.05,
+    WalkSpeed_Value = 16,     -- Custom Speedwalk value
     
     -- Chams Config Parameters
     FillTransparency = 0.8,
@@ -89,6 +91,7 @@ end
 local LogicEngine = {}
 
 function LogicEngine.IsVisible(targetPart, targetChar)
+    if Config.Wallhack_Enabled then return true end
     if not targetPart or not targetChar then return false end
     local origin = Camera.CFrame.Position
     local direction = targetPart.Position - origin
@@ -112,42 +115,11 @@ function LogicEngine.IsAlive(char)
     return true
 end
 
--- Target algorithm focusing target closest to crosshair center position
 function LogicEngine.GetClosestTarget()
     if Config.AimbotMode == "None" then return nil end
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local selectedTarget, closest = nil, Config.FOV_Radius
-
-    if Config.AimbotMode == "Bot" then
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and LogicEngine.IsAlive(obj) and not Players:GetPlayerFromCharacter(obj) then
-                local head = obj.Head
-                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen and LogicEngine.IsVisible(head, obj) then
-                    local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                    if dist < closest then closest = dist selectedTarget = head end
-                end
-            end
-        end
-    else
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and LogicEngine.IsAlive(p.Character) then
-                local isAllowed = (Config.AimbotMode == "Everyone") or (Config.AimbotMode == "Enemy" and p.Team ~= LocalPlayer.Team)
-                if isAllowed then
-                    local head = p.Character.Head
-                    local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    if onScreen and LogicEngine.IsVisible(head, p.Character) then
-                        local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                        if dist < closest then closest = dist selectedTarget = head end
-                    end
-                end
-            end
-        end
-    end
-    return selectedTarget
-end
-
--- ==========================================================
+    local selectedTarget
+    -- ==========================================================
 -- BILLBOARD CHAMS TAG CONTEXT LOGIC
 -- ==========================================================
 local function GetPlayerColor(Player)
@@ -251,7 +223,7 @@ local function ApplyChamsTag(Player)
 end
 
 -- ==========================================================
--- SOLID CIRLCE FOV & CORNER ESP OVERLAY ENGINE
+-- SOLID CIRCLE FOV & CORNER ESP OVERLAY ENGINE
 -- ==========================================================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
@@ -263,7 +235,6 @@ FOVCircle.NumSides = 64
 local function createESP(player)
     if player == LocalPlayer or ESP_Lines_Data[player] then return end
     
-    -- 8 Lines for 4 Corners (TopLeft, TopRight, BottomLeft, BottomRight)
     local data = {
         TL1 = Drawing.new("Line"), TL2 = Drawing.new("Line"),
         TR1 = Drawing.new("Line"), TR2 = Drawing.new("Line"),
@@ -275,17 +246,19 @@ local function createESP(player)
 
     for _, line in pairs(data) do
         line.Thickness = 1.5
-        line.Color = Color3.fromRGB(0, 255, 150) -- Default clean sleek light-green/cyan color
+        line.Color = Color3.fromRGB(0, 255, 150)
         line.Transparency = 1
         line.Visible = false
     end
     data.Health.Thickness = 2 
+    data.Tracer.Thickness = 1.5
+    data.Tracer.Color = Color3.fromRGB(255, 0, 0)
 
     ESP_Lines_Data[player] = data
 end
 
 -- ==========================================================
--- CLASSIC UI FRAME BUILD (ENGLISH TRANSLATED)
+-- CLASSIC TAB UI FRAME BUILD (HACK & INFO SYSTEM)
 -- ==========================================================
 local ScreenGui = Instance.new("ScreenGui", ParentGui)
 ScreenGui.Name = "Wangcaos_SplitMenu"
@@ -307,12 +280,11 @@ BtnStroke.Thickness = 1.5
 MakeDraggable(MobileToggleBtn, MobileToggleBtn)
 
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 310, 0, 255)
-MainFrame.Position = UDim2.new(0.5, -155, 0.5, -127)
+MainFrame.Size = UDim2.new(0, 320, 0, 335)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -167)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
-local FrameCorner = Instance.new("UICorner", MainFrame)
-FrameCorner.CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(45, 45, 45)
 FrameStroke.Thickness = 1.5
@@ -323,13 +295,11 @@ local TitleBar = Instance.new("Frame", MainFrame)
 TitleBar.Size = UDim2.new(1, 0, 0, 28)
 TitleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 TitleBar.BorderSizePixel = 0
-local BarCorner = Instance.new("UICorner", TitleBar)
-BarCorner.CornerRadius = UDim.new(0, 6)
-
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 6)
 MakeDraggable(TitleBar, MainFrame)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
-TitleText.Text = "  wangcaos script (Corner ESP & Circle FOV)"
+TitleText.Text = "  wangcaos script (Premium Center)"
 TitleText.TextColor3 = Color3.fromRGB(235, 235, 235)
 TitleText.Font = Enum.Font.SourceSansBold
 TitleText.TextSize = 13
@@ -356,18 +326,61 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy() 
 end)
 
-local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Size = UDim2.new(1, -24, 1, -42)
-ContentFrame.Position = UDim2.new(0, 12, 0, 36)
-ContentFrame.BackgroundTransparency = 1
+local TabBar = Instance.new("Frame", MainFrame)
+TabBar.Size = UDim2.new(1, 0, 0, 26)
+TabBar.Position = UDim2.new(0, 0, 0, 28)
+TabBar.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+TabBar.BorderSizePixel = 0
 
-local ListLayout = Instance.new("UIListLayout", ContentFrame)
-ListLayout.Padding = UDim.new(0, 7)
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local HackTabBtn = Instance.new("TextButton", TabBar)
+HackTabBtn.Size = UDim2.new(0.5, 0, 1, 0)
+HackTabBtn.BackgroundTransparency = 1
+HackTabBtn.Text = "HACK"
+HackTabBtn.Font = Enum.Font.SourceSansBold
+HackTabBtn.TextSize = 13
+HackTabBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+
+local InfoTabBtn = Instance.new("TextButton", TabBar)
+InfoTabBtn.Size = UDim2.new(0.5, 0, 1, 0)
+InfoTabBtn.Position = UDim2.new(0.5, 0, 0, 0)
+InfoTabBtn.BackgroundTransparency = 1
+InfoTabBtn.Text = "INFO"
+InfoTabBtn.Font = Enum.Font.SourceSansBold
+InfoTabBtn.TextSize = 13
+InfoTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+
+local HackPage = Instance.new("Frame", MainFrame)
+HackPage.Size = UDim2.new(1, -24, 1, -64)
+HackPage.Position = UDim2.new(0, 12, 0, 60)
+HackPage.BackgroundTransparency = 1
+
+local InfoPage = Instance.new("Frame", MainFrame)
+InfoPage.Size = UDim2.new(1, -24, 1, -64)
+InfoPage.Position = UDim2.new(0, 12, 0, 60)
+InfoPage.BackgroundTransparency = 1
+InfoPage.Visible = false
+
+HackTabBtn.MouseButton1Click:Connect(function()
+    HackPage.Visible = true
+    InfoPage.Visible = false
+    HackTabBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+    InfoTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+InfoTabBtn.MouseButton1Click:Connect(function()
+    HackPage.Visible = false
+    InfoPage.Visible = true
+    HackTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    InfoTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+local HackList = Instance.new("UIListLayout", HackPage)
+HackList.Padding = UDim.new(0, 6)
+HackList.SortOrder = Enum.SortOrder.LayoutOrder
 
 local function CreateMenuRow(labelText, layoutOrder)
-    local row = Instance.new("Frame", ContentFrame)
-    row.Size = UDim2.new(1, 0, 0, 28)
+    local row = Instance.new("Frame", HackPage)
+    row.Size = UDim2.new(1, 0, 0, 26)
     row.BackgroundTransparency = 1
     row.LayoutOrder = layoutOrder
 
@@ -377,8 +390,7 @@ local function CreateMenuRow(labelText, layoutOrder)
     box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     box.BorderSizePixel = 0
     box.Text = ""
-    local boxCorner = Instance.new("UICorner", box)
-    boxCorner.CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
     local boxStroke = Instance.new("UIStroke", box)
     boxStroke.Color = Color3.fromRGB(60, 60, 60)
     boxStroke.Thickness = 1
@@ -387,7 +399,7 @@ local function CreateMenuRow(labelText, layoutOrder)
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 14
+    label.TextSize = 13
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Size = UDim2.new(1, -35, 1, 0)
     label.Position = UDim2.new(0, 28, 0, 0)
@@ -397,7 +409,7 @@ local function CreateMenuRow(labelText, layoutOrder)
 end
 
 -- ==========================================================
--- INTERACTION CONFIG BUTTON HOOKS
+-- INTERACTION CONFIG BUTTON HOOKS & SELECTIONS
 -- ==========================================================
 local function ToggleVisual(btn, stroke, state)
     if state then
@@ -409,29 +421,32 @@ local function ToggleVisual(btn, stroke, state)
     end
 end
 
-local AimBtn, AimLabel, AimStroke = CreateMenuRow("Aimbot Closest Crosshair", 1)
-ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
+local AimBtn, _, AimStroke = CreateMenuRow("Aimbot Closest Crosshair", 1)
 AimBtn.MouseButton1Click:Connect(function()
     Config.Aimbot_Enabled = not Config.Aimbot_Enabled
     ToggleVisual(AimBtn, AimStroke, Config.Aimbot_Enabled)
 end)
 
-local FovBtn, FovLabel, FovStroke = CreateMenuRow("Display Circle FOV (White)", 2)
+local WhBtn, _, WhStroke = CreateMenuRow("Wallhack (Aim Through Walls)", 2)
+WhBtn.MouseButton1Click:Connect(function()
+    Config.Wallhack_Enabled = not Config.Wallhack_Enabled
+    ToggleVisual(WhBtn, WhStroke, Config.Wallhack_Enabled)
+end)
+
+local FovBtn, _, FovStroke = CreateMenuRow("Display Circle FOV (White)", 3)
 ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 FovBtn.MouseButton1Click:Connect(function()
     Config.FOV_Enabled = not Config.FOV_Enabled
     ToggleVisual(FovBtn, FovStroke, Config.FOV_Enabled)
 end)
 
-local EspBoxBtn, EspBoxLabel, EspBoxStroke = CreateMenuRow("Corner ESP Box + Health + Tracer", 3)
-ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
+local EspBoxBtn, _, EspBoxStroke = CreateMenuRow("Corner ESP Box + Health + Tracer", 4)
 EspBoxBtn.MouseButton1Click:Connect(function()
     Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
     ToggleVisual(EspBoxBtn, EspBoxStroke, Config.ESP_Box_Enabled)
 end)
 
-local ChamsBtn, ChamsLabel, ChamsStroke = CreateMenuRow("Chams Text Tags Information", 4)
-ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
+local ChamsBtn, _, ChamsStroke = CreateMenuRow("Chams Text Tags Information", 5)
 ChamsBtn.MouseButton1Click:Connect(function()
     Config.ESP_Chams_Enabled = not Config.ESP_Chams_Enabled
     ToggleVisual(ChamsBtn, ChamsStroke, Config.ESP_Chams_Enabled)
@@ -440,29 +455,28 @@ ChamsBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Target Mode Configuration Context Row
-local DropRow = Instance.new("Frame", ContentFrame)
-DropRow.Size = UDim2.new(1, 0, 0, 28)
+local DropRow = Instance.new("Frame", HackPage)
+DropRow.Size = UDim2.new(1, 0, 0, 26)
 DropRow.BackgroundTransparency = 1
-DropRow.LayoutOrder = 5
+DropRow.LayoutOrder = 6
 
 local DropTitle = Instance.new("TextLabel", DropRow)
 DropTitle.Text = "Target Mode:"
 DropTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
 DropTitle.Font = Enum.Font.SourceSansBold
-DropTitle.TextSize = 14
+DropTitle.TextSize = 13
 DropTitle.TextXAlignment = Enum.TextXAlignment.Left
 DropTitle.Size = UDim2.new(0, 95, 1, 0)
 DropTitle.BackgroundTransparency = 1
 
 local DropMainBtn = Instance.new("TextButton", DropRow)
-DropMainBtn.Size = UDim2.new(0, 125, 0, 22)
-DropMainBtn.Position = UDim2.new(0, 100, 0.5, -11)
+DropMainBtn.Size = UDim2.new(0, 125, 0, 20)
+DropMainBtn.Position = UDim2.new(0, 100, 0.5, -10)
 DropMainBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 DropMainBtn.Text = Config.AimbotMode .. "  ▼"
 DropMainBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
 DropMainBtn.Font = Enum.Font.SourceSansBold
-DropMainBtn.TextSize = 13
+DropMainBtn.TextSize = 12
 Instance.new("UICorner", DropMainBtn).CornerRadius = UDim.new(0, 4)
 local DropStroke = Instance.new("UIStroke", DropMainBtn)
 DropStroke.Color = Color3.fromRGB(50, 50, 50)
@@ -489,7 +503,7 @@ local function BuildOption(modeName)
     opt.Text = "  " .. modeName
     opt.TextColor3 = Color3.fromRGB(220, 220, 220)
     opt.Font = Enum.Font.SourceSans
-    opt.TextSize = 13
+    opt.TextSize = 12
     opt.TextXAlignment = Enum.TextXAlignment.Left
     opt.ZIndex = 16
     opt.MouseButton1Click:Connect(function()
@@ -500,7 +514,54 @@ local function BuildOption(modeName)
 end
 BuildOption("None") BuildOption("Enemy") BuildOption("Everyone") BuildOption("Bot")
 
--- Left Bracket Toggle Configuration Setup
+local SpeedRow = Instance.new("Frame", HackPage)
+SpeedRow.Size = UDim2.new(1, 0, 0, 26)
+SpeedRow.BackgroundTransparency = 1
+SpeedRow.LayoutOrder = 7
+
+local SpeedTitle = Instance.new("TextLabel", SpeedRow)
+SpeedTitle.Text = "Speedwalk Magnitude:"
+SpeedTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+SpeedTitle.Font = Enum.Font.SourceSansBold
+SpeedTitle.TextSize = 13
+SpeedTitle.TextXAlignment = Enum.TextXAlignment.Left
+SpeedTitle.Size = UDim2.new(0, 140, 1, 0)
+SpeedTitle.BackgroundTransparency = 1
+
+local SpeedBox = Instance.new("TextBox", SpeedRow)
+SpeedBox.Size = UDim2.new(0, 75, 0, 20)
+SpeedBox.Position = UDim2.new(0, 150, 0.5, -10)
+SpeedBox.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+SpeedBox.Text = "16"
+SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 100)
+SpeedBox.Font = Enum.Font.SourceSansBold
+SpeedBox.TextSize = 12
+Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 4)
+local SpeedStroke = Instance.new("UIStroke", SpeedBox)
+SpeedStroke.Color = Color3.fromRGB(50, 50, 50)
+
+SpeedBox.FocusLost:Connect(function(enterPressed)
+    local targetVal = tonumber(SpeedBox.Text)
+    if targetVal then
+        Config.WalkSpeed_Value = targetVal
+    else
+        SpeedBox.Text = tostring(Config.WalkSpeed_Value)
+    end
+end)
+
+-- ==========================================================
+-- CREDIT INFO PAGE INTERFACES
+-- ==========================================================
+local InfoLabel = Instance.new("TextLabel", InfoPage)
+InfoLabel.Size = UDim2.new(1, 0, 1, 0)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Font = Enum.Font.Code
+InfoLabel.TextSize = 13
+InfoLabel.TextColor3 = Color3.fromRGB(180, 255, 180)
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Center
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Center
+InfoLabel.Text = "=========================\n\nOWNER & CREDITS:\n\nThis optimized system\nwas built and developed\nstrictly by\n\n[ WANG ]\n\n========================="
+
 UserInputService.InputBegan:Connect(function(i, p)
     if not p and i.KeyCode == Enum.KeyCode.LeftBracket then
         Config.ESP_Box_Enabled = not Config.ESP_Box_Enabled
@@ -522,17 +583,24 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 -- ==========================================================
--- STEPPED RENDER PIPELINE CORE LAYER VÒNG LẶP LIÊN TỤC
+-- STEPPED RENDER PIPELINE CORE LOOP
 -- ==========================================================
 RunService.RenderStepped:Connect(function()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    -- Setup Clean Solid Circle Framework
+    -- ENGINE OVERRIDE FIX: Nếu Menu đang bật, buộc FOV Circle ẩn đi hoàn toàn
+    if MainFrame and MainFrame.Visible then
+        FOVCircle.Visible = false
+    else
+        FOVCircle.Visible = Config.FOV_Enabled 
+    end
     FOVCircle.Position = center
     FOVCircle.Radius = Config.FOV_Radius
-    FOVCircle.Visible = Config.FOV_Enabled 
 
-    -- Closest-to-Crosshair Aimbot Thread Logic Execution
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = Config.WalkSpeed_Value
+    end
+
     if Config.Aimbot_Enabled then
         if CurrentTarget and (not CurrentTarget.Parent or not LogicEngine.IsAlive(CurrentTarget.Parent)) then
             CurrentTarget = nil
@@ -559,7 +627,6 @@ RunService.RenderStepped:Connect(function()
         TargetHighlight.Adornee = nil
     end
 
-    -- Combined Layout Traditional Box Drawing Loop Execution Engine
     for _, player in pairs(Players:GetPlayers()) do
         local data = ESP_Lines_Data[player]
         if not data then if player ~= LocalPlayer then createESP(player) end continue end
@@ -578,44 +645,24 @@ RunService.RenderStepped:Connect(function()
                 local h = math.abs(headPos.Y - legPos.Y)
                 local w = h / 2
                 local x, y = pos.X - w/2, pos.Y - h/2
-                
-                -- Dynamic Corner Length calculation based on size
                 local lineLength = w / 3
 
-                -- Top-Left Corner Lines
-                data.TL1.From = Vector2.new(x, y)
-                data.TL1.To = Vector2.new(x + lineLength, y)
-                data.TL2.From = Vector2.new(x, y)
-                data.TL2.To = Vector2.new(x, y + lineLength)
+                data.TL1.From = Vector2.new(x, y) data.TL1.To = Vector2.new(x + lineLength, y)
+                data.TL2.From = Vector2.new(x, y) data.TL2.To = Vector2.new(x, y + lineLength)
+                data.TR1.From = Vector2.new(x + w, y) data.TR1.To = Vector2.new(x + w - lineLength, y)
+                data.TR2.From = Vector2.new(x + w, y) data.TR2.To = Vector2.new(x + w, y + lineLength)
+                data.BL1.From = Vector2.new(x, y + h) data.BL1.To = Vector2.new(x + lineLength, y + h)
+                data.BL2.From = Vector2.new(x, y + h) data.BL2.To = Vector2.new(x, y + h - lineLength)
+                data.BR1.From = Vector2.new(x + w, y + h) data.BR1.To = Vector2.new(x + w - lineLength, y + h)
+                data.BR2.From = Vector2.new(x + w, y + h) data.BR2.To = Vector2.new(x + w, y + h - lineLength)
 
-                -- Top-Right Corner Lines
-                data.TR1.From = Vector2.new(x + w, y)
-                data.TR1.To = Vector2.new(x + w - lineLength, y)
-                data.TR2.From = Vector2.new(x + w, y)
-                data.TR2.To = Vector2.new(x + w, y + lineLength)
-
-                -- Bottom-Left Corner Lines
-                data.BL1.From = Vector2.new(x, y + h)
-                data.BL1.To = Vector2.new(x + lineLength, y + h)
-                data.BL2.From = Vector2.new(x, y + h)
-                data.BL2.To = Vector2.new(x, y + h - lineLength)
-
-                -- Bottom-Right Corner Lines
-                data.BR1.From = Vector2.new(x + w, y + h)
-                data.BR1.To = Vector2.new(x + w - lineLength, y + h)
-                data.BR2.From = Vector2.new(x + w, y + h)
-                data.BR2.To = Vector2.new(x + w, y + h - lineLength)
-
-                -- Dynamic Red Health Line Placement SÁT CẠNH TRÁI CORNER
                 local healthX = x - 3 
                 data.Health.From = Vector2.new(healthX, y + h)
                 data.Health.To = Vector2.new(healthX, y + h - (h * (hum.Health / hum.MaxHealth)))
                 data.Health.Color = Color3.fromRGB(255, 0, 0) 
 
-                -- Snap Tracer Alignment to Center Bottom Screen Line
-                data.Tracer.From = Vector2.new(x + w/2, y + h)
-                data.Tracer.To = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                data.Tracer.Color = Color3.fromRGB(255, 0, 0) -- Tracer color back to requested red
+                data.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                data.Tracer.To = Vector2.new(pos.X, pos.Y)
 
                 for _, line in pairs(data) do line.Visible = true end
             else
@@ -627,10 +674,5 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Fire Initialization Hooks for Current Session Elements
-for _, v in pairs(Players:GetPlayers()) do 
-    createESP(v) 
-    ApplyChamsTag(v)
-end
-
-print("--- [Wangcaos Unified Version V18 - Modern Corner ESP & Circle FOV Loaded] ---")
+for _, v in pairs(Players:GetPlayers()) do createESP(v) ApplyChamsTag(v) end
+print("--- [Wangcaos Core System V20 - FOV Overlap Bug Fixed Successfully] ---")

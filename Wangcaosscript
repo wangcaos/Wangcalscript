@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM V6 - CSGO/NEVERLOSE STYLE ENGINE
+-- WANGCAOS CLEAN ENGINE - ORIGINAL GUI REBUILT
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -15,51 +15,50 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==============================================================================
--- 1. ADVANCED CSGO-STYLE MASTER CONFIGURATION
+-- 1. SYSTEM CONFIGURATION
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
-    MenuKeybind = Enum.KeyCode.LeftBracket,
     
-    -- [LEGIT/RAGE BOT]
+    -- [AIMSYSTEM]
     Aimbot = false,
-    SilentAim = false, -- Tự động bám tâm mượt không giật giật màn hình
+    SilentAim = false,
     TeamCheck = true,
     WallCheck = true,
-    TargetBone = "Head", -- Head, Torso
+    TargetBone = "Head",
     Smoothness = 0.2,
     
-    -- [VISUALS CONFIG - ESP CSGO]
+    -- [VISUALS / ESP]
     EspMaster = false,
-    EspBox = false, -- Box 3D Chams
-    EspBox2D = false, -- Bounding Box 2D Corners
+    EspBox = false,
+    EspBox2D = false,
     EspTransparency = 80,
     EspTracer = false,
     EspName = false,
-    EspHealthBar = false, -- Hiện thanh máu dọc cạnh người
-    EspWeapon = false, -- Hiện vũ khí cầm trên tay
+    EspHealthBar = false,
+    EspWeapon = false,
     
-    -- [EFFECTS & WORLD]
+    -- [WORLD & MODS]
     FovCircle = false,
     FovRadius = 120,
     FullBright = false,
-    NoFlash = false, -- Chống mù do lựu đạn chớp (nếu game có)
-    ThirdPerson = false, -- Bật góc nhìn thứ 3 góc rộng
+    NoFlash = false,
+    ThirdPerson = false,
     ThirdPersonDist = 12,
     
-    -- [MISC / PLAYER MODS]
+    -- [PLAYER PHYSIC]
     SpeedToggle = false,
     WalkSpeed = 16,
     JumpToggle = false,
     JumpPower = 50,
-    BunnyHop = false, -- Tự động nhảy liên tục khi giữ Space
+    BunnyHop = false,
     
     StoredAmbient = Lighting.Ambient,
     StoredOutdoorAmbient = Lighting.OutdoorAmbient
 }
 
 -- ==============================================================================
--- 2. GUI SECURITY & INJECTION PARENT
+-- 2. GUI CONTEXT SAFE INJECTION
 -- ==============================================================================
 local function GetSafeGui()
     local success, hui = pcall(function() return gethui() end)
@@ -71,18 +70,18 @@ end
 
 local SafeParent = GetSafeGui()
 for _, old in pairs(SafeParent:GetChildren()) do
-    if old.Name == "Wangcaos_CSGO_V6" then old:Destroy() end
+    if old.Name == "Wangcaos_Original_Engine" then old:Destroy() end
 end
 
 -- ==============================================================================
--- 3. INTERCEPT DRAWING & ANTI-GHOST SYSTEM
+-- 3. DRAWING & RENDERING PIPELINE
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Color3.fromRGB(0, 255, 255)
+FOV_Drawing.Color = Color3.fromRGB(255, 255, 255)
 FOV_Drawing.Thickness = 1
 FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
-FOV_Drawing.Transparency = 0.6
+FOV_Drawing.Transparency = 0.5
 FOV_Drawing.Visible = false
 
 local Tracer_Cache = {}
@@ -91,7 +90,7 @@ local Box2D_Cache = {}
 local function GetDrawingObjects(Player)
     if not Tracer_Cache[Player] then
         Tracer_Cache[Player] = Drawing.new("Line")
-        Tracer_Cache[Player].Thickness = 1.2
+        Tracer_Cache[Player].Thickness = 1
         Tracer_Cache[Player].Color = Color3.fromRGB(255, 255, 255)
         Tracer_Cache[Player].Visible = false
     end
@@ -102,7 +101,7 @@ local function GetDrawingObjects(Player)
             BL = Drawing.new("Line"), BR = Drawing.new("Line")
         }
         for _, line in pairs(Box) do
-            line.Thickness = 1.5
+            line.Thickness = 1.2
             line.Color = Color3.fromRGB(255, 255, 255)
             line.Visible = false
         end
@@ -135,7 +134,7 @@ local function ClearVisualsForPlayer(Player)
 end
 
 -- ==============================================================================
--- 4. CORE MATH & AIM DETECTION ENGINE
+-- 4. ALGORITHMS & TARGET DETECTION
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -157,12 +156,12 @@ end
 
 local function GetPColor(Player)
     if Player.Team then return Player.TeamColor.Color end
-    return Color3.fromRGB(0, 255, 127) -- Màu lục CSGO đặc trưng cho phe địch
+    return Color3.fromRGB(255, 0, 0)
 end
 
 local function GetTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
-    return Tool and Tool.Name or "Knife/Melee"
+    return Tool and Tool.Name or "Hands"
 end
 
 local function GetClosestTarget()
@@ -190,60 +189,64 @@ local function GetClosestTarget()
 end
 
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (NEVERLOSE DARK CYAN THEME)
+-- 5. CLEAN ORIGINAL GUI DESIGN
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Wangcaos_CSGO_V6"
+ScreenGui.Name = "Wangcaos_Original_Engine"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
+-- Toggle Icon di động gọn gàng
 local ToggleButton = Instance.new("TextButton", ScreenGui)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(11, 22, 33)
-ToggleButton.Position = UDim2.new(0, 20, 0, 150)
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "CS"
-ToggleButton.TextColor3 = Color3.fromRGB(0, 180, 255)
-ToggleButton.TextSize = 20
+ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ToggleButton.Position = UDim2.new(0, 15, 0, 120)
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.Text = "W"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 22
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(0, 120, 255)
+local ToggleStroke = Instance.new("UIStroke", ToggleButton)
+ToggleStroke.Color = Color3.fromRGB(60, 60, 60)
 
+-- Khung Menu Chính Nguyên Bản
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 16)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -290, 0.5, -210)
-MainFrame.Size = UDim2.new(0, 580, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 550, 0, 380)
 MainFrame.Visible = Config.MenuVisible
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Color = Color3.fromRGB(20, 30, 40)
+MainStroke.Color = Color3.fromRGB(50, 50, 50)
 
+-- Thanh Tiêu Đề
 local Header = Instance.new("Frame", MainFrame)
-Header.BackgroundColor3 = Color3.fromRGB(12, 18, 24)
-Header.Size = UDim2.new(1, 0, 0, 45)
-Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 10)
+Header.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
 
 local Title = Instance.new("TextLabel", Header)
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 20, 0, 0)
-Title.Size = UDim2.new(0, 400, 1, 0)
-Title.Font = Enum.Font.Code
-Title.Text = "WANGCAOS.NEVERLOSE // CSGO ROBLOX MULTIHACK"
-Title.TextColor3 = Color3.fromRGB(0, 200, 255)
-Title.TextSize = 14
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(0, 300, 1, 0)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "WANGCAOS PRIVATE INTERFACE"
+Title.TextColor3 = Color3.fromRGB(240, 240, 240)
+Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseBtn = Instance.new("TextButton", Header)
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -45, 0, 0)
-CloseBtn.Size = UDim2.new(0, 45, 1, 0)
-CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Position = UDim2.new(1, -40, 0, 0)
+CloseBtn.Size = UDim2.new(0, 40, 1, 0)
+CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 75, 75)
+CloseBtn.TextColor3 = Color3.fromRGB(240, 70, 70)
 CloseBtn.TextSize = 16
 
--- KÉO THẢ MƯỢT MÀ
+-- Xử lý Kéo thả Giao diện mượt mà
 local function MakeDraggable(UI, Handle)
     local drag, startPos, dragStart
     Handle.InputBegan:Connect(function(input)
@@ -266,20 +269,20 @@ MakeDraggable(MainFrame, Header)
 
 ToggleButton.MouseButton1Click:Connect(function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
 
--- PHÂN TÁCH DANH MỤC TABS
+-- Khu vực Phân Tab chức năng
 local TabContainer = Instance.new("Frame", MainFrame)
-TabContainer.BackgroundColor3 = Color3.fromRGB(10, 14, 20)
-TabContainer.Position = UDim2.new(0, 15, 0, 60)
-TabContainer.Size = UDim2.new(0, 130, 1, -75)
+TabContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+TabContainer.Position = UDim2.new(0, 12, 0, 52)
+TabContainer.Size = UDim2.new(0, 120, 1, -64)
 Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
 
 local ContentContainer = Instance.new("Frame", MainFrame)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 155, 0, 60)
-ContentContainer.Size = UDim2.new(1, -170, 1, -75)
+ContentContainer.Position = UDim2.new(0, 144, 0, 52)
+ContentContainer.Size = UDim2.new(1, -156, 1, -64)
 
 local TabListLayout = Instance.new("UIListLayout", TabContainer)
-TabListLayout.Padding = UDim.new(0, 4)
+TabListLayout.Padding = UDim.new(0, 5)
 local TabPadding = Instance.new("UIPadding", TabContainer)
 TabPadding.PaddingTop = UDim.new(0, 6) TabPadding.PaddingLeft = UDim.new(0, 6) TabPadding.PaddingRight = UDim.new(0, 6)
 
@@ -289,75 +292,70 @@ local function CreateTab(Name)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.BorderSizePixel = 0
-    Page.ScrollBarThickness = 3
-    Page.ScrollBarImageColor3 = Color3.fromRGB(0, 150, 255)
-    Page.CanvasSize = UDim2.new(0, 0, 0, 450)
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 420)
     Page.Visible = false
-    local Lay = Instance.new("UIListLayout", Page)
-    Lay.Padding = UDim.new(0, 6)
     
     local Btn = Instance.new("TextButton", TabContainer)
-    Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = Color3.fromRGB(15, 22, 30)
-    Btn.Font = Enum.Font.Code
-    Btn.Text = "  " .. Name:upper()
-    Btn.TextColor3 = Color3.fromRGB(130, 145, 160)
-    Btn.TextSize = 12
-    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.Size = UDim2.new(1, 0, 0, 30)
+    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Btn.Font = Enum.Font.SourceSans
+    Btn.Text = Name
+    Btn.TextColor3 = Color3.fromRGB(160, 160, 160)
+    Btn.TextSize = 14
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-    local BStrk = Instance.new("UIStroke", Btn)
-    BStrk.Color = Color3.fromRGB(0, 150, 255)
-    BStrk.Enabled = false
     
     Btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do 
-            p.Page.Visible = false p.Btn.TextColor3 = Color3.fromRGB(130, 145, 160) 
-            p.Btn.BackgroundColor3 = Color3.fromRGB(15, 22, 30) p.Btn.UIStroke.Enabled = false
+            p.Page.Visible = false p.Btn.TextColor3 = Color3.fromRGB(160, 160, 160) 
+            p.Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         end
         Page.Visible = true Btn.TextColor3 = Color3.fromRGB(255, 255, 255) 
-        Btn.BackgroundColor3 = Color3.fromRGB(0, 100, 200) BStrk.Enabled = true
+        Btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
     table.insert(Pages, {Page = Page, Btn = Btn})
+    local Lay = Instance.new("UIListLayout", Page) Lay.Padding = UDim.new(0, 6)
     return Page
 end
 
-local TabAimbot = CreateTab("Rage/Legit")
-local TabEsp = CreateTab("Visuals Esp")
-local TabWorld = CreateTab("World FX")
-local TabMisc = CreateTab("Misc Player")
+local TabAimbot = CreateTab("Aim System")
+local TabEsp = CreateTab("Visuals ESP")
+local TabWorld = CreateTab("World Options")
+local TabMisc = CreateTab("Player Mods")
 
 Pages[1].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Pages[1].Btn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-Pages[1].Btn.UIStroke.Enabled = true
+Pages[1].Btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 Pages[1].Page.Visible = true
 
 -- ==============================================================================
--- 6. INTERACTIVE WIDGET ENGINES
+-- 6. CONTROL COMPONENT SYSTEM
 -- ==============================================================================
 local function AddToggle(Page, Text, Key, Callback)
     local F = Instance.new("Frame", Page)
-    F.Size = UDim2.new(1, 0, 0, 34) F.BackgroundColor3 = Color3.fromRGB(12, 16, 22)
+    F.Size = UDim2.new(1, 0, 0, 32) F.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 4)
     local L = Instance.new("TextLabel", F)
     L.Size = UDim2.new(1, -60, 1, 0) L.Position = UDim2.new(0, 10, 0, 0)
-    L.BackgroundTransparency = 1 L.Font = Enum.Font.Code L.Text = Text L.TextColor3 = Color3.fromRGB(200, 210, 220) L.TextSize = 11 L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1 L.Font = Enum.Font.SourceSans L.Text = Text L.TextColor3 = Color3.fromRGB(220, 220, 220) L.TextSize = 14 L.TextXAlignment = Enum.TextXAlignment.Left
     
     local Box = Instance.new("TextButton", F)
-    Box.Size = UDim2.new(0, 35, 0, 18) Box.Position = UDim2.new(1, -45, 0.5, -9)
-    Box.BackgroundColor3 = Config[Key] and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(25, 30, 40)
-    Box.Text = "" Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 9)
+    Box.Size = UDim2.new(0, 32, 0, 16) Box.Position = UDim2.new(1, -42, 0.5, -8)
+    Box.BackgroundColor3 = Config[Key] and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
+    Box.Text = "" Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 8)
     
     local Indicator = Instance.new("Frame", Box)
-    Indicator.Size = UDim2.new(0, 14, 0, 14) 
-    Indicator.Position = Config[Key] and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Indicator.Size = UDim2.new(0, 12, 0, 12) 
+    Indicator.Position = Config[Key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+    Indicator.BackgroundColor3 = Config[Key] and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(200, 200, 200)
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
     
     Box.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
-        Box.BackgroundColor3 = Config[Key] and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(25, 30, 40)
-        TweenService:Create(Indicator, TweenInfo.new(0.1), {
-            Position = Config[Key] and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        Box.BackgroundColor3 = Config[Key] and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
+        Indicator.BackgroundColor3 = Config[Key] and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(200, 200, 200)
+        TweenService:Create(Indicator, TweenInfo.new(0.08), {
+            Position = Config[Key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
         }):Play()
         if Callback then Callback(Config[Key]) end
     end)
@@ -365,20 +363,20 @@ end
 
 local function AddSlider(Page, Text, Min, Max, Key, Callback)
     local F = Instance.new("Frame", Page)
-    F.Size = UDim2.new(1, 0, 0, 42) F.BackgroundColor3 = Color3.fromRGB(12, 16, 22)
+    F.Size = UDim2.new(1, 0, 0, 38) F.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 4)
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(0, 200, 0, 18) L.Position = UDim2.new(0, 10, 0, 2)
-    L.BackgroundTransparency = 1 L.Font = Enum.Font.Code L.Text = Text L.TextColor3 = Color3.fromRGB(180, 190, 200) L.TextSize = 11 L.TextXAlignment = Enum.TextXAlignment.Left
+    L.Size = UDim2.new(0, 180, 0, 16) L.Position = UDim2.new(0, 10, 0, 2)
+    L.BackgroundTransparency = 1 L.Font = Enum.Font.SourceSans L.Text = Text L.TextColor3 = Color3.fromRGB(180, 180, 180) L.TextSize = 13 L.TextXAlignment = Enum.TextXAlignment.Left
     
     local V = Instance.new("TextLabel", F)
-    V.Size = UDim2.new(0, 60, 0, 18) V.Position = UDim2.new(1, -70, 0, 2)
-    V.BackgroundTransparency = 1 V.Font = Enum.Font.Code V.Text = tostring(Config[Key]) V.TextColor3 = Color3.fromRGB(0, 200, 255) V.TextSize = 11 V.TextXAlignment = Enum.TextXAlignment.Right
+    V.Size = UDim2.new(0, 50, 0, 16) V.Position = UDim2.new(1, -60, 0, 2)
+    V.BackgroundTransparency = 1 V.Font = Enum.Font.SourceSans L.Text = tostring(Config[Key]) L.TextColor3 = Color3.fromRGB(255, 255, 255) L.TextSize = 13 L.TextXAlignment = Enum.TextXAlignment.Right
     
     local Bar = Instance.new("TextButton", F)
-    Bar.Size = UDim2.new(1, -20, 0, 4) Bar.Position = UDim2.new(0, 10, 0, 26) Bar.BackgroundColor3 = Color3.fromRGB(30, 40, 50) Bar.Text = ""
+    Bar.Size = UDim2.new(1, -20, 0, 4) Bar.Position = UDim2.new(0, 10, 0, 24) Bar.BackgroundColor3 = Color3.fromRGB(55, 55, 55) Bar.Text = ""
     local Fill = Instance.new("Frame", Bar)
-    Fill.Size = UDim2.new((Config[Key]-Min)/(Max-Min), 0, 1, 0) Fill.BackgroundColor3 = Color3.fromRGB(0, 180, 255) Fill.BorderSizePixel = 0
+    Fill.Size = UDim2.new((Config[Key]-Min)/(Max-Min), 0, 1, 0) Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) Fill.BorderSizePixel = 0
     
     local Drag = false
     Bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Drag = true end end)
@@ -395,15 +393,15 @@ end
 
 local function AddDropdown(Page, Text, Options, Key)
     local F = Instance.new("Frame", Page)
-    F.Size = UDim2.new(1, 0, 0, 36) F.BackgroundColor3 = Color3.fromRGB(12, 16, 22)
+    F.Size = UDim2.new(1, 0, 0, 34) F.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 4)
     local L = Instance.new("TextLabel", F)
     L.Size = UDim2.new(0, 150, 1, 0) L.Position = UDim2.new(0, 10, 0, 0)
-    L.BackgroundTransparency = 1 L.Font = Enum.Font.Code L.Text = Text L.TextColor3 = Color3.fromRGB(200, 210, 220) L.TextSize = 11 L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1 L.Font = Enum.Font.SourceSans L.Text = Text L.TextColor3 = Color3.fromRGB(220, 220, 220) L.TextSize = 14 L.TextXAlignment = Enum.TextXAlignment.Left
     
     local B = Instance.new("TextButton", F)
-    B.Size = UDim2.new(0, 120, 0, 24) B.Position = UDim2.new(1, -130, 0.5, -12) B.BackgroundColor3 = Color3.fromRGB(25, 32, 42)
-    B.Font = Enum.Font.Code B.Text = tostring(Config[Key]) B.TextColor3 = Color3.fromRGB(255, 255, 255) B.TextSize = 11
+    B.Size = UDim2.new(0, 110, 0, 22) B.Position = UDim2.new(1, -120, 0.5, -11) B.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    B.Font = Enum.Font.SourceSans B.Text = tostring(Config[Key]) B.TextColor3 = Color3.fromRGB(255, 255, 255) B.TextSize = 13
     Instance.new("UICorner", B).CornerRadius = UDim.new(0, 4)
     
     local OptIndex = 1
@@ -416,59 +414,57 @@ local function AddDropdown(Page, Text, Options, Key)
     end)
 end
 
--- INJECT CHỨC NĂNG VÀO TỪNG TAB
-AddToggle(TabAimbot, "Lock Target Aimbot", "Aimbot")
-AddToggle(TabAimbot, "Silent Aim (Perfect CFrame)", "SilentAim")
-AddToggle(TabAimbot, "Filter Teammates", "TeamCheck")
-AddToggle(TabAimbot, "Raycast Wall Check", "WallCheck")
-AddDropdown(TabAimbot, "Target Bone Position", {"Head", "HumanoidRootPart"}, "TargetBone")
-AddSlider(TabAimbot, "Smooth Angle Factor", 1, 10, "Smoothness", function(v) Config.Smoothness = v/20 end)
+-- ==============================================================================
+-- 7. MENU INTEGRATION
+-- ==============================================================================
+AddToggle(TabAimbot, "Enable Aimbot", "Aimbot")
+AddToggle(TabAimbot, "Silent Aim Mode", "SilentAim")
+AddToggle(TabAimbot, "Team Check", "TeamCheck")
+AddToggle(TabAimbot, "Wall Check", "WallCheck")
+AddDropdown(TabAimbot, "Aim Bone Target", {"Head", "HumanoidRootPart"}, "TargetBone")
+AddSlider(TabAimbot, "Smooth Calculation", 1, 10, "Smoothness", function(v) Config.Smoothness = v/20 end)
 
-AddToggle(TabEsp, "Master Active Visuals", "EspMaster")
-AddToggle(TabEsp, "Box 3D Wireframe Chams", "EspBox")
-AddToggle(TabEsp, "Box 2D Corner Layout", "EspBox2D")
-AddSlider(TabEsp, "3D Box Transparency Factor", 0, 100, "EspTransparency")
-AddToggle(TabEsp, "Bottom Snapline Tracers", "EspTracer")
-AddToggle(TabEsp, "Name Identity Rendering", "EspName")
-AddToggle(TabEsp, "Healthbar Status Panel", "EspHealthBar")
-AddToggle(TabEsp, "Weapon Hand Tracker", "EspWeapon")
+AddToggle(TabEsp, "Master ESP Switch", "EspMaster")
+AddToggle(TabEsp, "Render 3D Wireframe", "EspBox")
+AddToggle(TabEsp, "Render 2D Bounding Box", "EspBox2D")
+AddSlider(TabEsp, "Object Opacity Factor", 0, 100, "EspTransparency")
+AddToggle(TabEsp, "Show Tracers Snapline", "EspTracer")
+AddToggle(TabEsp, "Show Player Names", "EspName")
+AddToggle(TabEsp, "Show Health Panel", "EspHealthBar")
+AddToggle(TabEsp, "Show Current Weapon", "EspWeapon")
 
-AddToggle(TabWorld, "Draw FOV Safezone Circle", "FovCircle")
-AddSlider(TabWorld, "Radius Field of View", 30, 500, "FovRadius")
-AddToggle(TabWorld, "Full Ambient Brightness", "FullBright")
-AddToggle(TabWorld, "Anti-Flash Bang Modifier", "NoFlash")
-AddToggle(TabWorld, "Drone ThirdPerson View", "ThirdPerson")
-AddSlider(TabWorld, "ThirdPerson Target Range", 5, 30, "ThirdPersonDist")
+AddToggle(TabWorld, "Draw Safezone FOV", "FovCircle")
+AddSlider(TabWorld, "Radius Limit", 30, 500, "FovRadius")
+AddToggle(TabWorld, "Full Ambient Light", "FullBright")
+AddToggle(TabWorld, "Anti-Blind Modifier", "NoFlash")
+AddToggle(TabWorld, "Force ThirdPerson View", "ThirdPerson")
+AddSlider(TabWorld, "Camera Distance Offset", 5, 30, "ThirdPersonDist")
 
-AddToggle(TabMisc, "Active Movement Speed Modifier", "SpeedToggle")
-AddSlider(TabMisc, "Velocity Output Power", 16, 250, "WalkSpeed")
-AddToggle(TabMisc, "Active Jump Power Modifier", "JumpToggle")
-AddSlider(TabMisc, "Jump Force Output", 50, 350, "JumpPower")
-AddToggle(TabMisc, "Auto BunnyHop Engine", "BunnyHop")
+AddToggle(TabMisc, "Modify WalkSpeed", "SpeedToggle")
+AddSlider(TabMisc, "WalkSpeed Target Value", 16, 250, "WalkSpeed")
+AddToggle(TabMisc, "Modify JumpPower", "JumpToggle")
+AddSlider(TabMisc, "JumpPower Target Value", 50, 350, "JumpPower")
+AddToggle(TabMisc, "Auto BunnyHop System", "BunnyHop")
 
 -- ==============================================================================
--- 7. GAME-LOOP MAIN PROCESS PIPE (ANTI-GHOST MATRIX)
+-- 8. CORE ENGINE SYSTEM LOOP
 -- ==============================================================================
 local EngineConnection = nil
-
 EngineConnection = RunService.RenderStepped:Connect(function()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    -- FOV Drawing Calibrator
     if Config.FovCircle then
         FOV_Drawing.Position = Center FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
     end
 
-    -- Lighting Modifier Core
     if Config.FullBright then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
     else
         Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 
-    -- Flashbang Remover Core
     if Config.NoFlash then
         local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
         if pGui then
@@ -477,19 +473,16 @@ EngineConnection = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- ThirdPerson Overrider Core
     if Config.ThirdPerson then
         LocalPlayer.CameraMode = Enum.CameraMode.Classic
         Camera.CFrame = Camera.CFrame * CFrame.new(0, 0, Config.ThirdPersonDist)
     end
 
-    -- BunnyHop Engine Core
     if Config.BunnyHop and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
         local Char = LocalPlayer.Character
         if IsAlive(Char) and Char.Humanoid.FloorMaterial ~= Enum.Material.Air then Char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 
-    -- Humanoid Stats Core
     local MyChar = LocalPlayer.Character
     if IsAlive(MyChar) then
         local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
@@ -499,15 +492,11 @@ EngineConnection = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Aimbot Core Engine
     local Target = GetClosestTarget()
-    if Target then
-        if Config.Aimbot then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), Config.Smoothness)
-        end
+    if Target and Config.Aimbot then
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), Config.Smoothness)
     end
 
-    -- UNLIMITED DYNAMIC ESP LOOP (ANTI-GHOST SAFEGUARD)
     for _, Player in pairs(Players:GetPlayers()) do
         if Player == LocalPlayer then continue end
         
@@ -519,11 +508,9 @@ EngineConnection = RunService.RenderStepped:Connect(function()
             local Head = Char.Head
             local Hum = Char.Humanoid
             local PColor = GetPColor(Player)
-            
             local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
             local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
             
-            -- Chams 3D Wireframe Box Engine
             local Box = Root:FindFirstChild("WangBox")
             if Config.EspBox then
                 if not Box then
@@ -532,45 +519,37 @@ EngineConnection = RunService.RenderStepped:Connect(function()
                 Box.Visible = true Box.Color3 = PColor Box.Transparency = Config.EspTransparency / 100
             elseif Box then Box.Visible = false end
 
-            -- Informative Multi-Data Tag (Name / Health / Weapon)
             local Tag = Head:FindFirstChild("WangTag")
             if (Config.EspName or Config.EspHealthBar or Config.EspWeapon) then
                 if not Tag then
-                    Tag = Instance.new("BillboardGui") Tag.Name = "WangTag" Tag.Parent = Head Tag.Adornee = Head Tag.Size = UDim2.new(0, 220, 0, 65) Tag.StudsOffset = Vector3.new(0, 3.8, 0) Tag.AlwaysOnTop = true
-                    local L = Instance.new("TextLabel", Tag) L.Size = UDim2.new(1, 0, 1, 0) L.BackgroundTransparency = 1 L.Font = Enum.Font.Code L.TextSize = 13 L.Name = "Txt"
+                    Tag = Instance.new("BillboardGui") Tag.Name = "WangTag" Tag.Parent = Head Tag.Adornee = Head Tag.Size = UDim2.new(0, 200, 0, 60) Tag.StudsOffset = Vector3.new(0, 3.5, 0) Tag.AlwaysOnTop = true
+                    local L = Instance.new("TextLabel", Tag) L.Size = UDim2.new(1, 0, 1, 0) L.BackgroundTransparency = 1 L.Font = Enum.Font.SourceSans L.TextSize = 14 L.Name = "Txt"
                 end
                 Tag.Enabled = true
                 Tag.Txt.TextColor3 = PColor
-                
-                local StrName = Config.EspName and string.format("%s (%dm)", Player.Name, Dist) or ""
-                local StrHealth = Config.EspHealthBar and string.format("HP: %d/%d", math.floor(Hum.Health), math.floor(Hum.MaxHealth)) or ""
-                local StrWeapon = Config.EspWeapon and string.format("[%s]", GetTool(Char)) or ""
-                
+                local StrName = Config.EspName and string.format("%s [%dm]", Player.Name, Dist) or ""
+                local StrHealth = Config.EspHealthBar and string.format("Health: %d", math.floor(Hum.Health)) or ""
+                local StrWeapon = Config.EspWeapon and string.format("(%s)", GetTool(Char)) or ""
                 Tag.Txt.Text = string.format("%s\n%s %s", StrName, StrHealth, StrWeapon)
             elseif Tag then Tag.Enabled = false end
 
-            -- Corner Bounding 2D Box Engine (CSGO Style)
             if Config.EspBox2D and OnScreen then
-                local SizeX = Camera.ViewportSize.Y / ScreenPos.Z * 2.8
-                local SizeY = Camera.ViewportSize.Y / ScreenPos.Z * 4.2
+                local SizeX = Camera.ViewportSize.Y / ScreenPos.Z * 2.5
+                local SizeY = Camera.ViewportSize.Y / ScreenPos.Z * 4.0
                 local BX = ScreenPos.X - SizeX / 2
                 local BY = ScreenPos.Y - SizeY / 2
-                
-                local Length = SizeX * 0.22
-                
+                local Length = SizeX * 0.2
                 Box2D.TL.From = Vector2.new(BX, BY) Box2D.TL.To = Vector2.new(BX + Length, BY)
                 Box2D.TR.From = Vector2.new(BX + SizeX, BY) Box2D.TR.To = Vector2.new(BX + SizeX - Length, BY)
                 Box2D.BL.From = Vector2.new(BX, BY + SizeY) Box2D.BL.To = Vector2.new(BX + Length, BY + SizeY)
                 Box2D.BR.From = Vector2.new(BX + SizeX, BY + SizeY) Box2D.BR.To = Vector2.new(BX + SizeX - Length, BY + SizeY)
-                
                 for _, line in pairs(Box2D) do line.Color = PColor line.Visible = true end
             else
                 for _, line in pairs(Box2D) do line.Visible = false end
             end
 
-            -- Vector Snapline Tracers
             if Config.EspTracer then
-                local Leg, LegOnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+                local Leg, LegOnScreen = Camera:WorldToViewportPoint(Root.Position)
                 if LegOnScreen then
                     Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                     Line.To = Vector2.new(Leg.X, Leg.Y)
@@ -579,7 +558,6 @@ EngineConnection = RunService.RenderStepped:Connect(function()
                 else Line.Visible = false end
             else Line.Visible = false end
         else
-            -- [DỌN DẸP RÁC] NẾU ĐỐI THỦ CHẾT HOẶC KHÔNG THỎA MÃN ĐIỀU KIỆN RENDER -> TIÊU HỦY NGAY LẬP TỨC
             Line.Visible = false
             for _, line in pairs(Box2D) do line.Visible = false end
             if Char then
@@ -590,7 +568,7 @@ EngineConnection = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- SHUTDOWN PROCESS
+-- THOÁT HOÀN TOÀN HỆ THỐNG GIAO DIỆN
 CloseBtn.MouseButton1Click:Connect(function()
     if EngineConnection then EngineConnection:Disconnect() end
     pcall(function() FOV_Drawing:Remove() end)
@@ -601,12 +579,5 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Config.MenuKeybind then
-        Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible
-    end
-end)
-
 Players.PlayerRemoving:Connect(function(Player) ClearVisualsForPlayer(Player) end)
-
-StarterGui:SetCore("SendNotification", {Title = "NEVERLOSE INJECTED", Text = "BẢN V6 THIẾT KẾ THEO PHONG CÁCH CSGO ĐÃ SẴN SÀNG!", Duration = 6})
+StarterGui:SetCore("SendNotification", {Title = "WANGCAOS LOADED", Text = "Hệ thống nguyên bản đã đồng bộ thành công!", Duration = 5})

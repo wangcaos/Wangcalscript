@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V3.5 - FIGMA MINECRAFT TOP-BAR EDITION
+-- WANGCAOS PREMIUM CLIENT V3.6 - CREDITS & FOV UPDATE EDITION
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -27,7 +27,7 @@ local Config = {
     Smoothness = 0.2,
     
     EspMaster = false,
-    FovCircle = false,
+    FovCircle = false, -- Có thể Bật/Tắt linh hoạt theo yêu cầu của đại ca
     FovRadius = 120,
     EspBox = false,
     EspTracer = false,
@@ -70,7 +70,7 @@ end
 -- 3. DRAWING MEMORY ALLOCATION
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Color3.fromRGB(85, 255, 85) -- Màu xanh lá cây Minecraft 
+FOV_Drawing.Color = Color3.fromRGB(85, 255, 85)
 FOV_Drawing.Thickness = 1.5
 FOV_Drawing.NumSides = 64
 FOV_Drawing.Filled = false
@@ -109,7 +109,7 @@ local function CleanCharacterVisuals(Character)
 end
 
 -- ==============================================================================
--- 4. TARGETING ENGINE (ABSOLUTE RECTIFIED CENTER)
+-- 4. TARGETING ENGINE
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -168,7 +168,7 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 5. GUI CONSTRUCTION (MINECRAFT FIGMA TOP BAR NAVIGATION)
+-- 5. GUI CONSTRUCTION (MINECRAFT TOP BAR & NEW CREDITS TAB)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Minecraft_Figma_UI"
@@ -206,7 +206,6 @@ local FrameStroke = Instance.new("UIStroke", MainFrame)
 FrameStroke.Color = Color3.fromRGB(45, 47, 50)
 FrameStroke.Thickness = 1.5
 
--- TÍNH NĂNG MỚI: THANH GIỚI THIỆU PHÍA TRÊN TÍCH HỢP NÚT ĐÓNG (X) CHUẨN FIGMA
 local TopNavBar = Instance.new("Frame")
 TopNavBar.Name = "TopNavBar"
 TopNavBar.Parent = MainFrame
@@ -223,21 +222,21 @@ local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Name = "TabMenuContainer"
 TabMenuContainer.Parent = TopNavBar
 TabMenuContainer.BackgroundTransparency = 1
-TabMenuContainer.Size = UDim2.new(1, -50, 1, 0)
+TabMenuContainer.Size = UDim2.new(1, -45, 1, 0)
 
 local TabLayout = Instance.new("UIListLayout", TabMenuContainer)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Padding = UDim.new(0, 4)
 local TabPad = Instance.new("UIPadding", TabMenuContainer)
-TabPad.PaddingLeft = UDim.new(0, 8)
+TabPad.PaddingLeft = UDim.new(0, 6)
 TabPad.PaddingTop = UDim.new(0, 6)
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = TopNavBar
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -36, 0.5, -13)
+CloseBtn.Position = UDim2.new(1, -34, 0.5, -13)
 CloseBtn.Size = UDim2.new(0, 26, 0, 26)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "×"
@@ -255,9 +254,9 @@ local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
 local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
+local CreditsPage = Instance.new("ScrollingFrame", ContentContainer) -- Trang giới thiệu tác giả mới
 
--- CẤU HÌNH GRID LAYOUT 2 CỘT CHO TẤT CẢ CÁC TRANG CỦA CLIENT MẪU
-for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage}) do
+for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
@@ -277,12 +276,12 @@ local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 100, 0, 30)
+    TabBtn.Size = UDim2.new(0, 90, 0, 30)
     TabBtn.Font = Enum.Font.GothamBold
     TabBtn.LayoutOrder = Order
     TabBtn.Text = IconText .. " " .. Name
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 143, 148)
-    TabBtn.TextSize = 12
+    TabBtn.TextSize = 11
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TStroke = Instance.new("UIStroke", TabBtn)
@@ -296,6 +295,7 @@ local function CreateMinecraftTab(Name, IconText, Order, TargetPage)
         MovementPage.Visible = false
         VisualPage.Visible = false
         MiscPage.Visible = false
+        CreditsPage.Visible = false
         
         for _, btn in pairs(TabMenuContainer:GetChildren()) do
             if btn:IsA("TextButton") then
@@ -319,8 +319,8 @@ CreateMinecraftTab("Player", "👤", 2, PlayerPage)
 CreateMinecraftTab("Movement", "🏃", 3, MovementPage)
 CreateMinecraftTab("Visuals", "👁", 4, VisualPage)
 CreateMinecraftTab("Misc", "⚙", 5, MiscPage)
+CreateMinecraftTab("Credits", "👑", 6, CreditsPage) -- Thêm tab Credits lên đầu thanh công cụ
 
--- DRAG SYSTEM FOR UI ELEMENTS
 local function MakeDraggable(UIElement, DragHandle)
     local dragToggle = nil
     local dragStart = nil
@@ -362,7 +362,7 @@ end)
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 6. DESIGN SYSTEM COMPONENTS (GRID RENDER READY)
+-- 6. DESIGN SYSTEM COMPONENTS (TOGGLES & SLIDERS)
 -- ==============================================================================
 local function AddMinecraftToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
@@ -486,8 +486,41 @@ local function AddMinecraftSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
+-- HÀM THÊM HỘP THÔNG TIN TRONG TAB GIỚI THIỆU (CREDITS)
+local function AddMinecraftCreditBox(Page, Title, Description)
+    local CFrame = Instance.new("Frame", Page)
+    CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30)
+    CFrame.BackgroundTransparency = 0.3
+    CFrame.Size = UDim2.new(0, 275, 0, 42)
+    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
+    local BoxStroke = Instance.new("UIStroke", CFrame)
+    BoxStroke.Color = Color3.fromRGB(50, 52, 56)
+    BoxStroke.Thickness = 1
+
+    local TitleLbl = Instance.new("TextLabel", CFrame)
+    TitleLbl.BackgroundTransparency = 1
+    TitleLbl.Position = UDim2.new(0, 10, 0, 4)
+    TitleLbl.Size = UDim2.new(1, -20, 0, 16)
+    TitleLbl.Font = Enum.Font.GothamBold
+    TitleLbl.Text = Title
+    TitleLbl.TextColor3 = Color3.fromRGB(85, 255, 85)
+    TitleLbl.TextSize = 12
+    TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local DescLbl = Instance.new("TextLabel", CFrame)
+    DescLbl.BackgroundTransparency = 1
+    DescLbl.Position = UDim2.new(0, 10, 0, 20)
+    DescLbl.Size = UDim2.new(1, -20, 0, 16)
+    DescLbl.Font = Enum.Font.Gotham
+    DescLbl.Text = Description
+    DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180)
+    DescLbl.TextSize = 11
+    DescLbl.TextXAlignment = Enum.TextXAlignment.Left
+end
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 -- ==============================================================================
--- 7. BINDING COMPONENT FEATURES TO MINECRAFT PAGES (FULL SPECIFICATION)
+-- 7. BINDING FEATURES TO PAGES & BUILDING CREDITS INFO
 -- ==============================================================================
 AddMinecraftToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddMinecraftToggle(CombatPage, "Team Guard Filter", "TeamCheck")
@@ -503,13 +536,13 @@ AddMinecraftToggle(PlayerPage, "FullBright Environment", "FullBright", function(
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
--- ---[còn tiếp]---
--- ---[tiếp tục]---
+
 AddMinecraftToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle")
 AddMinecraftSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
 AddMinecraftToggle(MovementPage, "JumpPower Boost", "JumpToggle")
 AddMinecraftSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
+-- TÍNH NĂNG UPDATE: TẬP HỢP CÀI ĐẶT FOV VÀO ĐÚNG TRANG VISUALS CHO TIỆN QUẢN LÝ
 AddMinecraftToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
 AddMinecraftToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddMinecraftSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
@@ -519,6 +552,12 @@ AddMinecraftSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "Ma
 
 AddMinecraftToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddMinecraftSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
+
+-- HIỂN THỊ THÔNG TIN ĐỘC QUYỀN TRÊN MỤC GIỚI THIỆU (CREDITS) THEO Ý ĐẠI CA WANG
+AddMinecraftCreditBox(CreditsPage, "Lead Developer", "Đại ca Wang")
+AddMinecraftCreditBox(CreditsPage, "Active Users", "20+ Players and counting!")
+AddMinecraftCreditBox(CreditsPage, "Build Version", "Premium V3.6 (Minecraft Figma)")
+AddMinecraftCreditBox(CreditsPage, "Design Style", "Figma Hybrid UI Framework")
 
 -- ==============================================================================
 -- 8. CORE ESP RENDERING PIPELINE
@@ -568,12 +607,12 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (FIXED CENTER FOV & MATRIX VISUALS)
+-- 9. RUNSERVICE TICK ENGINE (DYNAMIC FOV CONTROL LOOP)
 -- ==============================================================================
 local MasterLoop = RunService.RenderStepped:Connect(function()
-    -- KHÓA CỨNG TÂM CỦA VÒNG TRÒN FOV LUÔN Ở CHÍNH GIỮA MÀN HÌNH MÁY TÍNH
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
+    -- TÍNH NĂNG UPDATE: KIỂM TRA ĐIỀU KIỆN ĐỂ BẬT/TẮT HOÀN TOÀN TÂM HÌNH TRÒN FOV
     if Config.FovCircle then
         FOV_Drawing.Position = ScreenCenter
         FOV_Drawing.Radius = Config.FovRadius
@@ -677,13 +716,14 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- THÔNG BÁO TIN VUI: KHẲNG ĐỊNH CHỦ QUYỀN KHI CHẠY SCRIPT
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V3.5",
-        Text = "GIAO DIỆN FIGMA MINECRAFT ĐÃ SẴN SÀNG!",
+        Title = "WANGCAOS PREMIUM V3.6",
+        Text = "Script này đã được thực hiện bởi Wang!",
         Duration = 6
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - POWERED BY BE FOR DAI CA
+-- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

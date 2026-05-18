@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.0 - ADVANCED BEHIND AUTO FARM & SMART TOUCH TOGGLE
+-- WANGCAOS PREMIUM CLIENT V6.1 - FIXED TOGGLE SENSITIVITY & TOUCH RELEASE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -39,7 +39,7 @@ local Config = {
     SpinSpeed = 25,
     
     AutoFarmPlayer = false,
-    AutoFarmDelay = 0.05, -- Giảm delay để bám dính mượt mà hơn khi mục tiêu di chuyển
+    AutoFarmDelay = 0.05,
     
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
@@ -278,24 +278,16 @@ local function ProcessAutoFarmPlayer()
     local EnemyRoot = ActiveTargetData.Root
     local EnemyHead = ActiveTargetData.Head
     
-    -- LOGIC DI CHUYỂN RA ĐẰNG SAU LƯNG MỤC TIÊU VÀ KHÓA CAMERA VÀO ĐẦU
     if EnemyRoot and EnemyHead then
-        -- Tính toán tọa độ ngay phía sau lưng kẻ địch (Lấy vị trí trừ đi hướng nhìn LookVector nhân với khoảng cách 3 studs)
         local BehindPosition = EnemyRoot.Position - (EnemyRoot.CFrame.LookVector * 3)
-        
-        -- Dịch chuyển đại ca ra sau lưng và hướng mặt về phía kẻ địch
         MyRoot.CFrame = CFrame.new(BehindPosition, EnemyRoot.Position)
-        
-        -- Bắt ép Camera hướng thẳng mục tiêu vào Đầu (Head) của kẻ địch
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, EnemyHead.Position)
         
-        -- Tự động xả đạn
         if not IsFiring then
             IsFiring = true
             pcall(function() mouse1press() end)
         end
         
-        -- Chuyển mục tiêu nếu hết thời gian delay đặt trước
         if tick() - LastFarmTime >= Config.AutoFarmDelay then
             LastFarmTime = tick()
             CurrentFarmIndex = CurrentFarmIndex + 1
@@ -344,12 +336,28 @@ local function MakeDraggable(UIElement, DragHandle)
     end)
 end
 
--- HÀM HỖ TRỢ CHẠM SIÊU NHẠY TRÊN MOBILE KHÔNG LO LỖI KẸT BUTTON
+-- SỬA LỖI NGHẸT NÚT: Bắt chính xác sự kiện nhấc ngón tay ra, chống kích hoạt trùng lặp
 local function RegisterTouchFriendlyClick(TextButton, Callback)
-    TextButton.MouseButton1Click:Connect(Callback)
-    TextButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch and input.UserInputState == Enum.UserInputState.Begin then
+    local HoldingTouch = false
+    
+    TextButton.MouseButton1Click:Connect(function()
+        if not HoldingTouch then
             Callback()
+        end
+    end)
+    
+    TextButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            HoldingTouch = true
+        end
+    end)
+
+    TextButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            if HoldingTouch then
+                HoldingTouch = false
+                Callback()
+            end
         end
     end)
 end
@@ -531,13 +539,6 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     end)
 end
 
-CreatePremiumTab("Combat", "⚔", 1, CombatPage)
-CreatePremiumTab("Player", "👤", 2, PlayerPage)
-CreatePremiumTab("Movement", "🏃", 3, MovementPage)
-CreatePremiumTab("Visuals", "👁", 4, VisualPage)
-CreatePremiumTab("Misc", "⚙", 5, MiscPage)
-CreatePremiumTab("Credits", "👑", 6, CreditsPage)
-
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -559,7 +560,6 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
--- HỆ THỐNG PHÍM GẠT ĐÃ ĐƯỢC CẢI TIẾN TOÀN DIỆN KHÔNG BỊ NUỐT PHÍM KHI CHẠM
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -596,7 +596,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
 
-    -- Ứng dụng hàm chạm đa nền tảng siêu nhạy cho nút Toggle đại ca yêu cầu
     RegisterTouchFriendlyClick(Btn, function()
         Config[Key] = not Config[Key]
         UpdateToggleVisual(Key)
@@ -926,8 +925,15 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.0 - Advanced Behind Farm & Mobile Touch Fix")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.1 - Fixed Toggle Sensitivity & Touch Release")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
+CreatePremiumTab("Combat", "⚔", 1, CombatPage)
+CreatePremiumTab("Player", "👤", 2, PlayerPage)
+CreatePremiumTab("Movement", "🏃", 3, MovementPage)
+CreatePremiumTab("Visuals", "👁", 4, VisualPage)
+CreatePremiumTab("Misc", "⚙", 5, MiscPage)
+CreatePremiumTab("Credits", "👑", 6, CreditsPage)
+
 local function RegisterMobileClick(Btn, Key)
     RegisterTouchFriendlyClick(Btn, function()
         Config[Key] = not Config[Key]
@@ -1097,8 +1103,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.0",
-        Text = "Đã cập nhật Auto Farm Sau Lưng & Sửa nút bấm Touch siêu mượt cho đại ca!",
+        Title = "WANGCAOS CLIENT V6.1",
+        Text = "Đã sửa xong lỗi kẹt nhả nút bấm trên Mobile cho đại ca! Test lại luôn đi đại ca ơi!",
         Duration = 7
     })
 end)

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.1 - CUSTOM BACKGROUND UPDATE
+-- WANGCAOS PREMIUM CLIENT V5.2 - FIX DRAG & CLOSE BEHAVIOR (@gigi REQUEST)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -14,6 +14,7 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
+local MasterLoop -- Khai báo trước để dùng cho hàm Uninject sau này
 
 -- ==============================================================================
 -- 1. MASTER CONFIGURATION
@@ -52,8 +53,6 @@ local Config = {
     FullBright = false,
     
     MobileButton = true,
-    
-    -- Yêu cầu của @hihihaha (Bật/Tắt hình nền tùy chỉnh từ Asset)
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
     
@@ -237,7 +236,7 @@ end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
 -- ==============================================================================
--- 5. GUI CONSTRUCTION & CUSTOM BACKGROUND SYSTEM (@hihihaha REQUEST)
+-- 5. GUI CONSTRUCTION & NEW DRAG LOGIC (VÁ LỖI CHO @gigi)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -258,9 +257,8 @@ MobileWidget.TextColor3 = Color3.fromRGB(255, 255, 255)
 MobileWidget.TextSize = 12
 MobileWidget.Visible = Config.MobileButton
 Instance.new("UICorner", MobileWidget).CornerRadius = UDim.new(1, 0)
-local WidgetStroke = Instance.new("UIStroke", MobileWidget)
-WidgetStroke.Color = Color3.fromRGB(255, 255, 255)
-WidgetStroke.Thickness = 2
+Instance.new("UIStroke", MobileWidget).Color = Color3.fromRGB(255, 255, 255)
+Instance.new("UIStroke", MobileWidget).Thickness = 2
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -274,9 +272,8 @@ ToggleButton.Text = "W"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.TextSize = 20
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
-local LogoStroke = Instance.new("UIStroke", ToggleButton)
-LogoStroke.Color = Color3.fromRGB(60, 60, 60)
-LogoStroke.Thickness = 1.5
+Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
+Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -288,20 +285,18 @@ MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 600, 0, 400)
 MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-local FrameStroke = Instance.new("UIStroke", MainFrame)
-FrameStroke.Color = Color3.fromRGB(45, 47, 50)
-FrameStroke.Thickness = 1.5
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
+Instance.new("UIStroke", MainFrame).Thickness = 1.5
 
--- TÍCH HỢP HÌNH NỀN TÙY CHỈNH THEO ID ASSET CỦA @hihihaha
 local CustomBackgroundImage = Instance.new("ImageLabel")
 CustomBackgroundImage.Name = "MenuCustomWallpaper"
 CustomBackgroundImage.Parent = MainFrame
 CustomBackgroundImage.BackgroundTransparency = 1
 CustomBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 CustomBackgroundImage.Image = Config.BackgroundAssetId
-CustomBackgroundImage.ImageTransparency = 0.75 -- Mờ nhẹ để không làm lóa mắt khi chỉnh tính năng
+CustomBackgroundImage.ImageTransparency = 0.75
 CustomBackgroundImage.ScaleType = Enum.ScaleType.Crop
-CustomBackgroundImage.ZIndex = 0 -- Đặt ở lớp dưới cùng của MainFrame
+CustomBackgroundImage.ZIndex = 0
 CustomBackgroundImage.Visible = Config.CustomBackground
 Instance.new("UICorner", CustomBackgroundImage).CornerRadius = UDim.new(0, 10)
 
@@ -328,6 +323,7 @@ local TabPad = Instance.new("UIPadding", TabMenuContainer)
 TabPad.PaddingLeft = UDim.new(0, 6)
 TabPad.PaddingTop = UDim.new(0, 6)
 
+-- FIX LỖI NÚT ĐÓNG MENU (Chỉ ẩn, không hủy script)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Parent = TopNavBar
@@ -339,6 +335,76 @@ CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
 CloseBtn.TextSize = 22
 
+-- HÀM MAKE DRAGGABLE MỚI: MƯỢT MÀ VÀ CHUẨN XÁC 100% CHO MỌI THIẾT BỊ
+local function MakeDraggable(UIElement, DragHandle)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    DragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = UIElement.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    DragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            UIElement.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+MakeDraggable(MainFrame, TopNavBar)
+MakeDraggable(ToggleButton, ToggleButton)
+MakeDraggable(MobileWidget, MobileWidget)
+
+-- FIX NÚT X CHỈ ẨN GIAO DIỆN CHỨ KHÔNG XÓA SCRIPT
+CloseBtn.MouseButton1Click:Connect(function()
+    Config.MenuVisible = false
+    MainFrame.Visible = false
+end)
+
+MobileWidget.MouseButton1Click:Connect(function()
+    Config.Aimbot = not Config.Aimbot
+    if Config.Aimbot then
+        MobileWidget.BackgroundColor3 = Color3.fromRGB(45, 120, 75)
+        MobileWidget.Text = "AIM\nON"
+    else
+        MobileWidget.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        MobileWidget.Text = "AIM\nOFF"
+    end
+end)
+
+ToggleButton.MouseButton1Click:Connect(function()
+    Config.MenuVisible = not Config.MenuVisible
+    MainFrame.Visible = Config.MenuVisible
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Config.MenuKeybind then
+        Config.MenuVisible = not Config.MenuVisible
+        MainFrame.Visible = Config.MenuVisible
+    end
+end)
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
+-- ==============================================================================
+-- 6. DESIGN SYSTEM TABS & INTERACTIVE UI COMPONENTS
+-- ==============================================================================
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -368,11 +434,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
 CombatPage.Visible = true
--- ---[còn tiếp]---
--- ---[tiếp tục]---
--- ==============================================================================
--- 6. DESIGN SYSTEM INTERACTION & SLIDER FACTORIES
--- ==============================================================================
+
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
@@ -386,7 +448,6 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     local TStroke = Instance.new("UIStroke", TabBtn)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
-    TStroke.Thickness = 1
     TStroke.Enabled = Order == 1
     
     TabBtn.MouseButton1Click:Connect(function()
@@ -414,62 +475,10 @@ CreatePremiumTab("Visuals", "👁", 4, VisualPage)
 CreatePremiumTab("Misc", "⚙", 5, MiscPage)
 CreatePremiumTab("Credits", "👑", 6, CreditsPage)
 
-local function MakeDraggable(UIElement, DragHandle)
-    local dragToggle = nil
-    local dragStart = nil
-    local startPos = nil
-    DragHandle.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = UIElement.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if dragToggle then
-                local delta = input.Position - dragStart
-                UIElement.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end
-    end)
-end
-
-MakeDraggable(MainFrame, TopNavBar)
-MakeDraggable(ToggleButton, ToggleButton)
-MakeDraggable(MobileWidget, MobileWidget)
-
-MobileWidget.MouseButton1Click:Connect(function()
-    Config.Aimbot = not Config.Aimbot
-    if Config.Aimbot then
-        MobileWidget.BackgroundColor3 = Color3.fromRGB(45, 120, 75)
-        MobileWidget.Text = "AIM\nON"
-    else
-        MobileWidget.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        MobileWidget.Text = "AIM\nOFF"
-    end
-end)
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Config.MenuVisible = not Config.MenuVisible
-    MainFrame.Visible = Config.MenuVisible
-end)
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Config.MenuKeybind then
-        Config.MenuVisible = not Config.MenuVisible
-        MainFrame.Visible = Config.MenuVisible
-    end
-end)
-
 local function AddPremiumToggle(Page, LabelText, Key, Callback)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
     TFrame.BackgroundTransparency = 0.4
-    TFrame.Size = UDim2.new(0, 275, 0, 42)
     Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
     
@@ -502,21 +511,17 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback)
 
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
-        TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-        }):Play()
-        TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
-        }):Play()
+        TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
+        TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)}):Play()
         if Callback then Callback(Config[Key]) end
     end)
 end
-
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
     SFrame.BackgroundTransparency = 0.4
-    SFrame.Size = UDim2.new(0, 275, 0, 42)
     Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", SFrame).Color = Color3.fromRGB(35, 37, 40)
 
@@ -582,229 +587,154 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
--- ---[còn tiếp]---
--- ---[tiếp tục]---
--- ==============================================================================
--- 6. DESIGN SYSTEM INTERACTION & SLIDER FACTORIES
--- ==============================================================================
-local function CreatePremiumTab(Name, IconText, Order, TargetPage)
-    local TabBtn = Instance.new("TextButton", TabMenuContainer)
-    TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
-    TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 88, 0, 30)
-    TabBtn.Font = Enum.Font.GothamBold
-    TabBtn.LayoutOrder = Order
-    TabBtn.Text = IconText .. " " .. Name
-    TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 143, 148)
-    TabBtn.TextSize = 11
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-    local TStroke = Instance.new("UIStroke", TabBtn)
-    TStroke.Color = Color3.fromRGB(55, 57, 61)
-    TStroke.Thickness = 1
-    TStroke.Enabled = Order == 1
+
+-- TÍNH NĂNG MỚI: NÚT BẤM THÔNG THƯỜNG (DÙNG ĐỂ UNINJECT)
+local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
+    local BFrame = Instance.new("Frame", Page)
+    BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    BFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", BFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", BFrame).Color = Color3.fromRGB(35, 37, 40)
     
-    TabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
-        for _, btn in pairs(TabMenuContainer:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                btn.BackgroundTransparency = 1
-                btn.TextColor3 = Color3.fromRGB(140, 143, 148)
-                btn.UIStroke.Enabled = false
-            end
-        end
-        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37)
-        TabBtn.BackgroundTransparency = 0
-        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TStroke.Enabled = true
-        TargetPage.Visible = true
-    end)
-end
-
-CreatePremiumTab("Combat", "⚔", 1, CombatPage)
-CreatePremiumTab("Player", "👤", 2, PlayerPage)
-CreatePremiumTab("Movement", "🏃", 3, MovementPage)
-CreatePremiumTab("Visuals", "👁", 4, VisualPage)
-CreatePremiumTab("Misc", "⚙", 5, MiscPage)
-CreatePremiumTab("Credits", "👑", 6, CreditsPage)
-
-local function MakeDraggable(UIElement, DragHandle)
-    local dragToggle = nil
-    local dragStart = nil
-    local startPos = nil
-    DragHandle.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = UIElement.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if dragToggle then
-                local delta = input.Position - dragStart
-                UIElement.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end
-    end)
-end
-
-MakeDraggable(MainFrame, TopNavBar)
-MakeDraggable(ToggleButton, ToggleButton)
-MakeDraggable(MobileWidget, MobileWidget)
-
-MobileWidget.MouseButton1Click:Connect(function()
-    Config.Aimbot = not Config.Aimbot
-    if Config.Aimbot then
-        MobileWidget.BackgroundColor3 = Color3.fromRGB(45, 120, 75)
-        MobileWidget.Text = "AIM\nON"
-    else
-        MobileWidget.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        MobileWidget.Text = "AIM\nOFF"
-    end
-end)
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Config.MenuVisible = not Config.MenuVisible
-    MainFrame.Visible = Config.MenuVisible
-end)
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Config.MenuKeybind then
-        Config.MenuVisible = not Config.MenuVisible
-        MainFrame.Visible = Config.MenuVisible
-    end
-end)
-
-local function AddPremiumToggle(Page, LabelText, Key, Callback)
-    local TFrame = Instance.new("Frame", Page)
-    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    TFrame.BackgroundTransparency = 0.4
-    TFrame.Size = UDim2.new(0, 275, 0, 42)
-    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
-    
-    local Lbl = Instance.new("TextLabel", TFrame)
+    local Lbl = Instance.new("TextLabel", BFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(1, -60, 1, 0)
+    Lbl.Size = UDim2.new(0, 140, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = LabelText
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
     Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local SwitchBg = Instance.new("Frame", TFrame)
-    SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
-    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8)
-    SwitchBg.Size = UDim2.new(0, 32, 0, 16)
-    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
-
-    local Ball = Instance.new("Frame", SwitchBg)
-    Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    Ball.Size = UDim2.new(0, 12, 0, 12)
-    Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
-
-    local Btn = Instance.new("TextButton", TFrame)
-    Btn.BackgroundTransparency = 1
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.Text = ""
-
-    Btn.MouseButton1Click:Connect(function()
-        Config[Key] = not Config[Key]
-        TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-        }):Play()
-        TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
-        }):Play()
-        if Callback then Callback(Config[Key]) end
+    local ActionBtn = Instance.new("TextButton", BFrame)
+    ActionBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    ActionBtn.Position = UDim2.new(1, -115, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 105, 0, 24)
+    ActionBtn.Font = Enum.Font.GothamBold
+    ActionBtn.Text = ButtonText
+    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ActionBtn.TextSize = 11
+    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
+    
+    ActionBtn.MouseButton1Click:Connect(function()
+        if Callback then Callback() end
     end)
 end
 
-local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
-    local SFrame = Instance.new("Frame", Page)
-    SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    SFrame.BackgroundTransparency = 0.4
-    SFrame.Size = UDim2.new(0, 275, 0, 42)
-    Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", SFrame).Color = Color3.fromRGB(35, 37, 40)
+local function AddHitboxSelector(Page)
+    local HFrame = Instance.new("Frame", Page)
+    HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    HFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", HFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", HFrame).Color = Color3.fromRGB(35, 37, 40)
 
-    local Lbl = Instance.new("TextLabel", SFrame)
+    local Lbl = Instance.new("TextLabel", HFrame)
     Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 4)
-    Lbl.Size = UDim2.new(1, -70, 0, 16)
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(0, 140, 1, 0)
     Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText
-    Lbl.TextColor3 = Color3.fromRGB(180, 183, 188)
-    Lbl.TextSize = 11
+    Lbl.Text = "Aimbot Target Hitbox"
+    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
+    Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local ValTxt = Instance.new("TextLabel", SFrame)
-    ValTxt.BackgroundTransparency = 1
-    ValTxt.Position = UDim2.new(1, -65, 0, 4)
-    ValTxt.Size = UDim2.new(0, 55, 0, 16)
-    ValTxt.Font = Enum.Font.GothamBold
-    ValTxt.Text = tostring(Config[Key])
-    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ValTxt.TextSize = 11
-    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
+    local HitboxBtn = Instance.new("TextButton", HFrame)
+    HitboxBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
+    HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12)
+    HitboxBtn.Size = UDim2.new(0, 105, 0, 24)
+    HitboxBtn.Font = Enum.Font.GothamBold
+    HitboxBtn.Text = Config.TargetPart == "Head" and "HEAD" or "TORSO"
+    HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    HitboxBtn.TextSize = 11
+    Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65)
 
-    local Bar = Instance.new("Frame", SFrame)
-    Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50)
-    Bar.BorderSizePixel = 0
-    Bar.Position = UDim2.new(0, 10, 0, 26)
-    Bar.Size = UDim2.new(1, -20, 0, 3)
-    Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-
-    local Fill = Instance.new("Frame", Bar)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Fill.BorderSizePixel = 0
-    Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
-    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
-
-    local SliderBall = Instance.new("Frame", Fill)
-    SliderBall.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
-    SliderBall.Size = UDim2.new(0, 8, 0, 8)
-    Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
-
-    local Btn = Instance.new("TextButton", Bar)
-    Btn.BackgroundTransparency = 1
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.Text = ""
-
-    local Dragging = false
-    Btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = true end
-    end)
-    Btn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local ratio = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-            local val = math.floor(Min + (Max - Min) * ratio)
-            Fill.Size = UDim2.new(ratio, 0, 1, 0)
-            ValTxt.Text = tostring(val)
-            Config[Key] = val
-            if Callback then Callback(val) end
+    HitboxBtn.MouseButton1Click:Connect(function()
+        if Config.TargetPart == "Head" then
+            Config.TargetPart = "HumanoidRootPart"
+            HitboxBtn.Text = "TORSO"
+        else
+            Config.TargetPart = "Head"
+            HitboxBtn.Text = "HEAD"
         end
     end)
 end
 -- ---[còn tiếp]---
 -- ---[tiếp tục]---
+local function AddTracerModeSelector(Page)
+    local MFrame = Instance.new("Frame", Page)
+    MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    MFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(35, 37, 40)
+
+    local Lbl = Instance.new("TextLabel", MFrame)
+    Lbl.BackgroundTransparency = 1
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Font = Enum.Font.Gotham
+    Lbl.Text = "Tracer Origin Mode"
+    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
+    Lbl.TextSize = 12
+    Lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local ModeBtn = Instance.new("TextButton", MFrame)
+    ModeBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
+    ModeBtn.Position = UDim2.new(1, -115, 0.5, -12)
+    ModeBtn.Size = UDim2.new(0, 105, 0, 24)
+    ModeBtn.Font = Enum.Font.GothamBold
+    ModeBtn.Text = Config.TracerMode:upper()
+    ModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ModeBtn.TextSize = 11
+    Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
+
+    ModeBtn.MouseButton1Click:Connect(function()
+        if Config.TracerMode == "Bottom" then
+            Config.TracerMode = "Center"
+        else
+            Config.TracerMode = "Bottom"
+        end
+        ModeBtn.Text = Config.TracerMode:upper()
+    end)
+end
+
+local function AddPremiumCreditBox(Page, Title, Description)
+    local CFrame = Instance.new("Frame", Page)
+    CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30)
+    CFrame.BackgroundTransparency = 0.3
+    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(50, 52, 56)
+
+    local TitleLbl = Instance.new("TextLabel", CFrame)
+    TitleLbl.BackgroundTransparency = 1
+    TitleLbl.Position = UDim2.new(0, 10, 0, 4)
+    TitleLbl.Size = UDim2.new(1, -20, 0, 16)
+    TitleLbl.Font = Enum.Font.GothamBold
+    TitleLbl.Text = Title
+    TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLbl.TextSize = 12
+    TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local DescLbl = Instance.new("TextLabel", CFrame)
+    DescLbl.BackgroundTransparency = 1
+    DescLbl.Position = UDim2.new(0, 10, 0, 20)
+    DescLbl.Size = UDim2.new(1, -20, 0, 16)
+    DescLbl.Font = Enum.Font.Gotham
+    DescLbl.Text = Description
+    DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180)
+    DescLbl.TextSize = 11
+    DescLbl.TextXAlignment = Enum.TextXAlignment.Left
+end
+
 -- ==============================================================================
--- 7. FUNCTION REGISTER PIPELINE & RENDERING SETUP
+-- 7. FUNCTION REGISTER PIPELINE
 -- ==============================================================================
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
 AddPremiumSlider(CombatPage, "Aimbot Smoothness", 0, 10, "Smoothness")
+AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot (Auto Click Địch)", "Triggerbot")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
 
@@ -829,6 +759,7 @@ AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
+AddTracerModeSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
@@ -838,12 +769,31 @@ AddPremiumToggle(MiscPage, "Crosshair Center Dot (White)", "CrosshairDot")
 AddPremiumToggle(MiscPage, "Show Mobile Fast Toggle Button", "MobileButton", function(state)
     MobileWidget.Visible = state
 end)
-
--- ĐĂNG KÝ TOGGLE BẬT TẮT HÌNH NỀN HẤP DẪN THEO YÊU CẦU CỦA @hihihaha
 AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state)
     CustomBackgroundImage.Visible = state
 end)
 
+-- NÚT XÓA HOÀN TOÀN SCRIPT NẰM GỌN GÀNG TRONG MISC ĐỂ KHÔNG BỊ BẤM NHẦM Ở GÓC MENU
+AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
+    MasterLoop:Disconnect()
+    pcall(function() FOV_Drawing:Remove() end)
+    pcall(function() Dot_Drawing:Remove() end)
+    for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
+    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
+    Lighting.Ambient = Config.StoredAmbient
+    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
+    ScreenGui:Destroy()
+end)
+
+AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.2")
+AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
+AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
+-- ---[còn tiếp]---
+-- ---[tiếp tục]---
+-- ==============================================================================
+-- 8. CORE ESP RENDERING PIPELINE
+-- ==============================================================================
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
@@ -886,12 +836,11 @@ local function MonitorPlayer(Player)
     end)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
--- ---[còn tiếp]---
--- ---[tiếp tục]---
+
 -- ==============================================================================
--- 8. RUNSERVICE TICK ENGINE & DESTRUCTION METHOD HOOKS
+-- 9. RUNSERVICE TICK ENGINE
 -- ==============================================================================
-local MasterLoop = RunService.RenderStepped:Connect(function()
+MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
@@ -1002,7 +951,6 @@ local MasterLoop = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- SYSTEM HOOKS
 Players.PlayerAdded:Connect(function(Player)
     CreateTracerObject(Player)
     MonitorPlayer(Player)
@@ -1016,21 +964,10 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
-CloseBtn.MouseButton1Click:Connect(function()
-    MasterLoop:Disconnect()
-    pcall(function() FOV_Drawing:Remove() end)
-    pcall(function() Dot_Drawing:Remove() end)
-    for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
-    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
-    Lighting.Ambient = Config.StoredAmbient
-    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
-    ScreenGui:Destroy()
-end)
-
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT CUSTOM BACKGROUND",
-        Text = "Đã tích hợp hình nền Custom Asset 118670919014080 và công tắc bật tắt thành công!",
+        Title = "WANGCAOS CLIENT PREMIUM",
+        Text = "Bản vá lỗi kéo thả UI & Nút đóng đã xong! Script này được thực hiện bởi Wang!",
         Duration = 7
     })
 end)

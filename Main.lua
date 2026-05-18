@@ -1,5 +1,6 @@
+
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.3 - MULTI-DEVICE BIND SYSTEM & ADVANCED FOV
+-- WANGCAOS PREMIUM CLIENT V5.4 - INDEPENDENT MOBILE SHORTCUTS & AUTO-OFF SYSTEM
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -17,30 +18,30 @@ local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION
+-- 1. MASTER CONFIGURATION (ALL FUNCTIONS DEFAULT OFF)
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
     MenuKeybind = Enum.KeyCode.LeftBracket,
     
-    Aimbot = false,
-    AimbotKeybind = Enum.KeyCode.E, -- Phím bật/tắt Aimbot trên PC
+    Aimbot = false, -- Tắt từ đầu
+    AimbotKeybind = Enum.KeyCode.E,
     TeamCheck = true,
     WallCheck = true,
     Smoothness = 5,
     TargetPart = "Head",
     
-    Triggerbot = false,
-    TriggerbotKeybind = Enum.KeyCode.T, -- Phím bật/tắt Triggerbot trên PC
+    Triggerbot = false, -- Tắt từ đầu
+    TriggerbotKeybind = Enum.KeyCode.T,
     TriggerWallCheck = true,
     
-    Spinbot = false,
-    SpinbotKeybind = Enum.KeyCode.K, -- Phím bật/tắt Spinbot trên PC
+    Spinbot = false, -- Tắt từ đầu
+    SpinbotKeybind = Enum.KeyCode.K,
     SpinSpeed = 25,
     
-    EspMaster = false,
-    EspMasterKeybind = Enum.KeyCode.O, -- Phím bật/tắt ESP trên PC
-    FovCircle = false,
+    EspMaster = false, -- Tắt từ đầu
+    EspMasterKeybind = Enum.KeyCode.O,
+    FovCircle = false, -- Tắt từ đầu
     FovRadius = 120,
     FovThickness = 1.5,
     FovSides = 64,
@@ -48,22 +49,22 @@ local Config = {
     FovTransparency = 0.8,
     FovFilled = false,
     
-    CrosshairDot = true,
-    EspBox = false,
-    EspTracer = false,
+    CrosshairDot = false, -- Tắt từ đầu
+    EspBox = false, -- Tắt từ đầu
+    EspTracer = false, -- Tắt từ đầu
     TracerMode = "Bottom",
     
-    EspName = false,
+    EspName = false, -- Tắt từ đầu
     EspTransparency = 80,
     MaxDistance = 5000,
     
-    SpeedToggle = false,
-    SpeedKeybind = Enum.KeyCode.Q, -- Phím bật/tắt Speed trên PC
+    SpeedToggle = false, -- Tắt từ đầu
+    SpeedKeybind = Enum.KeyCode.Q,
     WalkSpeed = 16,
-    JumpToggle = false,
-    JumpKeybind = Enum.KeyCode.G, -- Phím bật/tắt Jump trên PC
+    JumpToggle = false, -- Tắt từ đầu
+    JumpKeybind = Enum.KeyCode.G,
     JumpPower = 50,
-    FullBright = false,
+    FullBright = false, -- Tắt từ đầu
     
     MobileButton = true,
     CustomBackground = true,
@@ -246,7 +247,7 @@ local function PerformTriggerbotClick()
     end
 end
 -- ==============================================================================
--- 5. GUI CONSTRUCTION & NEW DRAG LOGIC
+-- 5. GUI CONSTRUCTION & INDEPENDENT DRAG SHORTCUTS LOGIC
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -254,45 +255,73 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
--- Container chứa các nút bấm nhanh dành riêng cho Mobile
-local MobileContainer = Instance.new("Frame")
-MobileContainer.Name = "MobileShortcutContainer"
-MobileContainer.Parent = ScreenGui
-MobileContainer.BackgroundTransparency = 1
-MobileContainer.Position = UDim2.new(0.75, 0, 0.25, 0)
-MobileContainer.Size = UDim2.new(0, 70, 0, 400)
-MobileContainer.Visible = (Config.MobileButton and IsMobile)
-
-local MobileLayout = Instance.new("UIListLayout", MobileContainer)
-MobileLayout.FillDirection = Enum.FillDirection.Vertical
-MobileLayout.Padding = UDim.new(0, 10)
-MobileLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
 local GlobalMobileButtons = {}
+local GlobalSyncToggles = {}
 
-local function CreateMobileShortcut(Name, TextOn, TextOff, Key, DefaultColor)
-    local Btn = Instance.new("TextButton")
-    Btn.Name = "Mobile_" .. Key
-    Btn.Parent = MobileContainer
-    Btn.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or DefaultColor
-    Btn.BackgroundTransparency = 0.2
-    Btn.Size = UDim2.new(0, 60, 0, 60)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.Text = Config[Key] and TextOn or TextOff
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.TextSize = 10
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", Btn).Color = Color3.fromRGB(255, 255, 255)
-    Instance.new("UIStroke", Btn).Thickness = 1.5
-    
-    GlobalMobileButtons[Key] = Btn
-    return Btn
+-- Hàm xử lý kéo thả độc lập cho bất kỳ UI nào (MainFrame hoặc các nút lẻ)
+local function MakeDraggable(UIElement, DragHandle)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    DragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = UIElement.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    DragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            UIElement.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end)
 end
 
-local MobAim = CreateMobileShortcut("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", Color3.fromRGB(255, 50, 50))
-local MobTrig = CreateMobileShortcut("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", Color3.fromRGB(230, 125, 30))
-local MobEsp = CreateMobileShortcut("EspMaster", "ESP\nON", "ESP\nOFF", "EspMaster", Color3.fromRGB(30, 140, 230))
-local MobSpeed = CreateMobileShortcut("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", Color3.fromRGB(140, 30, 230))
+-- Khởi tạo các nút Mobile riêng biệt (Từng nút tự di chuyển độc lập, Không dùng chung Container cũ)
+local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, DefaultColor, InitPos)
+    local ShortcutBtn = Instance.new("TextButton")
+    ShortcutBtn.Name = "IndependentMobile_" .. Key
+    ShortcutBtn.Parent = ScreenGui
+    ShortcutBtn.BackgroundColor3 = DefaultColor
+    ShortcutBtn.BackgroundTransparency = 0.2
+    ShortcutBtn.Position = InitPos
+    ShortcutBtn.Size = UDim2.new(0, 60, 0, 60)
+    ShortcutBtn.Font = Enum.Font.GothamBold
+    ShortcutBtn.Text = TextOff
+    ShortcutBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ShortcutBtn.TextSize = 10
+    ShortcutBtn.Visible = (Config.MobileButton and IsMobile)
+    
+    Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
+    local Stroke = Instance.new("UIStroke", ShortcutBtn)
+    Stroke.Color = Color3.fromRGB(255, 255, 255)
+    Stroke.Thickness = 1.5
+    
+    -- Kích hoạt khả năng kéo thả độc lập cho chính nút này
+    MakeDraggable(ShortcutBtn, ShortcutBtn)
+    
+    GlobalMobileButtons[Key] = ShortcutBtn
+    return ShortcutBtn
+end
+
+-- Tạo 3 nút nhanh hoạt động hoàn toàn riêng biệt trên Mobile (Đã loại bỏ nút ESP theo lệnh đại ca)
+local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", Color3.fromRGB(255, 50, 50), UDim2.new(0.8, 0, 0.2, 0))
+local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", Color3.fromRGB(230, 125, 30), UDim2.new(0.8, 0, 0.32, 0))
+local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", Color3.fromRGB(140, 30, 230), UDim2.new(0.8, 0, 0.44, 0))
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -343,7 +372,6 @@ TopNavBar.Position = UDim2.new(0, 10, 0, 10)
 TopNavBar.Size = UDim2.new(1, -20, 0, 42)
 TopNavBar.ZIndex = 2
 Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
-
 local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Name = "TabMenuContainer"
 TabMenuContainer.Parent = TopNavBar
@@ -368,41 +396,8 @@ CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
 CloseBtn.TextSize = 22
 
-local function MakeDraggable(UIElement, DragHandle)
-    local dragging = false
-    local dragInput, mousePos, framePos
-
-    DragHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            mousePos = input.Position
-            framePos = UIElement.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    DragHandle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - mousePos
-            UIElement.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
 MakeDraggable(MainFrame, TopNavBar)
 MakeDraggable(ToggleButton, ToggleButton)
-MakeDraggable(MobileContainer, MobileContainer)
 
 CloseBtn.MouseButton1Click:Connect(function()
     Config.MenuVisible = false
@@ -413,6 +408,7 @@ ToggleButton.MouseButton1Click:Connect(function()
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
+
 -- ==============================================================================
 -- 6. DESIGN SYSTEM TABS & INTERACTIVE UI COMPONENTS
 -- ==============================================================================
@@ -429,8 +425,6 @@ local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
 local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
-
-local GlobalSyncToggles = {}
 
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
@@ -487,7 +481,6 @@ CreatePremiumTab("Movement", "🏃", 3, MovementPage)
 CreatePremiumTab("Visuals", "👁", 4, VisualPage)
 CreatePremiumTab("Misc", "⚙", 5, MiscPage)
 CreatePremiumTab("Credits", "👑", 6, CreditsPage)
-
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -504,7 +497,6 @@ local function UpdateToggleVisual(Key)
         MBtn.BackgroundColor3 = state and Color3.fromRGB(45, 120, 75) or TargetData.DefMobColor
         if Key == "Aimbot" then MBtn.Text = state and "AIM\nON" or "AIM\nOFF"
         elseif Key == "Triggerbot" then MBtn.Text = state and "TRIG\nON" or "TRIG\nOFF"
-        elseif Key == "EspMaster" then MBtn.Text = state and "ESP\nON" or "ESP\nOFF"
         elseif Key == "SpeedToggle" then MBtn.Text = state and "SPD\nON" or "SPD\nOFF"
         end
     end
@@ -552,6 +544,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor)
         if Callback then Callback(Config[Key]) end
     end)
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -621,7 +614,6 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
-
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -692,6 +684,7 @@ local function AddHitboxSelector(Page)
         end
     end)
 end
+
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -759,7 +752,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
 end
 
 -- ==============================================================================
--- 7. FUNCTION REGISTER PIPELINE
+-- 7. FUNCTION REGISTER PIPELINE (REGISTER ALL DEFAULTS)
 -- ==============================================================================
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock [E]", "Aimbot", nil, Color3.fromRGB(255, 50, 50))
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
@@ -798,7 +791,9 @@ AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
 AddPremiumToggle(MiscPage, "Show Mobile Fast Toggles", "MobileButton", function(state)
-    MobileContainer.Visible = (state and IsMobile)
+    for _, btn in pairs(GlobalMobileButtons) do
+        btn.Visible = (state and IsMobile)
+    end
 end)
 AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state)
     CustomBackgroundImage.Visible = state
@@ -816,10 +811,10 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.3 Cross-Platform")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.4 Cross-Platform")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
--- CONNECT MOBILE TOGGLE BUTTON ACTIONS
+-- CONNECT INDEPENDENT MOBILE SHORTCUTS CLICK EVENT
 local function RegisterMobileClick(Btn, Key)
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
@@ -829,10 +824,9 @@ end
 
 RegisterMobileClick(MobAim, "Aimbot")
 RegisterMobileClick(MobTrig, "Triggerbot")
-RegisterMobileClick(MobEsp, "EspMaster")
 RegisterMobileClick(MobSpeed, "SpeedToggle")
 
--- PC KEYBIND LISTENER SYSTEM
+-- PC KEYBIND LISTENER SYSTEM (KEYBOARD PRESS INTERACTION)
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
@@ -1037,10 +1031,15 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
+-- Thực hiện cập nhật giao diện trạng thái tắt ban đầu cho toàn bộ các nút bấm
+for K, _ in pairs(GlobalSyncToggles) do
+    UpdateToggleVisual(K)
+end
+
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.3",
-        Text = "Hệ thống Phím tắt PC & Nút bấm Mobile đa nền tảng đã sẵn sàng!",
+        Title = "WANGCAOS CLIENT V5.4",
+        Text = "Đã tắt tất cả chức năng mặc định. Các nút Mobile đã tách rời độc lập!",
         Duration = 7
     })
 end)

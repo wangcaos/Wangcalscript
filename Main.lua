@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.7 - DYNAMIC KEYBIND SYSTEM & AIMBOT OVERHAUL
+-- WANGCAOS PREMIUM CLIENT V5.8 - SMART KEYBIND TIMEOUT & MOBILE FIX
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -17,14 +17,14 @@ local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION WITH CUSTOM KEYBINDS (@nga REQUEST)
+-- 1. MASTER CONFIGURATION
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
     MenuKeybind = Enum.KeyCode.LeftBracket,
     
     Aimbot = false,
-    AimbotKeybind = Enum.KeyCode.E, -- Có thể đổi trực tiếp trên UI
+    AimbotKeybind = Enum.KeyCode.E,
     TeamCheck = true,
     WallCheck = true,
     Smoothness = 5,
@@ -154,7 +154,7 @@ local function CleanCharacterVisuals(Character)
     if OldTag then OldTag:Destroy() end
 end
 -- ==============================================================================
--- 4. IMPROVED TARGETING ENGINE & AUTO FARM MECHANICS (@nga UPGRADE)
+-- 4. TARGETING ENGINE & AUTO FARM MECHANICS
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -298,6 +298,15 @@ local GlobalMobileButtons = {}
 local GlobalSyncToggles = {}
 local GlobalKeybindButtons = {}
 
+-- KHỞI TẠO NÚT TÀNG HÌNH TOÀN MÀN HÌNH ĐỂ HỦY CHỜ KEYBIND KHI BẤM RA NGOÀI
+local CancelOverlay = Instance.new("TextButton", ScreenGui)
+CancelOverlay.Name = "GlobalCancelOverlay"
+CancelOverlay.Size = UDim2.new(1, 0, 1, 0)
+CancelOverlay.BackgroundTransparency = 1
+CancelOverlay.Text = ""
+CancelOverlay.Visible = false
+CancelOverlay.ZIndex = 9999
+
 local function MakeDraggable(UIElement, DragHandle)
     local dragging = false
     local dragInput, mousePos, framePos
@@ -356,7 +365,6 @@ local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "A
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
 local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
-
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui
@@ -406,6 +414,7 @@ TopNavBar.Position = UDim2.new(0, 10, 0, 10)
 TopNavBar.Size = UDim2.new(1, -20, 0, 42)
 TopNavBar.ZIndex = 2
 Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
+
 local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Name = "TabMenuContainer"
 TabMenuContainer.Parent = TopNavBar
@@ -442,10 +451,6 @@ ToggleButton.MouseButton1Click:Connect(function()
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
-
--- ==============================================================================
--- 6. DESIGN SYSTEM TABS & INTERACTIVE UI CONTAINERS
--- ==============================================================================
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -515,6 +520,7 @@ CreatePremiumTab("Movement", "🏃", 3, MovementPage)
 CreatePremiumTab("Visuals", "👁", 4, VisualPage)
 CreatePremiumTab("Misc", "⚙", 5, MiscPage)
 CreatePremiumTab("Credits", "👑", 6, CreditsPage)
+
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -536,8 +542,7 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
-
--- TÍCH HỢP HỆ THỐNG CUSTOM KEYBIND TRỰC TIẾP TRÊN TOGGLE (@nga REQUEST)
+-- HỆ THỐNG CUSTOM KEYBIND ĐƯỢC FIX LỖI ĐƠ TRÊN ĐIỆN THOẠI (TIMEOUT + CLICK OUTSIDE)
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -593,30 +598,54 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60)
 
         local Listening = false
+        local ListenConnection
+        local CurrentSessionID = 0
+
+        local function EndListening(NewKey)
+            Listening = false
+            CancelOverlay.Visible = false
+            if ListenConnection then ListenConnection:Disconnect() end
+            if NewKey then
+                Config[BindKey] = NewKey
+                BindBtn.Text = NewKey.Name:upper()
+            else
+                BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE"
+            end
+            BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
+        end
+
         BindBtn.MouseButton1Click:Connect(function()
+            if Listening then return end
             Listening = true
+            CancelOverlay.Visible = true
             BindBtn.Text = "..."
             BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
+            
+            CurrentSessionID = math.random()
+            local ThisSession = CurrentSessionID
+
+            -- TỰ ĐỘNG HỦY SAU 5 GIÂY NẾU KHÔNG CHẠM HOẶC ẤN PHÍM (GIẢI PHÁP CHO MOBILE)
+            task.delay(5, function()
+                if Listening and CurrentSessionID == ThisSession then
+                    EndListening(nil)
+                end
+            end)
+
+            ListenConnection = UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    EndListening(input.KeyCode)
+                end
+            end)
         end)
 
-        UserInputService.InputBegan:Connect(function(input)
+        -- KHI BẤM RA NGOÀI MÀN HÌNH (CANCEL OVERLAY CLICKED) -> HỦY TRẠNG THÁI CHỜ LẬP TỨC
+        CancelOverlay.MouseButton1Click:Connect(function()
             if Listening then
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    Listening = false
-                    Config[BindKey] = input.KeyCode
-                    BindBtn.Text = input.KeyCode.Name:upper()
-                    BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
-                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                    Listening = false
-                    Config[BindKey] = Enum.KeyCode.Unknown -- Hoặc cơ chế riêng nếu cần gán chuột
-                    BindBtn.Text = "MB2"
-                    BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
-                end
+                EndListening(nil)
             end
         end)
     end
 end
-
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -687,6 +716,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
+
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -718,7 +748,6 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
         if Callback then Callback() end
     end)
 end
-
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -820,9 +849,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
--- ==============================================================================
--- 7. FUNCTION REGISTER PIPELINE
--- ==============================================================================
+-- PIPELINE REGISTER
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -862,12 +889,10 @@ AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
 
--- QUẢN LÝ ẨN/HIỆN TỪNG NÚT MOBILE ĐỂ TRÁNH CHẬT MÀN HÌNH CHỊ DÂU
 AddPremiumToggle(MiscPage, "Show Mobile Aim Button", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Show Mobile Trigger Button", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Show Mobile Speed Button", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Show Mobile Farm Button", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
-
 AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
 
 AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
@@ -883,9 +908,8 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.7 Dynamic Keybinds")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.8 Smart Fix")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
--- CONNECT INDEPENDENT MOBILE SHORTCUTS CLICK EVENT
 local function RegisterMobileClick(Btn, Key)
     Btn.MouseButton1Click:Connect(function()
         Config[Key] = not Config[Key]
@@ -898,7 +922,6 @@ RegisterMobileClick(MobTrig, "Triggerbot")
 RegisterMobileClick(MobSpeed, "SpeedToggle")
 RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 
--- PC KEYBIND LISTENER SYSTEM (HỆ THỐNG PHÍM TẮT ĐỘNG KHÔNG LO TRÙNG PHÍM GAME)
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
@@ -926,9 +949,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- ==============================================================================
--- 8. ESP RENDERING MANAGEMENT
--- ==============================================================================
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
@@ -970,9 +990,6 @@ local function MonitorPlayer(Player)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
 
--- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE (OPTIMIZED FOR NGA LOCK SPEED)
--- ==============================================================================
 MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -1011,7 +1028,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     task.spawn(ProcessAutoFarmPlayer)
     if Config.Triggerbot then task.spawn(PerformTriggerbotClick) end
 
-    -- AIMBOT LOCK ĐÃ ĐƯỢC TỐI ƯU HÓA TỐC ĐỘ KHÓA CHO CHỊ DÂU @NGA
     if Config.Aimbot then
         local Target = GetClosestPlayerToCrosshair()
         if Target then
@@ -1063,11 +1079,11 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.7",
-        Text = "Đã thêm Custom Keybind động chống trùng phím & Nâng cấp mượt mà Aimbot Lock!",
+        Title = "WANGCAOS CLIENT V5.8",
+        Text = "Đã fix triệt để lỗi đơ nút Keybind trên Điện thoại! Bấm ra ngoài hoặc đợi 5s để hủy.",
         Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - UPGRADED BY BE FOR DAI CA WANG & SISTER NGA (2026)
+-- END OF SCRIPT - FIXED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

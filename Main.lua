@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.1 - FIXED TOGGLE SENSITIVITY & TOUCH RELEASE
+-- WANGCAOS PREMIUM CLIENT V6.8 - ADVANCED TRANSPARENT/NON-COLLIDE WALL BYPASS
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -59,6 +59,9 @@ local Config = {
     EspName = false,
     EspTransparency = 80,
     MaxDistance = 5000,
+    
+    EspSkeleton = false,
+    EspHealthBar = false,
     
     SpeedToggle = false,
     SpeedKeybind = Enum.KeyCode.Q,
@@ -125,36 +128,23 @@ Dot_Drawing.Visible = false
 
 local Tracer_Cache = {}
 local Character_Cache = {}
+local Skeleton_Cache = {}
 
-local function CreateTracerObject(Player)
-    if Tracer_Cache[Player] then return end
-    local Line = Drawing.new("Line")
-    Line.Thickness = 1.2
-    Line.Color = Color3.fromRGB(255, 255, 255)
-    Line.Transparency = 1
-    Line.Visible = false
-    Tracer_Cache[Player] = Line
-end
+local SkeletonPairs = {
+    {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+}
 
-local function ClearTracerObject(Player)
-    if Tracer_Cache[Player] then
-        pcall(function()
-            Tracer_Cache[Player].Visible = false
-            Tracer_Cache[Player]:Remove()
-        end)
-        Tracer_Cache[Player] = nil
-    end
-end
-
-local function CleanCharacterVisuals(Character)
-    if not Character then return end
-    local OldBox = Character:FindFirstChild("BéBoxFill", true)
-    if OldBox then OldBox:Destroy() end
-    local OldTag = Character:FindFirstChild("BéInfoTag", true)
-    if OldTag then OldTag:Destroy() end
-end
+local SkeletonPairsR6 = {
+    {"Head", "Torso"},
+    {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+    {"Torso", "Left Leg"}, {"Torso", "Right Leg"}
+}
 -- ==============================================================================
--- 4. TARGETING ENGINE & BACK-TELEPORT AUTO FARM MECHANICS
+-- 4. TARGETING ENGINE & INTELLIGENT WALL PENETRATION DETECTION
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -174,26 +164,101 @@ local function IsTeammate(Player)
     return false
 end
 
-local function CheckWallOcclusion(TargetPart, Character)
-    if not Config.WallCheck then return true end
-    local Origin = Camera.CFrame.Position
-    local Direction = TargetPart.Position - Origin
-    local Params = RaycastParams.new()
-    Params.FilterType = Enum.RaycastFilterType.Exclude
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
-    local Result = workspace:Raycast(Origin, Direction, Params)
-    return Result == nil
+-- HÀM THÔNG MINH: KIỂM TRA XEM VẬT CẢN CÓ PHẢI LÀ TƯỜNG XUYÊN HOẶC TÀNG HÌNH KHÔNG
+local function IsInstancePenetratable(InstancePart)
+    if not InstancePart or not InstancePart:IsA("BasePart") then return false end
+    
+    -- Kiểm tra 1: Nếu tường tắt CanCollide (Cho phép đi xuyên qua)
+    if InstancePart.CanCollide == false then
+        return true
+    end
+    
+    -- Kiểm tra 2: Nếu tường trong suốt hoặc gần như tàng hình (Transparency >= 0.75)
+    if InstancePart.Transparency >= 0.75 then
+        return true
+    end
+    
+    -- Kiểm tra 3: Nếu là khiên năng lượng hoặc cửa kính được đặt tên đặc trưng
+    local LowerName = string.lower(InstancePart.Name)
+    if string.find(LowerName, "glass") or string.find(LowerName, "forcefield") or string.find(LowerName, "transparent") then
+        return true
+    end
+    
+    return false
 end
 
+-- THUẬT TOÁN RAYCAST RAY-BY-RAY ĐỂ BỎ QUA TƯỜNG ĐI XUYÊN VÀ TÀNG HÌNH THEO Ý ĐẠI CA
+local function CheckWallOcclusion(TargetPart, Character)
+    if not Config.WallCheck then return true end
+    
+    local Origin = Camera.CFrame.Position
+    local Direction = TargetPart.Position - Origin
+    local IgnoreList = {LocalPlayer.Character, Character, Camera}
+    
+    -- Vòng lặp bắn tia liên tục cho đến khi gặp tường đặc thực sự hoặc tới mục tiêu
+    while true do
+        local Params = RaycastParams.new()
+        Params.FilterType = Enum.RaycastFilterType.Exclude
+        Params.FilterDescendantsInstances = IgnoreList
+        
+        local Result = workspace:Raycast(Origin, Direction, Params)
+        if not Result then
+            return true -- Tia bắn thông suốt không vướng gì nữa
+        end
+        
+        local HitPart = Result.Instance
+        -- Nếu trúng phải tường đi xuyên hoặc tàng hình, ta cho tia đi tiếp bằng cách bỏ qua Part này
+        if IsInstancePenetratable(HitPart) then
+            table.insert(IgnoreList, HitPart)
+        else
+            -- Gặp phải tường đặc thật sự (Cản người, không trong suốt) -> Block Aim
+            return false
+        end
+    end
+end
+
+local function IsPartBehindWall(PartInstance, Character)
+    local Origin = Camera.CFrame.Position
+    local Direction = PartInstance.Position - Origin
+    local IgnoreList = {LocalPlayer.Character, Character, Camera}
+    
+    while true do
+        local Params = RaycastParams.new()
+        Params.FilterType = Enum.RaycastFilterType.Exclude
+        Params.FilterDescendantsInstances = IgnoreList
+        
+        local Result = workspace:Raycast(Origin, Direction, Params)
+        if not Result then return false end
+        
+        local HitPart = Result.Instance
+        if IsInstancePenetratable(HitPart) then
+            table.insert(IgnoreList, HitPart)
+        else
+            return true
+        end
+    end
+end
 local function CheckTriggerWall(Position)
     if not Config.TriggerWallCheck then return true end
     local Origin = Camera.CFrame.Position
     local Direction = Position - Origin
-    local Params = RaycastParams.new()
-    Params.FilterType = Enum.RaycastFilterType.Exclude
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
-    local Result = workspace:Raycast(Origin, Direction, Params)
-    return Result == nil or Result.Instance:IsDescendantOf(workspace)
+    local IgnoreList = {LocalPlayer.Character, Camera}
+    
+    while true do
+        local Params = RaycastParams.new()
+        Params.FilterType = Enum.RaycastFilterType.Exclude
+        Params.FilterDescendantsInstances = IgnoreList
+        
+        local Result = workspace:Raycast(Origin, Direction, Params)
+        if not Result then return true end
+        
+        local HitPart = Result.Instance
+        if IsInstancePenetratable(HitPart) then
+            table.insert(IgnoreList, HitPart)
+        else
+            return false
+        end
+    end
 end
 
 local function GetPlayerColor(Player)
@@ -230,7 +295,30 @@ local function GetClosestPlayerToCrosshair()
     return ClosestTarget
 end
 
-local function PerformTriggerbotClick()
+local function CreateTracerObject(Player)
+    if Player == LocalPlayer then return end
+    if not Tracer_Cache[Player] then
+        local Line = Drawing.new("Line")
+        Line.Thickness = 1.5
+        Line.Transparency = 0.8
+        Line.Visible = false
+        Tracer_Cache[Player] = Line
+    end
+end
+
+local function ClearTracerObject(Player)
+    if Tracer_Cache[Player] then
+        pcall(function()
+            Tracer_Cache[Player].Visible = false
+            Tracer_Cache[Player]:Remove()
+        end)
+        Tracer_Cache[Player] = nil
+    end
+end
+local PerformTriggerbotClick, ProcessAutoFarmPlayer
+local IsFiring = false
+
+function PerformTriggerbotClick()
     local TargetInstance = Mouse.Target
     if TargetInstance and TargetInstance.Parent then
         local Char = TargetInstance.Parent
@@ -246,8 +334,7 @@ local function PerformTriggerbotClick()
     end
 end
 
-local IsFiring = false
-local function ProcessAutoFarmPlayer()
+function ProcessAutoFarmPlayer()
     if not Config.AutoFarmPlayer then 
         if IsFiring then IsFiring = false pcall(function() mouse1release() end) end
         return 
@@ -294,8 +381,49 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
+
+local function CreateSkeletonLines(Player)
+    if Skeleton_Cache[Player] then return end
+    local Lines = {}
+    for i = 1, 20 do
+        local Line = Drawing.new("Line")
+        Line.Thickness = 1.8
+        Line.Transparency = 1
+        Line.Visible = false
+        table.insert(Lines, Line)
+    end
+    Skeleton_Cache[Player] = Lines
+end
+
+local function ClearSkeletonLines(Player)
+    if Skeleton_Cache[Player] then
+        for _, Line in pairs(Skeleton_Cache[Player]) do
+            pcall(function()
+                Line.Visible = false
+                Line:Remove()
+            end)
+        end
+        Skeleton_Cache[Player] = nil
+    end
+end
+
+local function CleanCharacterVisuals(Character)
+    if not Character then return end
+    local Root = Character:FindFirstChild("HumanoidRootPart")
+    if Root then
+        local OldBox = Root:FindFirstChild("BéBoxFill")
+        if OldBox then OldBox:Destroy() end
+    end
+    local Head = Character:FindFirstChild("Head")
+    if Head then
+        local OldGui = Head:FindFirstChild("BéInfoTag")
+        if OldGui then OldGui:Destroy() end
+        local OldHGui = Head:FindFirstChild("BéHealthTag")
+        if OldHGui then OldHGui:Destroy() end
+    end
+end
 -- ==============================================================================
--- 5. GUI CONSTRUCTION & MOBILE CONFIGURATION LAYER
+-- 5. GUI CONSTRUCTION & DRAG INTEGRATION LAYER
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -336,20 +464,15 @@ local function MakeDraggable(UIElement, DragHandle)
     end)
 end
 
--- SỬA LỖI NGHẸT NÚT: Bắt chính xác sự kiện nhấc ngón tay ra, chống kích hoạt trùng lặp
 local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     
     TextButton.MouseButton1Click:Connect(function()
-        if not HoldingTouch then
-            Callback()
-        end
+        if not HoldingTouch then Callback() end
     end)
     
     TextButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            HoldingTouch = true
-        end
+        if input.UserInputType == Enum.UserInputType.Touch then HoldingTouch = true end
     end)
 
     TextButton.InputEnded:Connect(function(input)
@@ -494,7 +617,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 450)
+    page.CanvasSize = UDim2.new(0, 0, 0, 480)
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
@@ -616,13 +739,11 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
         local Listening = false
         local ListenConnection
-        local TouchConnection
         local CurrentSessionID = 0
 
         local function EndListening(NewKey)
             Listening = false
             if ListenConnection then ListenConnection:Disconnect() end
-            if TouchConnection then TouchConnection:Disconnect() end
             if NewKey then
                 Config[BindKey] = NewKey
                 BindBtn.Text = NewKey.Name:upper()
@@ -646,25 +767,12 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
             end)
 
             ListenConnection = UserInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    EndListening(input.KeyCode)
-                end
-            end)
-
-            TouchConnection = UserInputService.TouchTap:Connect(function(touchPositions, processed)
-                if #touchPositions > 0 then
-                    local pos = touchPositions[1]
-                    local btnX, btnY = BindBtn.AbsolutePosition.X, BindBtn.AbsolutePosition.Y
-                    local btnW, btnH = BindBtn.AbsoluteSize.X, BindBtn.AbsoluteSize.Y
-                    
-                    if not (pos.X >= btnX and pos.X <= btnX + btnW and pos.Y >= btnY and pos.Y <= btnY + btnH) then
-                        EndListening(nil)
-                    end
-                end
+                if input.UserInputType == Enum.UserInputType.Keyboard then EndListening(input.KeyCode) end
             end)
         end)
     end
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -735,7 +843,6 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
-
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -765,6 +872,7 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
+
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -795,11 +903,9 @@ local function AddHitboxSelector(Page)
 
     RegisterTouchFriendlyClick(HitboxBtn, function()
         if Config.TargetPart == "Head" then
-            Config.TargetPart = "HumanoidRootPart"
-            HitboxBtn.Text = "TORSO"
+            Config.TargetPart = "HumanoidRootPart" HitboxBtn.Text = "TORSO"
         else
-            Config.TargetPart = "Head"
-            HitboxBtn.Text = "HEAD"
+            Config.TargetPart = "Head" HitboxBtn.Text = "HEAD"
         end
     end)
 end
@@ -869,29 +975,27 @@ end
 -- REGISTERING ALL ELEMENTS
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
-AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
+AddPremiumToggle(CombatPage, "Wall Check (Bypass Transparent)", "WallCheck") -- Đã tích hợp tính năng bỏ qua tường tàng hình/xuyên thấu
 AddPremiumSlider(CombatPage, "Aimbot Smoothness", 0, 10, "Smoothness")
 AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
-
 AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
 AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.01, 5, "AutoFarmDelay")
 AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
     if state then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
     else
-        Lighting.Ambient = Config.StoredAmbient
-        Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
+        Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
 AddPremiumToggle(PlayerPage, "Enable Spinbot", "Spinbot", nil, nil, "SpinbotKeybind")
 AddPremiumSlider(PlayerPage, "Spinbot Rotate Speed", 5, 100, "SpinSpeed")
 
-AddPremiumToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
+AddMovementToggle = AddPremiumToggle
+AddMovementToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
 AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
-AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
+AddMovementToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
 AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
 AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
@@ -900,6 +1004,8 @@ AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency"
 AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
 AddTracerModeSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
+AddPremiumToggle(VisualPage, "X-Ray Skeleton Smart Color", "EspSkeleton")
+AddPremiumToggle(VisualPage, "Independent Top Health Bar", "EspHealthBar")
 AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
 
 AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
@@ -918,15 +1024,16 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
     pcall(function() Dot_Drawing:Remove() end)
     pcall(function() mouse1release() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
+    for P, _ in pairs(Skeleton_Cache) do ClearSkeletonLines(P) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
-    Lighting.Ambient = Config.StoredAmbient
-    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
+    Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.1 - Fixed Toggle Sensitivity & Touch Release")
-AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.8 - Smart Transparent Wall Penetration")
+AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1.5k+ Active Exploiter Accounts (Verified)")
+
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
 CreatePremiumTab("Movement", "🏃", 3, MovementPage)
@@ -948,101 +1055,95 @@ RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    
     if input.KeyCode == Config.MenuKeybind then
         Config.MenuVisible = not Config.MenuVisible
         MainFrame.Visible = Config.MenuVisible
     elseif input.KeyCode == Config.AimbotKeybind and Config.AimbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Aimbot = not Config.Aimbot
-        UpdateToggleVisual("Aimbot")
+        Config.Aimbot = not Config.Aimbot UpdateToggleVisual("Aimbot")
     elseif input.KeyCode == Config.TriggerbotKeybind and Config.TriggerbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Triggerbot = not Config.Triggerbot
-        UpdateToggleVisual("Triggerbot")
+        Config.Triggerbot = not Config.Triggerbot UpdateToggleVisual("Triggerbot")
     elseif input.KeyCode == Config.SpinbotKeybind and Config.SpinbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Spinbot = not Config.Spinbot
-        UpdateToggleVisual("Spinbot")
+        Config.Spinbot = not Config.Spinbot UpdateToggleVisual("Spinbot")
     elseif input.KeyCode == Config.EspMasterKeybind and Config.EspMasterKeybind ~= Enum.KeyCode.Unknown then
-        Config.EspMaster = not Config.EspMaster
-        UpdateToggleVisual("EspMaster")
+        Config.EspMaster = not Config.EspMaster UpdateToggleVisual("EspMaster")
     elseif input.KeyCode == Config.SpeedKeybind and Config.SpeedKeybind ~= Enum.KeyCode.Unknown then
-        Config.SpeedToggle = not Config.SpeedToggle
-        UpdateToggleVisual("SpeedToggle")
+        Config.SpeedToggle = not Config.SpeedToggle UpdateToggleVisual("SpeedToggle")
     elseif input.KeyCode == Config.JumpKeybind and Config.JumpKeybind ~= Enum.KeyCode.Unknown then
-        Config.JumpToggle = not Config.JumpToggle
-        UpdateToggleVisual("JumpToggle")
+        Config.JumpToggle = not Config.JumpToggle UpdateToggleVisual("JumpToggle")
     end
 end)
-
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
     local Head = Character:WaitForChild("Head", 5)
-    if not Root or not Head then return end
+    local Hum = Character:WaitForChild("Humanoid", 5)
+    if not Root or not Head or not Hum then return end
     
     CleanCharacterVisuals(Character)
     
     local Box = Instance.new("BoxHandleAdornment")
-    Box.Name = "BéBoxFill"
-    Box.Parent = Root
-    Box.Adornee = Root
-    Box.AlwaysOnTop = true
-    Box.ZIndex = 10
-    Box.Size = Vector3.new(4, 6, 4)
-    Box.Visible = false
+    Box.Name = "BéBoxFill" Box.Parent = Root Box.Adornee = Root
+    Box.AlwaysOnTop = true Box.ZIndex = 10 Box.Size = Vector3.new(4, 6, 4) Box.Visible = false
 
     local Gui = Instance.new("BillboardGui")
-    Gui.Name = "BéInfoTag"
-    Gui.Adornee = Head
-    Gui.Size = UDim2.new(0, 200, 0, 100)
-    Gui.StudsOffset = Vector3.new(0, 4, 0)
-    Gui.AlwaysOnTop = true
+    Gui.Name = "BéInfoTag" Gui.Adornee = Head Gui.Size = UDim2.new(0, 200, 0, 40)
+    Gui.StudsOffset = Vector3.new(0, 4.2, 0) Gui.AlwaysOnTop = true
 
     local Label = Instance.new("TextLabel", Gui)
-    Label.Size = UDim2.new(1, 0, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 13
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Size = UDim2.new(1, 0, 1, 0) Label.BackgroundTransparency = 1
+    Label.Font = Enum.Font.Code Label.TextSize = 13 Label.TextColor3 = Color3.fromRGB(255, 255, 255)
     Gui.Parent = Head
     
-    Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, Player = Player }
+    local HealthGui = Instance.new("BillboardGui")
+    HealthGui.Name = "BéHealthTag" HealthGui.Adornee = Head
+    HealthGui.Size = UDim2.new(0, 60, 0, 5) HealthGui.StudsOffset = Vector3.new(0, 2.5, 0)
+    HealthGui.AlwaysOnTop = true
+    
+    local HealthBG = Instance.new("Frame", HealthGui)
+    HealthBG.Size = UDim2.new(1, 0, 1, 0) HealthBG.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    HealthBG.BorderSizePixel = 0
+    
+    local HealthBar = Instance.new("Frame", HealthBG)
+    HealthBar.Size = UDim2.new(1, 0, 1, 0) HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    HealthBar.BorderSizePixel = 0
+    HealthGui.Parent = Head
+    
+    Character_Cache[Character] = { 
+        Box = Box, 
+        Gui = Gui, 
+        Label = Label, 
+        HealthGui = HealthGui,
+        HealthBar = HealthBar,
+        Player = Player,
+        Humanoid = Hum
+    }
 end
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end
-    Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
-    if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
+    Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) CreateSkeletonLines(Player) end)
+    if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) CreateSkeletonLines(Player) end
 end
-
 MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
     if Config.FovCircle then
-        FOV_Drawing.Position = ScreenCenter
-        FOV_Drawing.Radius = Config.FovRadius
-        FOV_Drawing.Visible = true
-    else
-        FOV_Drawing.Visible = false
-    end
+        FOV_Drawing.Position = ScreenCenter FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true
+    else FOV_Drawing.Visible = false end
 
     if Config.CrosshairDot then
-        Dot_Drawing.Position = ScreenCenter
-        Dot_Drawing.Visible = true
-    else
-        Dot_Drawing.Visible = false
-    end
+        Dot_Drawing.Position = ScreenCenter Dot_Drawing.Visible = true
+    else Dot_Drawing.Visible = false end
 
     local MyChar = LocalPlayer.Character
     if IsAlive(MyChar) then
         local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
         local MyRoot = MyChar:FindFirstChild("HumanoidRootPart")
-        
         if MyHum then
             if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
             if Config.JumpToggle then MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end
         end
-        
         if Config.Spinbot and MyRoot then
             CurrentSpinAngle = (CurrentSpinAngle + Config.SpinSpeed) % 360
             MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
@@ -1056,10 +1157,52 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         local Target = GetClosestPlayerToCrosshair()
         if Target then
             local LerpFactor = 1
-            if Config.Smoothness > 0 then
-                LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1)
-            end
+            if Config.Smoothness > 0 then LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1) end
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
+        end
+    end
+
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player == LocalPlayer then continue end
+        local Char = Player.Character
+        local Lines = Skeleton_Cache[Player]
+        
+        if Lines then
+            if Config.EspMaster and Config.EspSkeleton and Char and IsAlive(Char) and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
+                local Dist = math.floor((Char.HumanoidRootPart.Position - MyChar.HumanoidRootPart.Position).Magnitude)
+                if Dist <= Config.MaxDistance then
+                    local Hum = Char:FindFirstChildOfClass("Humanoid")
+                    local IsR15 = (Hum and Hum.RigType == Enum.RigType.R15)
+                    local PairsToUse = IsR15 and SkeletonPairs or SkeletonPairsR6
+                    
+                    for idx, Pair in pairs(PairsToUse) do
+                        local LineObject = Lines[idx]
+                        if not LineObject then continue end
+                        local PartA = Char:FindFirstChild(Pair[1])
+                        local PartB = Char:FindFirstChild(Pair[2])
+                        
+                        if PartA and PartB then
+                            local PosA, OnScreenA = Camera:WorldToViewportPoint(PartA.Position)
+                            local PosB, OnScreenB = Camera:WorldToViewportPoint(PartB.Position)
+                            if OnScreenA and OnScreenB then
+                                LineObject.From = Vector2.new(PosA.X, PosA.Y)
+                                LineObject.To = Vector2.new(PosB.X, PosB.Y)
+                                if IsPartBehindWall(PartA, Char) or IsPartBehindWall(PartB, Char) then
+                                    LineObject.Color = Color3.fromRGB(255, 30, 30)
+                                else
+                                    LineObject.Color = Color3.fromRGB(0, 170, 255)
+                                end
+                                LineObject.Visible = true
+                            else LineObject.Visible = false end
+                        else LineObject.Visible = false end
+                    end
+                    for i = #PairsToUse + 1, #Lines do Lines[i].Visible = false end
+                else
+                    for _, L in pairs(Lines) do L.Visible = false end
+                end
+            else
+                for _, L in pairs(Lines) do L.Visible = false end
+            end
         end
     end
 
@@ -1079,6 +1222,15 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Label.Text = string.format("%s (%dm)\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char))
                 else Data.Label.Visible = false end
 
+                if Config.EspHealthBar and Dist <= Config.MaxDistance and Data.Humanoid then
+                    Data.HealthGui.Enabled = true
+                    local HealthRatio = math.clamp(Data.Humanoid.Health / Data.Humanoid.MaxHealth, 0, 1)
+                    Data.HealthBar.Size = UDim2.new(HealthRatio, 0, 1, 0)
+                    Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthRatio * 0.35, 1, 1)
+                else
+                    Data.HealthGui.Enabled = false
+                end
+
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
@@ -1088,23 +1240,23 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                     else Tracer.Visible = false end
                 elseif Tracer then Tracer.Visible = false end
             else
-                Data.Box.Visible = false Data.Label.Visible = false
+                Data.Box.Visible = false Data.Label.Visible = false Data.HealthGui.Enabled = false
                 if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
             end
         else CleanCharacterVisuals(Char) Character_Cache[Char] = nil end
     end
 end)
 
-Players.PlayerAdded:Connect(function(Player) CreateTracerObject(Player) MonitorPlayer(Player) end)
-Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
+Players.PlayerAdded:Connect(function(Player) CreateTracerObject(Player) CreateSkeletonLines(Player) MonitorPlayer(Player) end)
+Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) ClearSkeletonLines(Player) end)
 
-for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
+for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) CreateSkeletonLines(P) MonitorPlayer(P) end
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.1",
-        Text = "Đã sửa xong lỗi kẹt nhả nút bấm trên Mobile cho đại ca! Test lại luôn đi đại ca ơi!",
+        Title = "WANGCAOS CLIENT V6.8",
+        Text = "Đã cập nhật hệ thống Aimbot bỏ qua tường tàng hình & tường xuyên thấu cho đại ca!",
         Duration = 7
     })
 end)

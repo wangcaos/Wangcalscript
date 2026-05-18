@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.9 - PERFECT MOBILE TOGGLE & TOUCH FIX
+-- WANGCAOS PREMIUM CLIENT V6.0 - ADVANCED BEHIND AUTO FARM & SMART TOUCH TOGGLE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -39,7 +39,7 @@ local Config = {
     SpinSpeed = 25,
     
     AutoFarmPlayer = false,
-    AutoFarmDelay = 1,
+    AutoFarmDelay = 0.05, -- Giảm delay để bám dính mượt mà hơn khi mục tiêu di chuyển
     
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
@@ -154,7 +154,7 @@ local function CleanCharacterVisuals(Character)
     if OldTag then OldTag:Destroy() end
 end
 -- ==============================================================================
--- 4. TARGETING ENGINE & AUTO FARM MECHANICS
+-- 4. TARGETING ENGINE & BACK-TELEPORT AUTO FARM MECHANICS
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -261,7 +261,10 @@ local function ProcessAutoFarmPlayer()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and IsAlive(p.Character) and not IsTeammate(p) then
             local TRoot = p.Character:FindFirstChild("HumanoidRootPart")
-            if TRoot then table.insert(Targets, TRoot) end
+            local THead = p.Character:FindFirstChild("Head")
+            if TRoot and THead then 
+                table.insert(Targets, {Root = TRoot, Head = THead}) 
+            end
         end
     end
     
@@ -271,17 +274,31 @@ local function ProcessAutoFarmPlayer()
     end
     
     if CurrentFarmIndex > #Targets then CurrentFarmIndex = 1 end
-    local ActiveTarget = Targets[CurrentFarmIndex]
+    local ActiveTargetData = Targets[CurrentFarmIndex]
+    local EnemyRoot = ActiveTargetData.Root
+    local EnemyHead = ActiveTargetData.Head
     
-    if tick() - LastFarmTime >= Config.AutoFarmDelay then
-        MyRoot.CFrame = ActiveTarget.CFrame * CFrame.new(0, 0, 3)
-        LastFarmTime = tick()
-        CurrentFarmIndex = CurrentFarmIndex + 1
-    else
-        MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position, ActiveTarget.Position)
+    -- LOGIC DI CHUYỂN RA ĐẰNG SAU LƯNG MỤC TIÊU VÀ KHÓA CAMERA VÀO ĐẦU
+    if EnemyRoot and EnemyHead then
+        -- Tính toán tọa độ ngay phía sau lưng kẻ địch (Lấy vị trí trừ đi hướng nhìn LookVector nhân với khoảng cách 3 studs)
+        local BehindPosition = EnemyRoot.Position - (EnemyRoot.CFrame.LookVector * 3)
+        
+        -- Dịch chuyển đại ca ra sau lưng và hướng mặt về phía kẻ địch
+        MyRoot.CFrame = CFrame.new(BehindPosition, EnemyRoot.Position)
+        
+        -- Bắt ép Camera hướng thẳng mục tiêu vào Đầu (Head) của kẻ địch
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, EnemyHead.Position)
+        
+        -- Tự động xả đạn
         if not IsFiring then
             IsFiring = true
             pcall(function() mouse1press() end)
+        end
+        
+        -- Chuyển mục tiêu nếu hết thời gian delay đặt trước
+        if tick() - LastFarmTime >= Config.AutoFarmDelay then
+            LastFarmTime = tick()
+            CurrentFarmIndex = CurrentFarmIndex + 1
         end
     end
 end
@@ -323,6 +340,16 @@ local function MakeDraggable(UIElement, DragHandle)
         if input == dragInput and dragging then
             local delta = input.Position - mousePos
             UIElement.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- HÀM HỖ TRỢ CHẠM SIÊU NHẠY TRÊN MOBILE KHÔNG LO LỖI KẸT BUTTON
+local function RegisterTouchFriendlyClick(TextButton, Callback)
+    TextButton.MouseButton1Click:Connect(Callback)
+    TextButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch and input.UserInputState == Enum.UserInputState.Begin then
+            Callback()
         end
     end)
 end
@@ -381,7 +408,7 @@ MainFrame.Size = UDim2.new(0, 600, 0, 400)
 MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
-Instance.new("UIStroke", MainFrame).Thickness = 1.5
+MainFrame.UIStroke.Thickness = 1.5
 
 local CustomBackgroundImage = Instance.new("ImageLabel")
 CustomBackgroundImage.Name = "MenuCustomWallpaper"
@@ -432,12 +459,12 @@ CloseBtn.TextSize = 22
 MakeDraggable(MainFrame, TopNavBar)
 MakeDraggable(ToggleButton, ToggleButton)
 
-CloseBtn.MouseButton1Click:Connect(function()
+RegisterTouchFriendlyClick(CloseBtn, function()
     Config.MenuVisible = false
     MainFrame.Visible = false
 end)
 
-ToggleButton.MouseButton1Click:Connect(function()
+RegisterTouchFriendlyClick(ToggleButton, function()
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
@@ -486,7 +513,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
     TStroke.Enabled = Order == 1
     
-    TabBtn.MouseButton1Click:Connect(function()
+    RegisterTouchFriendlyClick(TabBtn, function()
         for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
         for _, btn in pairs(TabMenuContainer:GetChildren()) do
             if btn:IsA("TextButton") then
@@ -532,7 +559,7 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
--- HỆ THỐNG TOGGLE & KEYBIND ĐÃ FIX TRIỆT ĐỂ LỖI KẸT PHÍM / KHÔNG TOGGLE ĐƯỢC TRÊN MOBILE
+-- HỆ THỐNG PHÍM GẠT ĐÃ ĐƯỢC CẢI TIẾN TOÀN DIỆN KHÔNG BỊ NUỐT PHÍM KHI CHẠM
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -569,7 +596,8 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
 
-    Btn.MouseButton1Click:Connect(function()
+    -- Ứng dụng hàm chạm đa nền tảng siêu nhạy cho nút Toggle đại ca yêu cầu
+    RegisterTouchFriendlyClick(Btn, function()
         Config[Key] = not Config[Key]
         UpdateToggleVisual(Key)
         if Callback then Callback(Config[Key]) end
@@ -605,7 +633,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
             BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
         end
 
-        BindBtn.MouseButton1Click:Connect(function()
+        RegisterTouchFriendlyClick(BindBtn, function()
             if Listening then return end
             Listening = true
             BindBtn.Text = "..."
@@ -614,26 +642,22 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
             CurrentSessionID = math.random()
             local ThisSession = CurrentSessionID
 
-            -- TỰ ĐỘNG HỦY SAU 5 GIÂY NẾU KHÔNG CÓ THAO TÁC (CHỐNG ĐƠ TRÊN ĐIỆN THOẠI)
             task.delay(5, function()
                 if Listening and CurrentSessionID == ThisSession then EndListening(nil) end
             end)
 
-            -- LẮNG NGHE PHÍM CƠ TỪ BÀN PHÍM CO
             ListenConnection = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Keyboard then
                     EndListening(input.KeyCode)
                 end
             end)
 
-            -- CƠ CHẾ CLICK OUTSIDE CHO MOBILE: CHẠM RA NGOÀI KHU VỰC NÚT ĐỂ HỦY CHỜ PHÍM
             TouchConnection = UserInputService.TouchTap:Connect(function(touchPositions, processed)
                 if #touchPositions > 0 then
                     local pos = touchPositions[1]
                     local btnX, btnY = BindBtn.AbsolutePosition.X, BindBtn.AbsolutePosition.Y
                     local btnW, btnH = BindBtn.AbsoluteSize.X, BindBtn.AbsoluteSize.Y
                     
-                    -- Nếu vị trí chạm nằm ngoài kích thước của BindBtn thì hủy trạng thái chờ
                     if not (pos.X >= btnX and pos.X <= btnX + btnW and pos.Y >= btnY and pos.Y <= btnY + btnH) then
                         EndListening(nil)
                     end
@@ -740,9 +764,7 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     ActionBtn.TextSize = 11
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     
-    ActionBtn.MouseButton1Click:Connect(function()
-        if Callback then Callback() end
-    end)
+    RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
@@ -772,7 +794,7 @@ local function AddHitboxSelector(Page)
     Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4)
     Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65)
 
-    HitboxBtn.MouseButton1Click:Connect(function()
+    RegisterTouchFriendlyClick(HitboxBtn, function()
         if Config.TargetPart == "Head" then
             Config.TargetPart = "HumanoidRootPart"
             HitboxBtn.Text = "TORSO"
@@ -811,7 +833,7 @@ local function AddTracerModeSelector(Page)
     Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4)
     Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
 
-    ModeBtn.MouseButton1Click:Connect(function()
+    RegisterTouchFriendlyClick(ModeBtn, function()
         Config.TracerMode = Config.TracerMode == "Bottom" and "Center" or "Bottom"
         ModeBtn.Text = Config.TracerMode:upper()
     end)
@@ -854,8 +876,8 @@ AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
 
-AddPremiumToggle(PlayerPage, "Auto Farm Player (Rage TP)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
-AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.1, 5, "AutoFarmDelay")
+AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
+AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.01, 5, "AutoFarmDelay")
 AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
@@ -904,10 +926,10 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.9 Mobile Touch Fix")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.0 - Advanced Behind Farm & Mobile Touch Fix")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 local function RegisterMobileClick(Btn, Key)
-    Btn.MouseButton1Click:Connect(function()
+    RegisterTouchFriendlyClick(Btn, function()
         Config[Key] = not Config[Key]
         UpdateToggleVisual(Key)
     end)
@@ -1024,7 +1046,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     task.spawn(ProcessAutoFarmPlayer)
     if Config.Triggerbot then task.spawn(PerformTriggerbotClick) end
 
-    if Config.Aimbot then
+    if Config.Aimbot and not Config.AutoFarmPlayer then
         local Target = GetClosestPlayerToCrosshair()
         if Target then
             local LerpFactor = 1
@@ -1075,8 +1097,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.9",
-        Text = "Đã sửa lỗi kẹt Toggle! Giờ điện thoại bấm mượt, nhận lệnh cực nhạy nha đại ca.",
+        Title = "WANGCAOS CLIENT V6.0",
+        Text = "Đã cập nhật Auto Farm Sau Lưng & Sửa nút bấm Touch siêu mượt cho đại ca!",
         Duration = 7
     })
 end)

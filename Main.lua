@@ -1,6 +1,5 @@
-
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.4 - INDEPENDENT MOBILE SHORTCUTS & AUTO-OFF SYSTEM
+-- WANGCAOS PREMIUM CLIENT V5.5 - DYNAMIC TOGGLE FOR MOBILE SHORTCUTS
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -18,30 +17,30 @@ local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION (ALL FUNCTIONS DEFAULT OFF)
+-- 1. MASTER CONFIGURATION (ALL OFF BY DEFAULT, SHORTCUTS HIDDEN)
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
     MenuKeybind = Enum.KeyCode.LeftBracket,
     
-    Aimbot = false, -- Tắt từ đầu
+    Aimbot = false,
     AimbotKeybind = Enum.KeyCode.E,
     TeamCheck = true,
     WallCheck = true,
     Smoothness = 5,
     TargetPart = "Head",
     
-    Triggerbot = false, -- Tắt từ đầu
+    Triggerbot = false,
     TriggerbotKeybind = Enum.KeyCode.T,
     TriggerWallCheck = true,
     
-    Spinbot = false, -- Tắt từ đầu
+    Spinbot = false,
     SpinbotKeybind = Enum.KeyCode.K,
     SpinSpeed = 25,
     
-    EspMaster = false, -- Tắt từ đầu
+    EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
-    FovCircle = false, -- Tắt từ đầu
+    FovCircle = false,
     FovRadius = 120,
     FovThickness = 1.5,
     FovSides = 64,
@@ -49,24 +48,24 @@ local Config = {
     FovTransparency = 0.8,
     FovFilled = false,
     
-    CrosshairDot = false, -- Tắt từ đầu
-    EspBox = false, -- Tắt từ đầu
-    EspTracer = false, -- Tắt từ đầu
+    CrosshairDot = false,
+    EspBox = false,
+    EspTracer = false,
     TracerMode = "Bottom",
     
-    EspName = false, -- Tắt từ đầu
+    EspName = false,
     EspTransparency = 80,
     MaxDistance = 5000,
     
-    SpeedToggle = false, -- Tắt từ đầu
+    SpeedToggle = false,
     SpeedKeybind = Enum.KeyCode.Q,
     WalkSpeed = 16,
-    JumpToggle = false, -- Tắt từ đầu
+    JumpToggle = false,
     JumpKeybind = Enum.KeyCode.G,
     JumpPower = 50,
-    FullBright = false, -- Tắt từ đầu
+    FullBright = false,
     
-    MobileButton = true,
+    MobileButton = false, -- Tắt từ đầu: Ẩn tất cả các nút di động khi mới chạy script
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
     
@@ -258,7 +257,6 @@ ScreenGui.Parent = SafeParent
 local GlobalMobileButtons = {}
 local GlobalSyncToggles = {}
 
--- Hàm xử lý kéo thả độc lập cho bất kỳ UI nào (MainFrame hoặc các nút lẻ)
 local function MakeDraggable(UIElement, DragHandle)
     local dragging = false
     local dragInput, mousePos, framePos
@@ -291,7 +289,6 @@ local function MakeDraggable(UIElement, DragHandle)
     end)
 end
 
--- Khởi tạo các nút Mobile riêng biệt (Từng nút tự di chuyển độc lập, Không dùng chung Container cũ)
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, DefaultColor, InitPos)
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
@@ -304,24 +301,23 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, Default
     ShortcutBtn.Text = TextOff
     ShortcutBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ShortcutBtn.TextSize = 10
-    ShortcutBtn.Visible = (Config.MobileButton and IsMobile)
+    ShortcutBtn.Visible = (Config.MobileButton and IsMobile) -- Phụ thuộc vào Config.MobileButton (Tắt từ đầu)
     
     Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
     local Stroke = Instance.new("UIStroke", ShortcutBtn)
     Stroke.Color = Color3.fromRGB(255, 255, 255)
     Stroke.Thickness = 1.5
     
-    -- Kích hoạt khả năng kéo thả độc lập cho chính nút này
     MakeDraggable(ShortcutBtn, ShortcutBtn)
     
     GlobalMobileButtons[Key] = ShortcutBtn
     return ShortcutBtn
 end
 
--- Tạo 3 nút nhanh hoạt động hoàn toàn riêng biệt trên Mobile (Đã loại bỏ nút ESP theo lệnh đại ca)
-local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", Color3.fromRGB(255, 50, 50), UDim2.new(0.8, 0, 0.2, 0))
-local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", Color3.fromRGB(230, 125, 30), UDim2.new(0.8, 0, 0.32, 0))
-local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", Color3.fromRGB(140, 30, 230), UDim2.new(0.8, 0, 0.44, 0))
+-- Tạo 3 nút nhanh hoạt động hoàn toàn độc lập (Mặc định ẩn hoàn toàn từ đầu)
+local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.20, 0))
+local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.32, 0))
+local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.44, 0))
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -752,7 +748,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
 end
 
 -- ==============================================================================
--- 7. FUNCTION REGISTER PIPELINE (REGISTER ALL DEFAULTS)
+-- 7. FUNCTION REGISTER PIPELINE
 -- ==============================================================================
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock [E]", "Aimbot", nil, Color3.fromRGB(255, 50, 50))
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
@@ -790,11 +786,14 @@ AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxD
 AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
+
+-- NÚT BẬT HOẶC TẮT CHO CÁC NÚT MOBILE ĐỘC LẬP
 AddPremiumToggle(MiscPage, "Show Mobile Fast Toggles", "MobileButton", function(state)
     for _, btn in pairs(GlobalMobileButtons) do
         btn.Visible = (state and IsMobile)
     end
 end)
+
 AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state)
     CustomBackgroundImage.Visible = state
 end)
@@ -811,7 +810,7 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.4 Cross-Platform")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.5 Cross-Platform")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
 -- CONNECT INDEPENDENT MOBILE SHORTCUTS CLICK EVENT
@@ -826,7 +825,7 @@ RegisterMobileClick(MobAim, "Aimbot")
 RegisterMobileClick(MobTrig, "Triggerbot")
 RegisterMobileClick(MobSpeed, "SpeedToggle")
 
--- PC KEYBIND LISTENER SYSTEM (KEYBOARD PRESS INTERACTION)
+-- PC KEYBIND LISTENER SYSTEM (BẤM PHÍM BẬT/TẮT TRÊN PC)
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
@@ -1031,15 +1030,14 @@ for _, P in pairs(Players:GetPlayers()) do
     MonitorPlayer(P)
 end
 
--- Thực hiện cập nhật giao diện trạng thái tắt ban đầu cho toàn bộ các nút bấm
 for K, _ in pairs(GlobalSyncToggles) do
     UpdateToggleVisual(K)
 end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.4",
-        Text = "Đã tắt tất cả chức năng mặc định. Các nút Mobile đã tách rời độc lập!",
+        Title = "WANGCAOS CLIENT V5.5",
+        Text = "Đã tắt tất cả chức năng & ẩn các nút nhanh. Hãy bật 'Show Mobile Fast Toggles' trong Misc để hiện nút bấm!",
         Duration = 7
     })
 end)

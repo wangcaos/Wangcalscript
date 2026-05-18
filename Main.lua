@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.5 - DYNAMIC TOGGLE FOR MOBILE SHORTCUTS
+-- WANGCAOS PREMIUM CLIENT V5.7 - DYNAMIC KEYBIND SYSTEM & AIMBOT OVERHAUL
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -17,14 +17,14 @@ local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
 
 -- ==============================================================================
--- 1. MASTER CONFIGURATION (ALL OFF BY DEFAULT, SHORTCUTS HIDDEN)
+-- 1. MASTER CONFIGURATION WITH CUSTOM KEYBINDS (@nga REQUEST)
 -- ==============================================================================
 local Config = {
     MenuVisible = true,
     MenuKeybind = Enum.KeyCode.LeftBracket,
     
     Aimbot = false,
-    AimbotKeybind = Enum.KeyCode.E,
+    AimbotKeybind = Enum.KeyCode.E, -- Có thể đổi trực tiếp trên UI
     TeamCheck = true,
     WallCheck = true,
     Smoothness = 5,
@@ -37,6 +37,9 @@ local Config = {
     Spinbot = false,
     SpinbotKeybind = Enum.KeyCode.K,
     SpinSpeed = 25,
+    
+    AutoFarmPlayer = false,
+    AutoFarmDelay = 1,
     
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
@@ -65,7 +68,11 @@ local Config = {
     JumpPower = 50,
     FullBright = false,
     
-    MobileButton = false, -- Tắt từ đầu: Ẩn tất cả các nút di động khi mới chạy script
+    ShowMobileAim = false,
+    ShowMobileTrig = false,
+    ShowMobileSpeed = false,
+    ShowMobileFarm = false,
+    
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
     
@@ -75,6 +82,8 @@ local Config = {
 
 local CurrentSpinAngle = 0
 local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+local LastFarmTime = 0
+local CurrentFarmIndex = 1
 
 -- ==============================================================================
 -- 2. SECURE GUI PARENTING
@@ -88,10 +97,7 @@ local function GetSafeGui()
 end
 
 local SafeParent = GetSafeGui()
-if not SafeParent then
-    warn("[WANGCAOS] CRITICAL ERROR: Cannot find Safe Parent!")
-    return
-end
+if not SafeParent then return end
 
 for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" then old:Destroy() end
@@ -148,7 +154,7 @@ local function CleanCharacterVisuals(Character)
     if OldTag then OldTag:Destroy() end
 end
 -- ==============================================================================
--- 4. TARGETING ENGINE & TRIGGERBOT MECHANICS
+-- 4. IMPROVED TARGETING ENGINE & AUTO FARM MECHANICS (@nga UPGRADE)
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -191,11 +197,7 @@ local function CheckTriggerWall(Position)
 end
 
 local function GetPlayerColor(Player)
-    if IsTeammate(Player) then
-        return Color3.fromRGB(0, 170, 255)
-    else
-        return Color3.fromRGB(255, 50, 50)
-    end
+    return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 50, 50)
 end
 
 local function GetEquippedTool(Character)
@@ -238,15 +240,53 @@ local function PerformTriggerbotClick()
         if Plr and Plr ~= LocalPlayer and IsAlive(Char) and not IsTeammate(Plr) then
             local TargetPart = Char:FindFirstChild("Head") or Char:FindFirstChild("HumanoidRootPart")
             if TargetPart and CheckTriggerWall(TargetPart.Position) then
-                pcall(function()
-                    mouse1click()
-                end)
+                pcall(function() mouse1click() end)
             end
         end
     end
 end
+
+local IsFiring = false
+local function ProcessAutoFarmPlayer()
+    if not Config.AutoFarmPlayer then 
+        if IsFiring then IsFiring = false pcall(function() mouse1release() end) end
+        return 
+    end
+    
+    local MyChar = LocalPlayer.Character
+    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+    if not MyRoot or not IsAlive(MyChar) then return end
+    
+    local Targets = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and IsAlive(p.Character) and not IsTeammate(p) then
+            local TRoot = p.Character:FindFirstChild("HumanoidRootPart")
+            if TRoot then table.insert(Targets, TRoot) end
+        end
+    end
+    
+    if #Targets == 0 then 
+        if IsFiring then IsFiring = false pcall(function() mouse1release() end) end
+        return 
+    end
+    
+    if CurrentFarmIndex > #Targets then CurrentFarmIndex = 1 end
+    local ActiveTarget = Targets[CurrentFarmIndex]
+    
+    if tick() - LastFarmTime >= Config.AutoFarmDelay then
+        MyRoot.CFrame = ActiveTarget.CFrame * CFrame.new(0, 0, 3)
+        LastFarmTime = tick()
+        CurrentFarmIndex = CurrentFarmIndex + 1
+    else
+        MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position, ActiveTarget.Position)
+        if not IsFiring then
+            IsFiring = true
+            pcall(function() mouse1press() end)
+        end
+    end
+end
 -- ==============================================================================
--- 5. GUI CONSTRUCTION & INDEPENDENT DRAG SHORTCUTS LOGIC
+-- 5. GUI CONSTRUCTION & MOBILE CONFIGURATION LAYER
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -256,6 +296,7 @@ ScreenGui.Parent = SafeParent
 
 local GlobalMobileButtons = {}
 local GlobalSyncToggles = {}
+local GlobalKeybindButtons = {}
 
 local function MakeDraggable(UIElement, DragHandle)
     local dragging = false
@@ -268,9 +309,7 @@ local function MakeDraggable(UIElement, DragHandle)
             framePos = UIElement.Position
 
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
@@ -289,19 +328,19 @@ local function MakeDraggable(UIElement, DragHandle)
     end)
 end
 
-local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, DefaultColor, InitPos)
+local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
     ShortcutBtn.Parent = ScreenGui
     ShortcutBtn.BackgroundColor3 = DefaultColor
     ShortcutBtn.BackgroundTransparency = 0.2
     ShortcutBtn.Position = InitPos
-    ShortcutBtn.Size = UDim2.new(0, 60, 0, 60)
+    ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
     ShortcutBtn.Font = Enum.Font.GothamBold
     ShortcutBtn.Text = TextOff
     ShortcutBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ShortcutBtn.TextSize = 10
-    ShortcutBtn.Visible = (Config.MobileButton and IsMobile) -- Phụ thuộc vào Config.MobileButton (Tắt từ đầu)
+    ShortcutBtn.TextSize = 9
+    ShortcutBtn.Visible = (Config[ShowKey] and IsMobile)
     
     Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
     local Stroke = Instance.new("UIStroke", ShortcutBtn)
@@ -309,15 +348,14 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, Default
     Stroke.Thickness = 1.5
     
     MakeDraggable(ShortcutBtn, ShortcutBtn)
-    
-    GlobalMobileButtons[Key] = ShortcutBtn
+    GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
 
--- Tạo 3 nút nhanh hoạt động hoàn toàn độc lập (Mặc định ẩn hoàn toàn từ đầu)
-local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.20, 0))
-local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.32, 0))
-local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.44, 0))
+local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
+local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
+local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
+local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -406,7 +444,7 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- ==============================================================================
--- 6. DESIGN SYSTEM TABS & INTERACTIVE UI COMPONENTS
+-- 6. DESIGN SYSTEM TABS & INTERACTIVE UI CONTAINERS
 -- ==============================================================================
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
@@ -489,16 +527,18 @@ local function UpdateToggleVisual(Key)
     TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)}):Play()
     
     if GlobalMobileButtons[Key] then
-        local MBtn = GlobalMobileButtons[Key]
-        MBtn.BackgroundColor3 = state and Color3.fromRGB(45, 120, 75) or TargetData.DefMobColor
-        if Key == "Aimbot" then MBtn.Text = state and "AIM\nON" or "AIM\nOFF"
-        elseif Key == "Triggerbot" then MBtn.Text = state and "TRIG\nON" or "TRIG\nOFF"
-        elseif Key == "SpeedToggle" then MBtn.Text = state and "SPD\nON" or "SPD\nOFF"
+        local MData = GlobalMobileButtons[Key]
+        MData.Btn.BackgroundColor3 = state and Color3.fromRGB(45, 120, 75) or TargetData.DefMobColor
+        if Key == "Aimbot" then MData.Btn.Text = state and "AIM\nON" or "AIM\nOFF"
+        elseif Key == "Triggerbot" then MData.Btn.Text = state and "TRIG\nON" or "TRIG\nOFF"
+        elseif Key == "SpeedToggle" then MData.Btn.Text = state and "SPD\nON" or "SPD\nOFF"
+        elseif Key == "AutoFarmPlayer" then MData.Btn.Text = state and "FRM\nON" or "FRM\nOFF"
         end
     end
 end
 
-local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor)
+-- TÍCH HỢP HỆ THỐNG CUSTOM KEYBIND TRỰC TIẾP TRÊN TOGGLE (@nga REQUEST)
+local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
     TFrame.BackgroundTransparency = 0.4
@@ -508,11 +548,11 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor)
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(1, -60, 1, 0)
+    Lbl.Size = UDim2.new(1, -110, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = LabelText
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local SwitchBg = Instance.new("Frame", TFrame)
@@ -529,7 +569,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor)
 
     local Btn = Instance.new("TextButton", TFrame)
     Btn.BackgroundTransparency = 1
-    Btn.Size = UDim2.new(1, 0, 1, 0)
+    Btn.Size = UDim2.new(1, -55, 1, 0)
     Btn.Text = ""
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
@@ -539,6 +579,42 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor)
         UpdateToggleVisual(Key)
         if Callback then Callback(Config[Key]) end
     end)
+
+    if BindKey then
+        local BindBtn = Instance.new("TextButton", TFrame)
+        BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
+        BindBtn.Position = UDim2.new(1, -100, 0.5, -10)
+        BindBtn.Size = UDim2.new(0, 50, 0, 20)
+        BindBtn.Font = Enum.Font.GothamBold
+        BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE"
+        BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
+        BindBtn.TextSize = 10
+        Instance.new("UICorner", BindBtn).CornerRadius = UDim.new(0, 4)
+        Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60)
+
+        local Listening = false
+        BindBtn.MouseButton1Click:Connect(function()
+            Listening = true
+            BindBtn.Text = "..."
+            BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
+        end)
+
+        UserInputService.InputBegan:Connect(function(input)
+            if Listening then
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    Listening = false
+                    Config[BindKey] = input.KeyCode
+                    BindBtn.Text = input.KeyCode.Name:upper()
+                    BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    Listening = false
+                    Config[BindKey] = Enum.KeyCode.Unknown -- Hoặc cơ chế riêng nếu cần gán chuột
+                    BindBtn.Text = "MB2"
+                    BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
+                end
+            end
+        end)
+    end
 end
 
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
@@ -602,7 +678,8 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     UserInputService.InputChanged:Connect(function(input)
         if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local ratio = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-            local val = math.floor(Min + (Max - Min) * ratio)
+            local val = Min + (Max - Min) * ratio
+            if Max - Min > 10 then val = math.floor(val) else val = math.floor(val * 10) / 10 end
             Fill.Size = UDim2.new(ratio, 0, 1, 0)
             ValTxt.Text = tostring(val)
             Config[Key] = val
@@ -710,11 +787,7 @@ local function AddTracerModeSelector(Page)
     Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
 
     ModeBtn.MouseButton1Click:Connect(function()
-        if Config.TracerMode == "Bottom" then
-            Config.TracerMode = "Center"
-        else
-            Config.TracerMode = "Bottom"
-        end
+        Config.TracerMode = Config.TracerMode == "Bottom" and "Center" or "Bottom"
         ModeBtn.Text = Config.TracerMode:upper()
     end)
 end
@@ -750,14 +823,16 @@ end
 -- ==============================================================================
 -- 7. FUNCTION REGISTER PIPELINE
 -- ==============================================================================
-AddPremiumToggle(CombatPage, "Enable Aimbot Lock [E]", "Aimbot", nil, Color3.fromRGB(255, 50, 50))
+AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
 AddPremiumSlider(CombatPage, "Aimbot Smoothness", 0, 10, "Smoothness")
 AddHitboxSelector(CombatPage)
-AddPremiumToggle(CombatPage, "Triggerbot (Auto Click) [T]", "Triggerbot", nil, Color3.fromRGB(230, 125, 30))
+AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
 
+AddPremiumToggle(PlayerPage, "Auto Farm Player (Rage TP)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
+AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.1, 5, "AutoFarmDelay")
 AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
@@ -767,15 +842,15 @@ AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(st
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
-AddPremiumToggle(PlayerPage, "Enable Spinbot [K]", "Spinbot")
+AddPremiumToggle(PlayerPage, "Enable Spinbot", "Spinbot", nil, nil, "SpinbotKeybind")
 AddPremiumSlider(PlayerPage, "Spinbot Rotate Speed", 5, 100, "SpinSpeed")
 
-AddPremiumToggle(MovementPage, "WalkSpeed Bypass [Q]", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230))
+AddPremiumToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
 AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
-AddPremiumToggle(MovementPage, "JumpPower Boost [G]", "JumpToggle")
+AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
 AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
-AddPremiumToggle(VisualPage, "Master Visual ESP Control [O]", "EspMaster", nil, Color3.fromRGB(30, 140, 230))
+AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
@@ -787,21 +862,19 @@ AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
 
--- NÚT BẬT HOẶC TẮT CHO CÁC NÚT MOBILE ĐỘC LẬP
-AddPremiumToggle(MiscPage, "Show Mobile Fast Toggles", "MobileButton", function(state)
-    for _, btn in pairs(GlobalMobileButtons) do
-        btn.Visible = (state and IsMobile)
-    end
-end)
+-- QUẢN LÝ ẨN/HIỆN TỪNG NÚT MOBILE ĐỂ TRÁNH CHẬT MÀN HÌNH CHỊ DÂU
+AddPremiumToggle(MiscPage, "Show Mobile Aim Button", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Show Mobile Trigger Button", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Show Mobile Speed Button", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Show Mobile Farm Button", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
 
-AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state)
-    CustomBackgroundImage.Visible = state
-end)
+AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
 
 AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
     pcall(function() Dot_Drawing:Remove() end)
+    pcall(function() mouse1release() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     Lighting.Ambient = Config.StoredAmbient
@@ -810,9 +883,8 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.5 Cross-Platform")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.7 Dynamic Keybinds")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
-AddPremiumCreditBox(CreditsPage, "Community Rating", "⭐⭐⭐⭐⭐ 5 Stars Review Verified!")
 -- CONNECT INDEPENDENT MOBILE SHORTCUTS CLICK EVENT
 local function RegisterMobileClick(Btn, Key)
     Btn.MouseButton1Click:Connect(function()
@@ -824,37 +896,38 @@ end
 RegisterMobileClick(MobAim, "Aimbot")
 RegisterMobileClick(MobTrig, "Triggerbot")
 RegisterMobileClick(MobSpeed, "SpeedToggle")
+RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 
--- PC KEYBIND LISTENER SYSTEM (BẤM PHÍM BẬT/TẮT TRÊN PC)
+-- PC KEYBIND LISTENER SYSTEM (HỆ THỐNG PHÍM TẮT ĐỘNG KHÔNG LO TRÙNG PHÍM GAME)
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
     if input.KeyCode == Config.MenuKeybind then
         Config.MenuVisible = not Config.MenuVisible
         MainFrame.Visible = Config.MenuVisible
-    elseif input.KeyCode == Config.AimbotKeybind then
+    elseif input.KeyCode == Config.AimbotKeybind and Config.AimbotKeybind ~= Enum.KeyCode.Unknown then
         Config.Aimbot = not Config.Aimbot
         UpdateToggleVisual("Aimbot")
-    elseif input.KeyCode == Config.TriggerbotKeybind then
+    elseif input.KeyCode == Config.TriggerbotKeybind and Config.TriggerbotKeybind ~= Enum.KeyCode.Unknown then
         Config.Triggerbot = not Config.Triggerbot
         UpdateToggleVisual("Triggerbot")
-    elseif input.KeyCode == Config.SpinbotKeybind then
+    elseif input.KeyCode == Config.SpinbotKeybind and Config.SpinbotKeybind ~= Enum.KeyCode.Unknown then
         Config.Spinbot = not Config.Spinbot
         UpdateToggleVisual("Spinbot")
-    elseif input.KeyCode == Config.EspMasterKeybind then
+    elseif input.KeyCode == Config.EspMasterKeybind and Config.EspMasterKeybind ~= Enum.KeyCode.Unknown then
         Config.EspMaster = not Config.EspMaster
         UpdateToggleVisual("EspMaster")
-    elseif input.KeyCode == Config.SpeedKeybind then
+    elseif input.KeyCode == Config.SpeedKeybind and Config.SpeedKeybind ~= Enum.KeyCode.Unknown then
         Config.SpeedToggle = not Config.SpeedToggle
         UpdateToggleVisual("SpeedToggle")
-    elseif input.KeyCode == Config.JumpKeybind then
+    elseif input.KeyCode == Config.JumpKeybind and Config.JumpKeybind ~= Enum.KeyCode.Unknown then
         Config.JumpToggle = not Config.JumpToggle
         UpdateToggleVisual("JumpToggle")
     end
 end)
 
 -- ==============================================================================
--- 8. CORE ESP RENDERING PIPELINE
+-- 8. ESP RENDERING MANAGEMENT
 -- ==============================================================================
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
@@ -893,14 +966,12 @@ end
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end
-    Player.CharacterAdded:Connect(function(Char)
-        task.spawn(RenderVisuals, Player, Char)
-    end)
+    Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
 
 -- ==============================================================================
--- 9. RUNSERVICE TICK ENGINE
+-- 9. RUNSERVICE TICK ENGINE (OPTIMIZED FOR NGA LOCK SPEED)
 -- ==============================================================================
 MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -909,11 +980,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.FovCircle then
         FOV_Drawing.Position = ScreenCenter
         FOV_Drawing.Radius = Config.FovRadius
-        FOV_Drawing.Color = Config.FovColor
-        FOV_Drawing.Thickness = Config.FovThickness
-        FOV_Drawing.NumSides = Config.FovSides
-        FOV_Drawing.Filled = Config.FovFilled
-        FOV_Drawing.Transparency = Config.FovTransparency
         FOV_Drawing.Visible = true
     else
         FOV_Drawing.Visible = false
@@ -921,7 +987,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
 
     if Config.CrosshairDot then
         Dot_Drawing.Position = ScreenCenter
-        Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
         Dot_Drawing.Visible = true
     else
         Dot_Drawing.Visible = false
@@ -934,10 +999,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         
         if MyHum then
             if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
-            if Config.JumpToggle then
-                MyHum.UseJumpPower = true
-                MyHum.JumpPower = Config.JumpPower
-            end
+            if Config.JumpToggle then MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end
         end
         
         if Config.Spinbot and MyRoot then
@@ -946,10 +1008,10 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         end
     end
 
-    if Config.Triggerbot then
-        task.spawn(PerformTriggerbotClick)
-    end
+    task.spawn(ProcessAutoFarmPlayer)
+    if Config.Triggerbot then task.spawn(PerformTriggerbotClick) end
 
+    -- AIMBOT LOCK ĐÃ ĐƯỢC TỐI ƯU HÓA TỐC ĐỘ KHÓA CHO CHỊ DÂU @NGA
     if Config.Aimbot then
         local Target = GetClosestPlayerToCrosshair()
         if Target then
@@ -967,80 +1029,45 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") then
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
-                local Team = Data.Player.Team and Data.Player.Team.Name or "No Team"
-                local Tool = GetEquippedTool(Char)
 
                 if Config.EspBox and Dist <= Config.MaxDistance then
-                    Data.Box.Visible = true
-                    Data.Box.Color3 = PColor
-                    Data.Box.Transparency = Config.EspTransparency / 100
-                else
-                    Data.Box.Visible = false
-                end
+                    Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100
+                else Data.Box.Visible = false end
 
                 if Config.EspName and Dist <= Config.MaxDistance then
-                    Data.Gui.Enabled = true
-                    Data.Label.Visible = true
-                    Data.Label.TextColor3 = PColor
-                    Data.Label.Text = string.format("%s (%dm)\n[%s] [%s]", Data.Player.Name, Dist, Team, Tool)
-                else
-                    Data.Label.Visible = false
-                end
+                    Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor
+                    Data.Label.Text = string.format("%s (%dm)\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char))
+                else Data.Label.Visible = false end
 
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
                     local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
                     if OnScreen then
-                        if Config.TracerMode == "Center" then
-                            Tracer.From = ScreenCenter
-                        else
-                            Tracer.From = ScreenBottom
-                        end
-                        Tracer.To = Vector2.new(Leg.X, Leg.Y)
-                        Tracer.Color = PColor
-                        Tracer.Visible = true
-                    else
-                        Tracer.Visible = false
-                    end
-                elseif Tracer then 
-                    Tracer.Visible = false 
-                end
+                        Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom
+                        Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true
+                    else Tracer.Visible = false end
+                elseif Tracer then Tracer.Visible = false end
             else
-                Data.Box.Visible = false
-                Data.Label.Visible = false
+                Data.Box.Visible = false Data.Label.Visible = false
                 if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
             end
-        else
-            CleanCharacterVisuals(Char)
-            Character_Cache[Char] = nil
-        end
+        else CleanCharacterVisuals(Char) Character_Cache[Char] = nil end
     end
 end)
 
-Players.PlayerAdded:Connect(function(Player)
-    CreateTracerObject(Player)
-    MonitorPlayer(Player)
-end)
-Players.PlayerRemoving:Connect(function(Player)
-    ClearTracerObject(Player)
-end)
+Players.PlayerAdded:Connect(function(Player) CreateTracerObject(Player) MonitorPlayer(Player) end)
+Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 
-for _, P in pairs(Players:GetPlayers()) do
-    CreateTracerObject(P)
-    MonitorPlayer(P)
-end
-
-for K, _ in pairs(GlobalSyncToggles) do
-    UpdateToggleVisual(K)
-end
+for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
+for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.5",
-        Text = "Đã tắt tất cả chức năng & ẩn các nút nhanh. Hãy bật 'Show Mobile Fast Toggles' trong Misc để hiện nút bấm!",
+        Title = "WANGCAOS CLIENT V5.7",
+        Text = "Đã thêm Custom Keybind động chống trùng phím & Nâng cấp mượt mà Aimbot Lock!",
         Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - UPGRADED BY BE FOR DAI CA WANG (2026)
+-- END OF SCRIPT - UPGRADED BY BE FOR DAI CA WANG & SISTER NGA (2026)
 -- ==============================================================================

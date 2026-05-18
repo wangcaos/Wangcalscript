@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V5.8 - SMART KEYBIND TIMEOUT & MOBILE FIX
+-- WANGCAOS PREMIUM CLIENT V5.9 - PERFECT MOBILE TOGGLE & TOUCH FIX
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -296,16 +296,6 @@ ScreenGui.Parent = SafeParent
 
 local GlobalMobileButtons = {}
 local GlobalSyncToggles = {}
-local GlobalKeybindButtons = {}
-
--- KHỞI TẠO NÚT TÀNG HÌNH TOÀN MÀN HÌNH ĐỂ HỦY CHỜ KEYBIND KHI BẤM RA NGOÀI
-local CancelOverlay = Instance.new("TextButton", ScreenGui)
-CancelOverlay.Name = "GlobalCancelOverlay"
-CancelOverlay.Size = UDim2.new(1, 0, 1, 0)
-CancelOverlay.BackgroundTransparency = 1
-CancelOverlay.Text = ""
-CancelOverlay.Visible = false
-CancelOverlay.ZIndex = 9999
 
 local function MakeDraggable(UIElement, DragHandle)
     local dragging = false
@@ -542,7 +532,7 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
--- HỆ THỐNG CUSTOM KEYBIND ĐƯỢC FIX LỖI ĐƠ TRÊN ĐIỆN THOẠI (TIMEOUT + CLICK OUTSIDE)
+-- HỆ THỐNG TOGGLE & KEYBIND ĐÃ FIX TRIỆT ĐỂ LỖI KẸT PHÍM / KHÔNG TOGGLE ĐƯỢC TRÊN MOBILE
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -599,12 +589,13 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
         local Listening = false
         local ListenConnection
+        local TouchConnection
         local CurrentSessionID = 0
 
         local function EndListening(NewKey)
             Listening = false
-            CancelOverlay.Visible = false
             if ListenConnection then ListenConnection:Disconnect() end
+            if TouchConnection then TouchConnection:Disconnect() end
             if NewKey then
                 Config[BindKey] = NewKey
                 BindBtn.Text = NewKey.Name:upper()
@@ -617,32 +608,37 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         BindBtn.MouseButton1Click:Connect(function()
             if Listening then return end
             Listening = true
-            CancelOverlay.Visible = true
             BindBtn.Text = "..."
             BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
             
             CurrentSessionID = math.random()
             local ThisSession = CurrentSessionID
 
-            -- TỰ ĐỘNG HỦY SAU 5 GIÂY NẾU KHÔNG CHẠM HOẶC ẤN PHÍM (GIẢI PHÁP CHO MOBILE)
+            -- TỰ ĐỘNG HỦY SAU 5 GIÂY NẾU KHÔNG CÓ THAO TÁC (CHỐNG ĐƠ TRÊN ĐIỆN THOẠI)
             task.delay(5, function()
-                if Listening and CurrentSessionID == ThisSession then
-                    EndListening(nil)
-                end
+                if Listening and CurrentSessionID == ThisSession then EndListening(nil) end
             end)
 
+            -- LẮNG NGHE PHÍM CƠ TỪ BÀN PHÍM CO
             ListenConnection = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Keyboard then
                     EndListening(input.KeyCode)
                 end
             end)
-        end)
 
-        -- KHI BẤM RA NGOÀI MÀN HÌNH (CANCEL OVERLAY CLICKED) -> HỦY TRẠNG THÁI CHỜ LẬP TỨC
-        CancelOverlay.MouseButton1Click:Connect(function()
-            if Listening then
-                EndListening(nil)
-            end
+            -- CƠ CHẾ CLICK OUTSIDE CHO MOBILE: CHẠM RA NGOÀI KHU VỰC NÚT ĐỂ HỦY CHỜ PHÍM
+            TouchConnection = UserInputService.TouchTap:Connect(function(touchPositions, processed)
+                if #touchPositions > 0 then
+                    local pos = touchPositions[1]
+                    local btnX, btnY = BindBtn.AbsolutePosition.X, BindBtn.AbsolutePosition.Y
+                    local btnW, btnH = BindBtn.AbsoluteSize.X, BindBtn.AbsoluteSize.Y
+                    
+                    -- Nếu vị trí chạm nằm ngoài kích thước của BindBtn thì hủy trạng thái chờ
+                    if not (pos.X >= btnX and pos.X <= btnX + btnW and pos.Y >= btnY and pos.Y <= btnY + btnH) then
+                        EndListening(nil)
+                    end
+                end
+            end)
         end)
     end
 end
@@ -849,7 +845,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
--- PIPELINE REGISTER
+-- REGISTERING ALL ELEMENTS
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -908,7 +904,7 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.8 Smart Fix")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium Cracked V5.9 Mobile Touch Fix")
 AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
 local function RegisterMobileClick(Btn, Key)
     Btn.MouseButton1Click:Connect(function()
@@ -1079,11 +1075,11 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V5.8",
-        Text = "Đã fix triệt để lỗi đơ nút Keybind trên Điện thoại! Bấm ra ngoài hoặc đợi 5s để hủy.",
+        Title = "WANGCAOS CLIENT V5.9",
+        Text = "Đã sửa lỗi kẹt Toggle! Giờ điện thoại bấm mượt, nhận lệnh cực nhạy nha đại ca.",
         Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - FIXED BY BE FOR DAI CA WANG (2026)
+-- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.2 - KILL AURA & CHAT SYSTEM INTEGRATION
+-- WANGCAOS PREMIUM CLIENT V6.3 - FIX GUI & CHAT SYSTEM INTEGRATION
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -43,7 +43,6 @@ local Config = {
     AutoFarmPlayer = false,
     AutoFarmDelay = 0.05,
     
-    -- CONFIG CHO HỆ THỐNG KILL AURA MỚI
     KillAura = false,
     KillAuraKeybind = Enum.KeyCode.X,
     KillAuraRadius = 15,
@@ -82,7 +81,7 @@ local Config = {
     ShowMobileTrig = false,
     ShowMobileSpeed = false,
     ShowMobileFarm = false,
-    ShowMobileKillAura = true, -- Mặc định hiện nút Kill Aura trên Mobile
+    ShowMobileKillAura = true,
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -195,7 +194,6 @@ local function IsKillAuraTeammate(Player)
     return false
 end
 
--- KHỞI TẠO VÒNG TRÒN TRẮNG TRAN 50% DƯỚI CHÂN (SỬ DỤNG CYLINDER PART ĐỂ ĐỒNG BỘ KHÔNG GIAN 3D)
 local AuraPart = Instance.new("Part")
 AuraPart.Name = "Wangcaos_KillAura_Circle"
 AuraPart.Shape = Enum.PartType.Cylinder
@@ -235,7 +233,7 @@ local function RunKillAuraEngine()
 
     for _, Player in pairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
-            if IsKillAuraAuraTeammate and IsKillAuraTeammate(Player) then continue end
+            if IsKillAuraTeammate(Player) then continue end
             local EnemyRoot = Player.Character:FindFirstChild("HumanoidRootPart")
             local EnemyHead = Player.Character:FindFirstChild("Head")
             if EnemyRoot and EnemyHead then
@@ -249,9 +247,7 @@ local function RunKillAuraEngine()
     end
 
     if ClosestEnemy then
-        -- QUAY TÂM THẲNG VÀO ĐẦU ĐỐI THỦ
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, ClosestEnemy.Position)
-        -- TỰ ĐỘNG BẮN
         pcall(function() mouse1click() end)
     end
 end
@@ -379,7 +375,6 @@ local StoredChatLogs = {}
 local OnLogAdded = Instance.new("BindableEvent")
 
 local function HookChatSystem()
-    -- Bắt log từ hệ thống TextChatService mới (2025/2026)
     TextChatService.MessageReceived:Connect(function(msg)
         local sender = msg.TextSource and msg.TextSource.Name or "System"
         local filteredText = msg.Text
@@ -387,7 +382,7 @@ local function HookChatSystem()
         table.insert(StoredChatLogs, logString)
         OnLogAdded:Fire(logString)
     end)
-    -- Fallback nếu game dùng hệ thống Legacy Chat cũ
+    
     local SayMessage = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("OnMessageDoneFiltering")
     if SayMessage and SayMessage:IsA("RemoteEvent") then
         SayMessage.OnClientEvent:Connect(function(data)
@@ -429,7 +424,7 @@ local function MakeDraggable(UIElement, DragHandle)
         end
     end)
 
-    DragHandle.InputChanged:Connect(function(input)
+    DragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
@@ -492,7 +487,6 @@ local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "A
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
 local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
--- NÚT BẤM ĐIỆN THOẠI RIÊNG BIỆT CHO KILL AURA
 local MobKill = CreateIndependentMobileButton("KillAura", "AURA\nON", "AURA\nOFF", "KillAura", "ShowMobileKillAura", Color3.fromRGB(255, 255, 255), UDim2.new(0.85, 0, 0.59, 0))
 MobKill.TextColor3 = Color3.fromRGB(20, 20, 20)
 
@@ -596,7 +590,7 @@ local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
 local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
-local ChatHubPage = Instance.new("Frame", ContentContainer) -- MỤC CHAT RIÊNG BIỆT THEO Ý ĐẠI CA
+local ChatHubPage = Instance.new("Frame", ContentContainer)
 local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
 
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
@@ -614,14 +608,13 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
 
--- THIẾT KẾ PHẦN INTERFACE BOX CHAT RIÊNG BIỆT
+-- FIX LỖI TẠI ĐÂY: THAY BACKGROUNDRESULT THÀNH BACKGROUNDTRANSPARENCY CHUẨN ROBLOX
 ChatHubPage.Size = UDim2.new(1, 0, 1, 0)
 ChatHubPage.BackgroundTransparency = 1
 ChatHubPage.Visible = false
 
 local ChatScroller = Instance.new("ScrollingFrame", ChatHubPage)
 ChatScroller.Size = UDim2.new(1, 0, 1, -40)
-ChatScroller.BackgroundResult = 1
 ChatScroller.BackgroundTransparency = 0.5
 ChatScroller.BackgroundColor3 = Color3.fromRGB(10, 11, 12)
 ChatScroller.BorderSizePixel = 0
@@ -1056,7 +1049,6 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
--- TẠO CÁC PHÂN MỤC TABS TRÊN MENU (THÊM CHAT HUB)
 CreatePremiumTab("Combat", "⚔️", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
 CreatePremiumTab("Move", "⚡", 3, MovementPage)
@@ -1065,7 +1057,6 @@ CreatePremiumTab("ChatHub", "💬", 5, ChatHubPage)
 CreatePremiumTab("Misc", "⚙️", 6, MiscPage)
 CreatePremiumTab("Credits", "🎖️", 7, CreditsPage)
 
--- ĐĂNG KÝ CÁC PHÍM ĐIỀU KHIỂN & SLIDER CHO COMBAT PAGE
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -1074,7 +1065,6 @@ AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
 
--- CHÈN THÊM CÁC TÙY CHỌN KILL AURA VÀO MỤC COMBAT THEO YÊU CẦU CỦA ĐẠI CA
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "KillAura", nil, Color3.fromRGB(255, 255, 255), "KillAuraKeybind")
 AddPremiumToggle(CombatPage, "Kill Aura TeamCheck", "KillAuraTeamCheck")
 AddPremiumSlider(CombatPage, "Kill Aura Radius (Studs)", 5, 50, "KillAuraRadius")
@@ -1113,9 +1103,6 @@ AddPremiumSlider(VisualPage, "Max Esp Rendering Distance", 100, 10000, "MaxDista
 AddPremiumCreditBox(CreditsPage, "LEAD DEVELOPER", "DAI CA WANG - PROJECT OWNER")
 AddPremiumCreditBox(CreditsPage, "CORE CORE ENGINE", "POWERED BY BE FOR DAI CA WANG (2026)")
 
--- ==============================================================================
--- 6. RUNTIME MASTER ENGINE SYNCHRONIZATION LOOP
--- ==============================================================================
 MasterLoop = RunService.RenderStepped:Connect(function()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -1131,7 +1118,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- ĐỒNG BỘ ENGINE KILL AURA ĐỂ QUAY TÂM VÀ TỰ ĐỘNG BẮN
     if Config.KillAura then
         pcall(RunKillAuraEngine)
     end
@@ -1151,7 +1137,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Triggerbot then pcall(PerformTriggerbotClick) end
     pcall(ProcessAutoFarmPlayer)
     
-    -- ĐỒNG BỘ ĐỒ HỌA 2D DRAWING OVERLAYS
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     FOV_Drawing.Position = Center FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = Config.FovCircle and Config.MenuVisible
     Dot_Drawing.Position = Center Dot_Drawing.Visible = Config.CrosshairDot
@@ -1226,7 +1211,10 @@ RunService.Heartbeat:Connect(function()
                     Data.Box.Color3 = GetPlayerColor(Data.Player)
                     
                     Data.Label.Visible = Config.EspName Data.Label.TextTransparency = 1 - RealAlpha
-                    Data.Label.Text = string.format("%s\n[%d studs] [%s]", Data.Player.Name, math.floor(Dist), GetEquippedTool(Char))
+                    local ToolName = "None"
+                    local Tool = Char:FindFirstChildOfClass("Tool")
+                    if Tool then ToolName = Tool.Name end
+                    Data.Label.Text = string.format("%s\n[%d studs] [%s]", Data.Player.Name, math.floor(Dist), ToolName)
                     Data.Label.TextColor3 = GetPlayerColor(Data.Player)
                     
                     Data.HealthBG.Visible = Config.EspHealth Data.HealthBG.BackgroundTransparency = 1 - RealAlpha
@@ -1282,8 +1270,8 @@ end)
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.2",
-        Text = "Đã cập nhật Kill Aura 3D và Mục Chat Toàn Bộ Server cho đại ca!",
+        Title = "WANGCAOS CLIENT V6.3",
+        Text = "Đã sửa hoàn toàn lỗi hiển thị GUI lỗi và căn chỉnh ChatHub ngon lành cho đại ca!",
         Duration = 7
     })
 end)

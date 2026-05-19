@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.1 - FIXED TOGGLE SENSITIVITY & TOUCH RELEASE
+-- WANGCAOS PREMIUM CLIENT V6.2 - KILL AURA & CHAT SYSTEM INTEGRATION
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -10,6 +10,8 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local StarterGui = game:GetService("StarterGui")
 local Lighting = game:GetService("Lighting")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -41,6 +43,13 @@ local Config = {
     AutoFarmPlayer = false,
     AutoFarmDelay = 0.05,
     
+    -- CONFIG CHO HỆ THỐNG KILL AURA MỚI
+    KillAura = false,
+    KillAuraKeybind = Enum.KeyCode.X,
+    KillAuraRadius = 15,
+    KillAuraTeamCheck = true,
+    KillAuraTransparency = 0.5,
+    
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
     FovCircle = false,
@@ -57,7 +66,7 @@ local Config = {
     TracerMode = "Bottom",
     
     EspName = false,
-    EspHealth = false, -- ĐÃ TÍCH HỢP THANH MÁU VÀO ĐÂY THEO LỆNH ĐẠI CA
+    EspHealth = false,
     EspTransparency = 80,
     MaxDistance = 5000,
     
@@ -73,6 +82,7 @@ local Config = {
     ShowMobileTrig = false,
     ShowMobileSpeed = false,
     ShowMobileFarm = false,
+    ShowMobileKillAura = true, -- Mặc định hiện nút Kill Aura trên Mobile
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -136,7 +146,7 @@ local function CreateTracerObject(Player)
     Line.Visible = false
     Tracer_Cache[Player] = Line
 end
-
+---[còn tiếp]---
 local function ClearTracerObject(Player)
     if Tracer_Cache[Player] then
         pcall(function()
@@ -154,8 +164,9 @@ local function CleanCharacterVisuals(Character)
     local OldTag = Character:FindFirstChild("BéInfoTag", true)
     if OldTag then OldTag:Destroy() end
 end
+
 -- ==============================================================================
--- 4. TARGETING ENGINE & BACK-TELEPORT AUTO FARM MECHANICS
+-- 4. TARGETING ENGINE & KILL AURA MECHANICAL SYSTEM
 -- ==============================================================================
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
@@ -175,6 +186,76 @@ local function IsTeammate(Player)
     return false
 end
 
+local function IsKillAuraTeammate(Player)
+    if not Config.KillAuraTeamCheck then return false end
+    if Player.Team and LocalPlayer.Team then return Player.Team == LocalPlayer.Team end
+    if Player.TeamColor and LocalPlayer.TeamColor then
+        return Player.TeamColor == LocalPlayer.TeamColor and Player.TeamColor.Name ~= "White" and Player.TeamColor.Name ~= "Medium stone grey"
+    end
+    return false
+end
+
+-- KHỞI TẠO VÒNG TRÒN TRẮNG TRAN 50% DƯỚI CHÂN (SỬ DỤNG CYLINDER PART ĐỂ ĐỒNG BỘ KHÔNG GIAN 3D)
+local AuraPart = Instance.new("Part")
+AuraPart.Name = "Wangcaos_KillAura_Circle"
+AuraPart.Shape = Enum.PartType.Cylinder
+AuraPart.Material = Enum.Material.ForceField
+AuraPart.Color = Color3.fromRGB(255, 255, 255)
+AuraPart.Transparency = Config.KillAuraTransparency
+AuraPart.Anchored = true
+AuraPart.CanCollide = false
+AuraPart.CastShadow = false
+AuraPart.Orientation = Vector3.new(0, 0, 90)
+AuraPart.Parent = workspace
+
+task.spawn(function()
+    while task.wait() do
+        local MyChar = LocalPlayer.Character
+        local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+        if MyRoot and IsAlive(MyChar) and Config.KillAura then
+            AuraPart.Visible = true
+            local Radius = Config.KillAuraRadius
+            AuraPart.Size = Vector3.new(0.1, Radius * 2, Radius * 2)
+            AuraPart.Position = MyRoot.Position - Vector3.new(0, 2.8, 0)
+            AuraPart.Transparency = Config.KillAuraTransparency
+        else
+            AuraPart.Visible = false
+        end
+    end
+end)
+
+local function RunKillAuraEngine()
+    if not Config.KillAura then return end
+    local MyChar = LocalPlayer.Character
+    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+    if not MyRoot or not IsAlive(MyChar) then return end
+
+    local ClosestEnemy = nil
+    local SmallestDistance = Config.KillAuraRadius
+
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
+            if IsKillAuraAuraTeammate and IsKillAuraTeammate(Player) then continue end
+            local EnemyRoot = Player.Character:FindFirstChild("HumanoidRootPart")
+            local EnemyHead = Player.Character:FindFirstChild("Head")
+            if EnemyRoot and EnemyHead then
+                local Distance = (MyRoot.Position - EnemyRoot.Position).Magnitude
+                if Distance <= SmallestDistance then
+                    SmallestDistance = Distance
+                    ClosestEnemy = EnemyHead
+                end
+            end
+        end
+    end
+
+    if ClosestEnemy then
+        -- QUAY TÂM THẲNG VÀO ĐẦU ĐỐI THỦ
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, ClosestEnemy.Position)
+        -- TỰ ĐỘNG BẮN
+        pcall(function() mouse1click() end)
+    end
+end
+---[còn tiếp]---
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck then return true end
     local Origin = Camera.CFrame.Position
@@ -199,11 +280,6 @@ end
 
 local function GetPlayerColor(Player)
     return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 50, 50)
-end
-
-local function GetEquippedTool(Character)
-    local Tool = Character:FindFirstChildOfClass("Tool")
-    return Tool and Tool.Name or "None"
 end
 
 local function GetClosestPlayerToCrosshair()
@@ -295,6 +371,36 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
+
+-- ==============================================================================
+-- HỆ THỐNG ĐỌC CHAT SERVER RIÊNG BIỆT (BẮT TOÀN BỘ TIN NHẮN)
+-- ==============================================================================
+local StoredChatLogs = {}
+local OnLogAdded = Instance.new("BindableEvent")
+
+local function HookChatSystem()
+    -- Bắt log từ hệ thống TextChatService mới (2025/2026)
+    TextChatService.MessageReceived:Connect(function(msg)
+        local sender = msg.TextSource and msg.TextSource.Name or "System"
+        local filteredText = msg.Text
+        local logString = string.format("[%s]: %s", sender, filteredText)
+        table.insert(StoredChatLogs, logString)
+        OnLogAdded:Fire(logString)
+    end)
+    -- Fallback nếu game dùng hệ thống Legacy Chat cũ
+    local SayMessage = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("OnMessageDoneFiltering")
+    if SayMessage and SayMessage:IsA("RemoteEvent") then
+        SayMessage.OnClientEvent:Connect(function(data)
+            if data and data.FromSpeaker and data.Message then
+                local logString = string.format("[%s]: %s", tostring(data.FromSpeaker), tostring(data.Message))
+                table.insert(StoredChatLogs, logString)
+                OnLogAdded:Fire(logString)
+            end
+        end)
+    end
+end
+task.spawn(HookChatSystem)
+---[còn tiếp]---
 -- ==============================================================================
 -- 5. GUI CONSTRUCTION & MOBILE CONFIGURATION LAYER
 -- ==============================================================================
@@ -341,15 +447,11 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     
     TextButton.MouseButton1Click:Connect(function()
-        if not HoldingTouch then
-            Callback()
-        end
+        if not HoldingTouch then Callback() end
     end)
     
     TextButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            HoldingTouch = true
-        end
+        if input.UserInputType == Enum.UserInputType.Touch then HoldingTouch = true end
     end)
 
     TextButton.InputEnded:Connect(function(input)
@@ -390,6 +492,9 @@ local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "A
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
 local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
+-- NÚT BẤM ĐIỆN THOẠI RIÊNG BIỆT CHO KILL AURA
+local MobKill = CreateIndependentMobileButton("KillAura", "AURA\nON", "AURA\nOFF", "KillAura", "ShowMobileKillAura", Color3.fromRGB(255, 255, 255), UDim2.new(0.85, 0, 0.59, 0))
+MobKill.TextColor3 = Color3.fromRGB(20, 20, 20)
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -406,10 +511,8 @@ Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
 Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 
--- ĐÃ FIX: KHÔNG BỎ MakeDraggable VÀO LOGO TRÊN MOBILE ĐỂ TRÁNH XUNG ĐỘT KẸT PHÍM CẢM ỨNG
-if not IsMobile then
-    MakeDraggable(ToggleButton, ToggleButton)
-end
+if not IsMobile then MakeDraggable(ToggleButton, ToggleButton) end
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -422,7 +525,7 @@ MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
 MainFrame.UIStroke.Thickness = 1.5
-
+---[còn tiếp]---
 local CustomBackgroundImage = Instance.new("ImageLabel")
 CustomBackgroundImage.Name = "MenuCustomWallpaper"
 CustomBackgroundImage.Parent = MainFrame
@@ -493,6 +596,7 @@ local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
 local MovementPage = Instance.new("ScrollingFrame", ContentContainer)
 local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
+local ChatHubPage = Instance.new("Frame", ContentContainer) -- MỤC CHAT RIÊNG BIỆT THEO Ý ĐẠI CA
 local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
 
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
@@ -509,6 +613,84 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     grid.CellPadding = UDim2.new(0, 12, 0, 8)
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
+
+-- THIẾT KẾ PHẦN INTERFACE BOX CHAT RIÊNG BIỆT
+ChatHubPage.Size = UDim2.new(1, 0, 1, 0)
+ChatHubPage.BackgroundTransparency = 1
+ChatHubPage.Visible = false
+
+local ChatScroller = Instance.new("ScrollingFrame", ChatHubPage)
+ChatScroller.Size = UDim2.new(1, 0, 1, -40)
+ChatScroller.BackgroundResult = 1
+ChatScroller.BackgroundTransparency = 0.5
+ChatScroller.BackgroundColor3 = Color3.fromRGB(10, 11, 12)
+ChatScroller.BorderSizePixel = 0
+ChatScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+ChatScroller.ScrollBarThickness = 4
+
+local ChatListLayout = Instance.new("UIListLayout", ChatScroller)
+ChatListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ChatListLayout.Padding = UDim.new(0, 4)
+
+local ChatInputBar = Instance.new("TextBox", ChatHubPage)
+ChatInputBar.Size = UDim2.new(1, -85, 0, 32)
+ChatInputBar.Position = UDim2.new(0, 0, 1, -32)
+ChatInputBar.BackgroundColor3 = Color3.fromRGB(25, 26, 28)
+ChatInputBar.Font = Enum.Font.Gotham
+ChatInputBar.PlaceholderText = "Nhập tin nhắn để chat toàn bộ server tại đây..."
+ChatInputBar.Text = ""
+ChatInputBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+ChatInputBar.TextSize = 12
+ChatInputBar.TextXAlignment = Enum.TextXAlignment.Left
+Instance.new("UICorner", ChatInputBar).CornerRadius = UDim.new(0, 6)
+
+local SendChatBtn = Instance.new("TextButton", ChatHubPage)
+SendChatBtn.Size = UDim2.new(0, 75, 0, 32)
+SendChatBtn.Position = UDim2.new(1, -75, 1, -32)
+SendChatBtn.BackgroundColor3 = Color3.fromRGB(45, 120, 75)
+SendChatBtn.Font = Enum.Font.GothamBold
+SendChatBtn.Text = "GỬI"
+SendChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SendChatBtn.TextSize = 12
+Instance.new("UICorner", SendChatBtn).CornerRadius = UDim.new(0, 6)
+---[còn tiếp]---
+local function AppendMessageToUI(text)
+    local MsgLabel = Instance.new("TextLabel")
+    MsgLabel.Size = UDim2.new(1, -10, 0, 20)
+    MsgLabel.BackgroundTransparency = 1
+    MsgLabel.Font = Enum.Font.Gotham
+    MsgLabel.Text = text
+    MsgLabel.TextColor3 = Color3.fromRGB(230, 235, 240)
+    MsgLabel.TextSize = 11
+    MsgLabel.TextXAlignment = Enum.TextXAlignment.Left
+    MsgLabel.Parent = ChatScroller
+    ChatScroller.CanvasSize = UDim2.new(0, 0, 0, ChatListLayout.AbsoluteContentSize.Y + 10)
+    ChatScroller.CanvasPosition = Vector2.new(0, ChatListLayout.AbsoluteContentSize.Y)
+end
+
+OnLogAdded.Event:Connect(function(text)
+    AppendMessageToUI(text)
+end)
+
+local function SendMessageFromMenu()
+    local text = ChatInputBar.Text
+    if text ~= "" then
+        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then channel:SendAsync(text) end
+        else
+            local SayRemote = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+            if SayRemote and SayRemote:IsA("RemoteEvent") then SayRemote:FireServer(text, "All") end
+        end
+        ChatInputBar.Text = ""
+    end
+end
+
+RegisterTouchFriendlyClick(SendChatBtn, SendMessageFromMenu)
+ChatInputBar.FocusLost:Connect(function(enterPressed)
+    if enterPressed then SendMessageFromMenu() end
+end)
+
 CombatPage.Visible = true
 
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
@@ -527,7 +709,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     TStroke.Enabled = Order == 1
     
     RegisterTouchFriendlyClick(TabBtn, function()
-        for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
+        for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, ChatHubPage, CreditsPage}) do p.Visible = false end
         for _, btn in pairs(TabMenuContainer:GetChildren()) do
             if btn:IsA("TextButton") then
                 btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -543,6 +725,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
+
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -561,10 +744,11 @@ local function UpdateToggleVisual(Key)
         elseif Key == "Triggerbot" then MData.Btn.Text = state and "TRIG\nON" or "TRIG\nOFF"
         elseif Key == "SpeedToggle" then MData.Btn.Text = state and "SPD\nON" or "SPD\nOFF"
         elseif Key == "AutoFarmPlayer" then MData.Btn.Text = state and "FRM\nON" or "FRM\nOFF"
+        elseif Key == "KillAura" then MData.Btn.Text = state and "AURA\nON" or "AURA\nOFF" MData.Btn.TextColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(20,20,20)
         end
     end
 end
-
+---[còn tiếp]---
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -661,7 +845,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
                     local pos = touchPositions[1]
                     local btnX, btnY = BindBtn.AbsolutePosition.X, BindBtn.AbsolutePosition.Y
                     local btnW, btnH = BindBtn.AbsoluteSize.X, BindBtn.AbsoluteSize.Y
-                    
                     if not (pos.X >= btnX and pos.X <= btnX + btnW and pos.Y >= btnY and pos.Y <= btnY + btnH) then
                         EndListening(nil)
                     end
@@ -670,7 +853,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         end)
     end
 end
-
+---[còn tiếp]---
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -741,6 +924,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         end
     end)
 end
+
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -770,7 +954,7 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
      
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
-
+---[còn tiếp]---
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -872,7 +1056,16 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
--- REGISTERING ALL ELEMENTS
+-- TẠO CÁC PHÂN MỤC TABS TRÊN MENU (THÊM CHAT HUB)
+CreatePremiumTab("Combat", "⚔️", 1, CombatPage)
+CreatePremiumTab("Player", "👤", 2, PlayerPage)
+CreatePremiumTab("Move", "⚡", 3, MovementPage)
+CreatePremiumTab("Visual", "👁️", 4, VisualPage)
+CreatePremiumTab("ChatHub", "💬", 5, ChatHubPage)
+CreatePremiumTab("Misc", "⚙️", 6, MiscPage)
+CreatePremiumTab("Credits", "🎖️", 7, CreditsPage)
+
+-- ĐĂNG KÝ CÁC PHÍM ĐIỀU KHIỂN & SLIDER CHO COMBAT PAGE
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Team Guard Filter", "TeamCheck")
 AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
@@ -881,6 +1074,11 @@ AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
 
+-- CHÈN THÊM CÁC TÙY CHỌN KILL AURA VÀO MỤC COMBAT THEO YÊU CẦU CỦA ĐẠI CA
+AddPremiumToggle(CombatPage, "Enable Kill Aura", "KillAura", nil, Color3.fromRGB(255, 255, 255), "KillAuraKeybind")
+AddPremiumToggle(CombatPage, "Kill Aura TeamCheck", "KillAuraTeamCheck")
+AddPremiumSlider(CombatPage, "Kill Aura Radius (Studs)", 5, 50, "KillAuraRadius")
+---[còn tiếp]---
 AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
 AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.01, 5, "AutoFarmDelay")
 AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
@@ -900,229 +1098,152 @@ AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
 AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
 AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
-AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
-AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
-AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
-AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
+AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, nil, "EspMasterKeybind")
+AddPremiumToggle(VisualPage, "Render Aimbot FOV Circle", "FovCircle")
+AddPremiumSlider(VisualPage, "Dynamic FOV Radius", 10, 600, "FovRadius")
+AddPremiumToggle(VisualPage, "Draw Center Crosshair Dot", "CrosshairDot")
+AddPremiumToggle(VisualPage, "Render Safe 3D Box ESP", "EspBox")
+AddPremiumToggle(VisualPage, "Render Directional Tracer", "EspTracer")
 AddTracerModeSelector(VisualPage)
-AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
-AddPremiumToggle(VisualPage, "Show Character Health Bar", "EspHealth") -- CẤU HÌNH THANH MÁU TRONG MENU THEO LỆNH ĐẠI CA
-AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
+AddPremiumToggle(VisualPage, "Display Identity Name", "EspName")
+AddPremiumToggle(VisualPage, "Display Health Monitor", "EspHealth")
+AddPremiumSlider(VisualPage, "Visual Transparency %", 10, 100, "EspTransparency")
+AddPremiumSlider(VisualPage, "Max Esp Rendering Distance", 100, 10000, "MaxDistance")
 
-AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
-AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
-AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
+AddPremiumCreditBox(CreditsPage, "LEAD DEVELOPER", "DAI CA WANG - PROJECT OWNER")
+AddPremiumCreditBox(CreditsPage, "CORE CORE ENGINE", "POWERED BY BE FOR DAI CA WANG (2026)")
 
-AddPremiumToggle(MiscPage, "Show Mobile Aim Button", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Trigger Button", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Speed Button", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Farm Button", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
-
-AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
-    MasterLoop:Disconnect()
-    pcall(function() FOV_Drawing:Remove() end)
-    pcall(function() Dot_Drawing:Remove() end)
-    pcall(function() mouse1release() end)
-    for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
-    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
-    Lighting.Ambient = Config.StoredAmbient
-    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
-    ScreenGui:Destroy()
-end)
-
-AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.1 - Fixed Toggle Sensitivity & Touch Release")
-AddPremiumCreditBox(CreditsPage, "Active Users Engine", "1k+ Active Exploiter Accounts (Verified)")
-
-CreatePremiumTab("Combat", "⚔", 1, CombatPage)
-CreatePremiumTab("Player", "👤", 2, PlayerPage)
-CreatePremiumTab("Movement", "🏃", 3, MovementPage)
-CreatePremiumTab("Visuals", "👁", 4, VisualPage)
-CreatePremiumTab("Misc", "⚙", 5, MiscPage)
-CreatePremiumTab("Credits", "👑", 6, CreditsPage)
-
-local function RegisterMobileClick(Btn, Key)
-    RegisterTouchFriendlyClick(Btn, function()
-        Config[Key] = not Config[Key]
-        UpdateToggleVisual(Key)
-    end)
-end
-
-RegisterMobileClick(MobAim, "Aimbot")
-RegisterMobileClick(MobTrig, "Triggerbot")
-RegisterMobileClick(MobSpeed, "SpeedToggle")
-RegisterMobileClick(MobFarm, "AutoFarmPlayer")
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    
-    if input.KeyCode == Config.MenuKeybind then
-        Config.MenuVisible = not Config.MenuVisible
-        MainFrame.Visible = Config.MenuVisible
-    elseif input.KeyCode == Config.AimbotKeybind and Config.AimbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Aimbot = not Config.Aimbot
-        UpdateToggleVisual("Aimbot")
-    elseif input.KeyCode == Config.TriggerbotKeybind and Config.TriggerbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Triggerbot = not Config.Triggerbot
-        UpdateToggleVisual("Triggerbot")
-    elseif input.KeyCode == Config.SpinbotKeybind and Config.SpinbotKeybind ~= Enum.KeyCode.Unknown then
-        Config.Spinbot = not Config.Spinbot
-        UpdateToggleVisual("Spinbot")
-    elseif input.KeyCode == Config.EspMasterKeybind and Config.EspMasterKeybind ~= Enum.KeyCode.Unknown then
-        Config.EspMaster = not Config.EspMaster
-        UpdateToggleVisual("EspMaster")
-    elseif input.KeyCode == Config.SpeedKeybind and Config.SpeedKeybind ~= Enum.KeyCode.Unknown then
-        Config.SpeedToggle = not Config.SpeedToggle
-        UpdateToggleVisual("SpeedToggle")
-    elseif input.KeyCode == Config.JumpKeybind and Config.JumpKeybind ~= Enum.KeyCode.Unknown then
-        Config.JumpToggle = not Config.JumpToggle
-        UpdateToggleVisual("JumpToggle")
-    end
-end)
-
-local function RenderVisuals(Player, Character)
-    if not Character or not Character.Parent then return end
-    local Root = Character:WaitForChild("HumanoidRootPart", 5)
-    local Head = Character:WaitForChild("Head", 5)
-    if not Root or not Head then return end
-    
-    CleanCharacterVisuals(Character)
-    
-    local Box = Instance.new("BoxHandleAdornment")
-    Box.Name = "BéBoxFill"
-    Box.Parent = Root
-    Box.Adornee = Root
-    Box.AlwaysOnTop = true
-    Box.ZIndex = 10
-    Box.Size = Vector3.new(4, 6, 4)
-    Box.Visible = false
-
-    local Gui = Instance.new("BillboardGui")
-    Gui.Name = "BéInfoTag"
-    Gui.Adornee = Head
-    Gui.Size = UDim2.new(0, 200, 0, 100)
-    Gui.StudsOffset = Vector3.new(0, 4, 0)
-    Gui.AlwaysOnTop = true
-
-    local Label = Instance.new("TextLabel", Gui)
-    Label.Size = UDim2.new(1, 0, 0, 40)
-    Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 13
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    
-    -- TẠO SẴN KHUNG THANH MÁU TRONG BILLBOARD GUI
-    local HealthBG = Instance.new("Frame", Gui)
-    HealthBG.Name = "HealthBG"
-    HealthBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-    HealthBG.BorderSizePixel = 1
-    HealthBG.Position = UDim2.new(0.25, 0, 0, 45)
-    HealthBG.Size = UDim2.new(0.5, 0, 0, 5)
-    HealthBG.Visible = false
-    
-    local HealthBar = Instance.new("Frame", HealthBG)
-    HealthBar.Name = "HealthBar"
-    HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-    HealthBar.BorderSizePixel = 0
-    HealthBar.Size = UDim2.new(1, 0, 1, 0)
-
-    Gui.Parent = Head
-    Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, HealthBG = HealthBG, HealthBar = HealthBar, Player = Player }
-end
-
-local function MonitorPlayer(Player)
-    if Player == LocalPlayer then return end
-    Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
-    if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
-end
-
+-- ==============================================================================
+-- 6. RUNTIME MASTER ENGINE SYNCHRONIZATION LOOP
+-- ==============================================================================
 MasterLoop = RunService.RenderStepped:Connect(function()
-    local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-    
-    if Config.FovCircle then
-        FOV_Drawing.Position = ScreenCenter
-        FOV_Drawing.Radius = Config.FovRadius
-        FOV_Drawing.Visible = true
-    else
-        FOV_Drawing.Visible = false
-    end
-
-    if Config.CrosshairDot then
-        Dot_Drawing.Position = ScreenCenter
-        Dot_Drawing.Visible = true
-    else
-        Dot_Drawing.Visible = false
-    end
-
     local MyChar = LocalPlayer.Character
-    if IsAlive(MyChar) then
-        local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
-        local MyRoot = MyChar:FindFirstChild("HumanoidRootPart")
+    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+    local MyHum = MyChar and MyChar:FindFirstChildOfClass("Humanoid")
+    
+    if MyRoot and MyHum and IsAlive(MyChar) then
+        if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
+        if Config.JumpToggle then MyHum.JumpPower = Config.JumpPower MyHum.UseJumpPower = true end
         
-        if MyHum then
-            if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
-            if Config.JumpToggle then MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end
-        end
-        
-        if Config.Spinbot and MyRoot then
+        if Config.Spinbot then
             CurrentSpinAngle = (CurrentSpinAngle + Config.SpinSpeed) % 360
-            MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
+            MyRoot.CFrame = MyRoot.CFrame * CFrame.Angles(0, math.rad(Config.SpinSpeed), 0)
         end
     end
-
-    task.spawn(ProcessAutoFarmPlayer)
-    if Config.Triggerbot then task.spawn(PerformTriggerbotClick) end
-
-    if Config.Aimbot and not Config.AutoFarmPlayer then
-        local Target = GetClosestPlayerToCrosshair()
-        if Target then
-            local LerpFactor = 1
+    
+    -- ĐỒNG BỘ ENGINE KILL AURA ĐỂ QUAY TÂM VÀ TỰ ĐỘNG BẮN
+    if Config.KillAura then
+        pcall(RunKillAuraEngine)
+    end
+    
+    if Config.Aimbot then
+        local TargetPart = GetClosestPlayerToCrosshair()
+        if TargetPart then
+            local LookPos = TargetPart.Position
             if Config.Smoothness > 0 then
-                LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, LookPos), 1 / Config.Smoothness)
+            else
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, LookPos)
             end
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
         end
     end
+    
+    if Config.Triggerbot then pcall(PerformTriggerbotClick) end
+    pcall(ProcessAutoFarmPlayer)
+    
+    -- ĐỒNG BỘ ĐỒ HỌA 2D DRAWING OVERLAYS
+    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FOV_Drawing.Position = Center FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = Config.FovCircle and Config.MenuVisible
+    Dot_Drawing.Position = Center Dot_Drawing.Visible = Config.CrosshairDot
+end)
+---[còn tiếp]---
+local function MonitorPlayer(Player)
+    local function ApplyVisuals(Char)
+        if not Char then return end
+        Char:WaitForChild("HumanoidRootPart", 5)
+        Char:WaitForChild("Humanoid", 5)
+        
+        task.wait(0.5)
+        if not Char.Parent then return end
+        CleanCharacterVisuals(Char)
+        
+        local BoxFill = Instance.new("BoxHandleAdornment")
+        BoxFill.Name = "BéBoxFill"
+        BoxFill.AlwaysOnTop = true
+        BoxFill.ZIndex = 5
+        BoxFill.Adornee = Char
+        BoxFill.Color3 = GetPlayerColor(Player)
+        BoxFill.Transparency = 1
+        BoxFill.Size = Vector3.new(4, 5.5, 3.5)
+        BoxFill.Parent = Char
 
+        local BBG = Instance.new("BillboardGui")
+        BBG.Name = "BéInfoTag"
+        BBG.AlwaysOnTop = true
+        BBG.Size = UDim2.new(0, 160, 0, 40)
+        BBG.StudsOffset = Vector3.new(0, 3.5, 0)
+        BBG.Parent = Char
+
+        local Txt = Instance.new("TextLabel", BBG)
+        Txt.Size = UDim2.new(1, 0, 0, 16)
+        Txt.BackgroundTransparency = 1
+        Txt.Font = Enum.Font.GothamBold
+        Txt.TextSize = 11
+        Txt.TextColor3 = GetPlayerColor(Player)
+        Txt.Text = Player.Name
+
+        local HBG = Instance.new("Frame", BBG)
+        HBG.Size = UDim2.new(0, 70, 0, 3.5)
+        HBG.Position = UDim2.new(0.5, -35, 0, 18)
+        HBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+        HBG.BorderSizePixel = 0
+
+        local HBar = Instance.new("Frame", HBG)
+        HBar.Size = UDim2.new(1, 0, 1, 0)
+        HBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        HBar.BorderSizePixel = 0
+
+        Character_Cache[Char] = {Box = BoxFill, Label = Txt, HealthBG = HBG, HealthBar = HBar, Player = Player}
+    end
+
+    Player.CharacterAdded:Connect(ApplyVisuals)
+    if Player.Character then task.spawn(ApplyVisuals, Player.Character) end
+end
+
+RunService.Heartbeat:Connect(function()
+    local MyChar = LocalPlayer.Character
+    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+    
     for Char, Data in pairs(Character_Cache) do
         if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
             local Hum = Char:FindFirstChildOfClass("Humanoid")
-            
-            if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum then
-                local PColor = GetPlayerColor(Data.Player)
-                local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
-
-                if Config.EspBox and Dist <= Config.MaxDistance then
-                    Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100
-                else Data.Box.Visible = false end
-
-                if Config.EspName and Dist <= Config.MaxDistance then
-                    Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor
-                    Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char))
-                else Data.Label.Visible = false end
-
-                -- ĐÃ TÍCH HỢP: HIỂN THỊ THANH MÁU THEO TRẠNG THÁI BẬT/TẮT TRONG MENU VISUAL
-                if Config.EspHealth and Dist <= Config.MaxDistance then
-                    Data.Gui.Enabled = true
-                    Data.HealthBG.Visible = true
-                    local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1)
-                    Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0)
-                    Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1)
+            if Root and Hum and MyRoot then
+                local Dist = (MyRoot.Position - Root.Position).Magnitude
+                if Config.EspMaster and Dist <= Config.MaxDistance and not IsTeammate(Data.Player) then
+                    local RealAlpha = (100 - Config.EspTransparency) / 100
+                    Data.Box.Visible = Config.EspBox Data.Box.Transparency = Config.EspBox and (1 - (RealAlpha * 0.25)) or 1
+                    Data.Box.Color3 = GetPlayerColor(Data.Player)
+                    
+                    Data.Label.Visible = Config.EspName Data.Label.TextTransparency = 1 - RealAlpha
+                    Data.Label.Text = string.format("%s\n[%d studs] [%s]", Data.Player.Name, math.floor(Dist), GetEquippedTool(Char))
+                    Data.Label.TextColor3 = GetPlayerColor(Data.Player)
+                    
+                    Data.HealthBG.Visible = Config.EspHealth Data.HealthBG.BackgroundTransparency = 1 - RealAlpha
+                    Data.HealthBar.BackgroundTransparency = 1 - RealAlpha
+                    Data.HealthBar.Size = UDim2.new(math.clamp(Hum.Health / Hum.MaxHealth, 0, 1), 0, 1, 0)
+                    
+                    local Tracer = Tracer_Cache[Data.Player]
+                    local Leg = Root.Position - Vector3.new(0, 3, 0)
+                    local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Leg)
+                    if Config.EspTracer and OnScreen then
+                        Tracer.From = Config.TracerMode == "Center" and Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2) or Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                        Tracer.To = Vector2.new(ScreenPos.X, ScreenPos.Y) Tracer.Color = GetPlayerColor(Data.Player) Tracer.Transparency = RealAlpha Tracer.Visible = true
+                    else if Tracer then Tracer.Visible = false end end
                 else
-                    Data.HealthBG.Visible = false
+                    Data.Box.Visible = false Data.Label.Visible = false Data.HealthBG.Visible = false
+                    if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
                 end
-
-                local Tracer = Tracer_Cache[Data.Player]
-                if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
-                    local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
-                    if OnScreen then
-                        Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom
-                        Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true
-                    else Tracer.Visible = false end
-                elseif Tracer then Tracer.Visible = false end
             else
                 Data.Box.Visible = false Data.Label.Visible = false Data.HealthBG.Visible = false
                 if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end
@@ -1137,13 +1258,36 @@ Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Config.MenuKeybind then
+        Config.MenuVisible = not Config.MenuVisible
+        MainFrame.Visible = Config.MenuVisible
+    elseif input.KeyCode == Config.AimbotKeybind then
+        Config.Aimbot = not Config.Aimbot UpdateToggleVisual("Aimbot")
+    elseif input.KeyCode == Config.TriggerbotKeybind then
+        Config.Triggerbot = not Config.Triggerbot UpdateToggleVisual("Triggerbot")
+    elseif input.KeyCode == Config.SpeedKeybind then
+        Config.SpeedToggle = not Config.SpeedToggle UpdateToggleVisual("SpeedToggle")
+    elseif input.KeyCode == Config.JumpKeybind then
+        Config.JumpToggle = not Config.JumpToggle UpdateToggleVisual("JumpToggle")
+    elseif input.KeyCode == Config.SpinbotKeybind then
+        Config.Spinbot = not Config.Spinbot UpdateToggleVisual("Spinbot")
+    elseif input.KeyCode == Config.EspMasterKeybind then
+        Config.EspMaster = not Config.EspMaster UpdateToggleVisual("EspMaster")
+    elseif input.KeyCode == Config.KillAuraKeybind then
+        Config.KillAura = not Config.KillAura UpdateToggleVisual("KillAura")
+    end
+end)
+
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.1",
-        Text = "Đã sửa xong lỗi kẹt nhả nút bấm trên Mobile cho đại ca! Test lại luôn đi đại ca ơi!",
+        Title = "WANGCAOS CLIENT V6.2",
+        Text = "Đã cập nhật Kill Aura 3D và Mục Chat Toàn Bộ Server cho đại ca!",
         Duration = 7
     })
 end)
 -- ==============================================================================
 -- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================
+---[hết mục]---

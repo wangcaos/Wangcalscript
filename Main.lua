@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.3.0 - SYNCED ESP & TRACER COLOR MATRIX
+-- WANGCAOS PREMIUM CLIENT V6.3.3 - FIXED ULTIMATE SLIDER & TOUCH ENGINE
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -64,7 +64,7 @@ local Config = {
     EspTracer = false,
     TracerMode = "Bottom",
     
-    EspColor = Color3.fromRGB(255, 50, 50), -- Màu đồng bộ cho cả ESP và Tracers
+    EspColor = Color3.fromRGB(255, 50, 50),
     EspName = false,
     EspHealth = false,
     EspTransparency = 80,
@@ -251,7 +251,7 @@ local function CheckTriggerWall(Position)
 end
 
 -- ==============================================================================
--- 5. LOWEST HEALTH PRIORITY TARGET LOCK
+-- 5. TARGET LOCK ENGINE
 -- ==============================================================================
 local function GetClosestPlayerToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -330,7 +330,6 @@ local function GetAuraTarget()
     return BestTarget
 end
 local function GetPlayerColor(Player)
-    -- Nếu bật TeamCheck và là đồng đội thì giữ màu xanh lam mặc định, ngược lại trả về màu tùy chỉnh của Đại ca
     return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Config.EspColor
 end
 
@@ -407,7 +406,7 @@ local function ProcessAutoFarmPlayer()
 end
 
 -- ==============================================================================
--- 6. GUI CONSTRUCTION LAYER
+-- 6. DYNAMIC UI CORE ENGINE (FIXED DRAG & TOUCH ENGINE)
 -- ==============================================================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
@@ -468,7 +467,6 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
         end
     end)
 end
-
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
@@ -492,6 +490,7 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
+
 local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
@@ -585,7 +584,6 @@ RegisterTouchFriendlyClick(ToggleButton, function()
     Config.MenuVisible = not Config.MenuVisible
     MainFrame.Visible = Config.MenuVisible
 end)
-
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -615,6 +613,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
 CombatPage.Visible = true
+
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
@@ -670,7 +669,6 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
-
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -727,13 +725,10 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
         local Listening = false
         local ListenConnection
-        local TouchConnection
-        local CurrentSessionID = 0
 
         local function EndListening(NewKey)
             Listening = false
             if ListenConnection then ListenConnection:Disconnect() end
-            if TouchConnection then TouchConnection:Disconnect() end
             if NewKey then
                 Config[BindKey] = NewKey
                 BindBtn.Text = NewKey.Name:upper()
@@ -749,12 +744,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
             BindBtn.Text = "..."
             BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
             
-            CurrentSessionID = math.random()
-            local ThisSession = CurrentSessionID
-
-            task.delay(5, function()
-                if Listening and CurrentSessionID == ThisSession then EndListening(nil) end
-            end)
+            task.delay(5, function() if Listening then EndListening(nil) end end)
 
             ListenConnection = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -764,6 +754,10 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         end)
     end
 end
+
+-- =========================================================================================
+-- HỆ THỐNG SLIDER FIX LỖI KẸT 100% TRÊN CẢ PC VÀ MOBILE CHO ĐẠI CA
+-- =========================================================================================
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -816,25 +810,38 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Btn.Text = ""
 
     local Dragging = false
+
+    local function Update(inputPos)
+        local mouseX = (inputPos and inputPos.X) or Mouse.X
+        local ratio = math.clamp((mouseX - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+        local val = Min + (Max - Min) * ratio
+        if Max - Min > 10 then val = math.floor(val) else val = math.floor(val * 10) / 10 end
+        
+        Fill.Size = UDim2.new(ratio, 0, 1, 0)
+        ValTxt.Text = tostring(val)
+        Config[Key] = val
+        if Callback then Callback(val) end
+    end
+
     Btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = true end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            Dragging = true 
+            Update(input.Position)
+        end
     end)
-    Btn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.MouseButton1 or input.UserInputType == Enum.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            Dragging = false 
+        end
     end)
+
     UserInputService.InputChanged:Connect(function(input)
         if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local ratio = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-            local val = Min + (Max - Min) * ratio
-            if Max - Min > 10 then val = math.floor(val) else val = math.floor(val * 10) / 10 end
-            Fill.Size = UDim2.new(ratio, 0, 1, 0)
-            ValTxt.Text = tostring(val)
-            Config[Key] = val
-            if Callback then Callback(val) end
+            Update(input.Position)
         end
     end)
 end
-
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -904,7 +911,6 @@ local function AddHitboxSelector(Page)
     end)
 end
 
--- BỘ ĐỔI MÀU ĐỒNG BỘ ESP VÀ TRACER CHO ĐẠI CA
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -940,6 +946,7 @@ local function AddSyncedEspColorSelector(Page)
         ColorBtn.BackgroundColor3 = Config.EspColor
     end)
 end
+
 local function AddAuraColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -975,7 +982,6 @@ local function AddAuraColorSelector(Page)
         ColorBtn.BackgroundColor3 = Config.AuraColor
     end)
 end
-
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1038,7 +1044,6 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
--- KHỞI TẠO TAB COMBAT & PLAYER
 AddPremiumToggle(CombatPage, "Kích Hoạt Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Check Riêng", "TeamCheckAura")
 AddPremiumSlider(CombatPage, "Bán Kính Vòng Aura", 5, 150, "AuraRadius")
@@ -1067,18 +1072,18 @@ AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(st
 end)
 AddPremiumToggle(PlayerPage, "Enable Spinbot", "Spinbot", nil, nil, "SpinbotKeybind")
 AddPremiumSlider(PlayerPage, "Spinbot Rotate Speed", 5, 100, "SpinSpeed")
+
 AddPremiumToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
 AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
 AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
 AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
 
--- KHỞI TẠO TAB VISUALS VỚI NÚT ĐỔI MÀU CHUNG ĐỒNG BỘ
 AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
 AddTracerModeSelector(VisualPage)
-AddSyncedEspColorSelector(VisualPage) -- Đặt bảng màu đồng bộ tại đây
+AddSyncedEspColorSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(VisualPage, "Show Character Health Bar", "EspHealth") 
 AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
@@ -1108,7 +1113,7 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.3.0 - Synced Color Engine Active")
+AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.3.3 - Fixed UI Input Bounds")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1234,7 +1239,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     
     if IsAlive(MyChar) and MyRoot then
         local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
-        
         if MyHum then
             if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
             if Config.JumpToggle then MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end
@@ -1313,7 +1317,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                     if OnScreen then
                         Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom
                         Tracer.To = Vector2.new(Leg.X, Leg.Y) 
-                        Tracer.Color = PColor -- Cập nhật thời gian thực màu đồng bộ sang Line Tracer
+                        Tracer.Color = PColor
                         Tracer.Visible = true
                     else Tracer.Visible = false end
                 elseif Tracer then Tracer.Visible = false end
@@ -1333,8 +1337,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.3.0",
-        Text = "Đã đồng bộ hóa bảng chọn màu ESP và Tracers thành một nút duy nhất cho đại ca!",
+        Title = "WANGCAOS CLIENT V6.3.3",
+        Text = "Bé đã fix lỗi kẹt thanh Slider trên cảm ứng cho đại ca rồi nha, test vuốt xả láng luôn!",
         Duration = 7
     })
 end)

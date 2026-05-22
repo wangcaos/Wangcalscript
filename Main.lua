@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.3.3 - FIXED ULTIMATE SLIDER & TOUCH ENGINE
+-- WANGCAOS PREMIUM CLIENT V6.4.0 - ENGLISH VERSION WITH AURA WALLCHECK
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -33,6 +33,7 @@ local Config = {
     Aura = false,
     AuraKeybind = Enum.KeyCode.H,
     TeamCheckAura = true,
+    AuraWallCheck = true,
     AuraRadius = 30,
     AuraColor = Color3.fromRGB(0, 170, 255),
     AuraTransparency = 50,
@@ -229,7 +230,7 @@ local function IsTeammate(Player)
 end
 
 local function CheckWallOcclusion(TargetPart, Character)
-    if not Config.WallCheck then return true end
+    if not Config.WallCheck and not Config.AuraWallCheck then return true end
     local Origin = Camera.CFrame.Position
     local Direction = TargetPart.Position - Origin
     local Params = RaycastParams.new()
@@ -307,6 +308,8 @@ local function GetAuraTarget()
             local Hum = Player.Character:FindFirstChildOfClass("Humanoid")
             
             if EnemyHead and EnemyRoot and Hum then
+                if Config.AuraWallCheck and not CheckWallOcclusion(EnemyHead, Player.Character) then continue end
+                
                 local MyPosFlat = Vector3.new(MyRoot.Position.X, 0, MyRoot.Position.Z)
                 local EnemyPosFlat = Vector3.new(EnemyRoot.Position.X, 0, EnemyRoot.Position.Z)
                 local DistFlat = (EnemyPosFlat - MyPosFlat).Magnitude
@@ -602,7 +605,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 520)
+    page.CanvasSize = UDim2.new(0, 0, 0, 550)
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
@@ -755,9 +758,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
 end
 
--- =========================================================================================
--- HỆ THỐNG SLIDER FIX LỖI KẸT 100% TRÊN CẢ PC VÀ MOBILE CHO ĐẠI CA
--- =========================================================================================
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -923,7 +923,7 @@ local function AddSyncedEspColorSelector(Page)
     Lbl.Position = UDim2.new(0, 10, 0, 0)
     Lbl.Size = UDim2.new(0, 140, 1, 0)
     Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "Màu ESP & Tracer"
+    Lbl.Text = "ESP & Tracer Color"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
     Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -933,7 +933,7 @@ local function AddSyncedEspColorSelector(Page)
     ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
     ColorBtn.Size = UDim2.new(0, 105, 0, 24)
     ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "ĐỔI MÀU CHUNG"
+    ColorBtn.Text = "CHANGE COLOR"
     ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ColorBtn.TextSize = 10
     Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
@@ -959,7 +959,7 @@ local function AddAuraColorSelector(Page)
     Lbl.Position = UDim2.new(0, 10, 0, 0)
     Lbl.Size = UDim2.new(0, 140, 1, 0)
     Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "Màu Vòng Tròn Aura"
+    Lbl.Text = "Aura Circle Color"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
     Lbl.TextSize = 12
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -969,7 +969,7 @@ local function AddAuraColorSelector(Page)
     ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
     ColorBtn.Size = UDim2.new(0, 105, 0, 24)
     ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "ĐỔI MÀU"
+    ColorBtn.Text = "SWAP COLOR"
     ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ColorBtn.TextSize = 11
     Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
@@ -1044,24 +1044,25 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
-AddPremiumToggle(CombatPage, "Kích Hoạt Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
-AddPremiumToggle(CombatPage, "Aura Team Check Riêng", "TeamCheckAura")
-AddPremiumSlider(CombatPage, "Bán Kính Vòng Aura", 5, 150, "AuraRadius")
-AddPremiumSlider(CombatPage, "Độ Mờ Vòng Aura (%)", 0, 100, "AuraTransparency")
+AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
+AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
+AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
+AddPremiumSlider(CombatPage, "Aura Field Radius", 5, 150, "AuraRadius")
+AddPremiumSlider(CombatPage, "Aura Transparency (%)", 0, 100, "AuraTransparency")
 AddAuraColorSelector(CombatPage)
-AddPremiumToggle(CombatPage, "Ưu Tiên Thấp Máu Nhất", "PriorityLowestHealth")
+AddPremiumToggle(CombatPage, "Priority Lowest Health", "PriorityLowestHealth")
 
 AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
 AddPremiumToggle(CombatPage, "Aimbot Team Guard", "TeamCheck")
-AddPremiumToggle(CombatPage, "Wall Occlusion Check", "WallCheck")
-AddPremiumSlider(CombatPage, "Aimbot Smoothness", 0, 10, "Smoothness")
+AddPremiumToggle(CombatPage, "Aimbot Wall Occlusion", "WallCheck")
+AddPremiumSlider(CombatPage, "Aimbot Smoothness Factor", 0, 10, "Smoothness")
 AddHitboxSelector(CombatPage)
-AddPremiumToggle(CombatPage, "Triggerbot Click", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
-AddPremiumToggle(CombatPage, "Triggerbot Gun WallCheck", "TriggerWallCheck")
+AddPremiumToggle(CombatPage, "Triggerbot Click Engine", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
+AddPremiumToggle(CombatPage, "Triggerbot Wall Check", "TriggerWallCheck")
 
 AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
-AddPremiumSlider(PlayerPage, "Farm TP Delay Interval", 0.01, 5, "AutoFarmDelay")
-AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(state)
+AddPremiumSlider(PlayerPage, "Farm TP Intervallic Delay", 0.01, 5, "AutoFarmDelay")
+AddPremiumToggle(PlayerPage, "FullBright Atmosphere", "FullBright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
@@ -1070,36 +1071,36 @@ AddPremiumToggle(PlayerPage, "FullBright Environment", "FullBright", function(st
         Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     end
 end)
-AddPremiumToggle(PlayerPage, "Enable Spinbot", "Spinbot", nil, nil, "SpinbotKeybind")
-AddPremiumSlider(PlayerPage, "Spinbot Rotate Speed", 5, 100, "SpinSpeed")
+AddPremiumToggle(PlayerPage, "Enable Spinbot Axis", "Spinbot", nil, nil, "SpinbotKeybind")
+AddPremiumSlider(PlayerPage, "Spinbot Rotate Velocity", 5, 100, "SpinSpeed")
 
-AddPremiumToggle(MovementPage, "WalkSpeed Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
-AddPremiumSlider(MovementPage, "Speed Multiplier", 16, 200, "WalkSpeed")
-AddPremiumToggle(MovementPage, "JumpPower Boost", "JumpToggle", nil, nil, "JumpKeybind")
-AddPremiumSlider(MovementPage, "Jump Force Power", 50, 350, "JumpPower")
+AddPremiumToggle(MovementPage, "WalkSpeed Safe Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
+AddPremiumSlider(MovementPage, "Speed Core Value", 16, 200, "WalkSpeed")
+AddPremiumToggle(MovementPage, "JumpPower Boost Axis", "JumpToggle", nil, nil, "JumpKeybind")
+AddPremiumSlider(MovementPage, "Jump Force Magnitude", 50, 350, "JumpPower")
 
-AddPremiumToggle(VisualPage, "Master Visual ESP Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
+AddPremiumToggle(VisualPage, "Master ESP Overlay Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
-AddPremiumSlider(VisualPage, "Chams Box Transparency", 0, 100, "EspTransparency")
-AddPremiumToggle(VisualPage, "Snapline Tracers", "EspTracer")
+AddPremiumSlider(VisualPage, "Chams Opacity Multiplier", 0, 100, "EspTransparency")
+AddPremiumToggle(VisualPage, "Snapline Tracers Vector", "EspTracer")
 AddTracerModeSelector(VisualPage)
 AddSyncedEspColorSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
-AddPremiumToggle(VisualPage, "Show Character Health Bar", "EspHealth") 
-AddPremiumSlider(VisualPage, "Max ESP Quét Toàn Bản Đồ", 100, 5000, "MaxDistance")
+AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
+AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
 
-AddPremiumToggle(MiscPage, "Draw Silent FOV Circle", "FovCircle")
-AddPremiumSlider(MiscPage, "FOV Calibration Radius", 30, 500, "FovRadius")
-AddPremiumToggle(MiscPage, "Crosshair Center Dot", "CrosshairDot")
+AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
+AddPremiumSlider(MiscPage, "FOV Perimeter Range", 30, 500, "FovRadius")
+AddPremiumToggle(MiscPage, "Crosshair Center Alignment Dot", "CrosshairDot")
 
-AddPremiumToggle(MiscPage, "Show Mobile Aura Button", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Aim Button", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Trigger Button", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Speed Button", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Show Mobile Farm Button", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Menu Custom Background", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
+AddPremiumToggle(MiscPage, "Display Mobile Aura Trigger", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Display Mobile Aim Trigger", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Display Mobile Trigger Clicker", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
 
-AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
+AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
     pcall(function() Dot_Drawing:Remove() end)
@@ -1112,8 +1113,8 @@ AddPremiumButton(MiscPage, "Force Uninject Script", "UNINJECT", function()
     ScreenGui:Destroy()
 end)
 
-AddPremiumCreditBox(CreditsPage, "Lead Programmer", "Đại ca Wang (Wangcaos Client Owner)")
-AddPremiumCreditBox(CreditsPage, "Script Status", "Premium V6.3.3 - Fixed UI Input Bounds")
+AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.4.0 - English Integration Ready")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1337,8 +1338,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.3.3",
-        Text = "Bé đã fix lỗi kẹt thanh Slider trên cảm ứng cho đại ca rồi nha, test vuốt xả láng luôn!",
+        Title = "WANGCAOS CLIENT V6.4.0",
+        Text = "Aura Wall-Check added successfully. Language configuration updated to English!",
         Duration = 7
     })
 end)

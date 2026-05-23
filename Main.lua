@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.4.0 - ENGLISH VERSION WITH AURA WALLCHECK
+-- WANGCAOS PREMIUM CLIENT V6.5.0 - ENGLISH VERSION WITH AURA SMOOTHNESS
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -34,6 +34,7 @@ local Config = {
     AuraKeybind = Enum.KeyCode.H,
     TeamCheckAura = true,
     AuraWallCheck = true,
+    AuraSmoothness = 5, -- Thêm độ nhạy cho Aura theo lệnh đại ca
     AuraRadius = 30,
     AuraColor = Color3.fromRGB(0, 170, 255),
     AuraTransparency = 50,
@@ -605,7 +606,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 550)
+    page.CanvasSize = UDim2.new(0, 0, 0, 600)
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
@@ -1048,6 +1049,7 @@ AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
 AddPremiumSlider(CombatPage, "Aura Field Radius", 5, 150, "AuraRadius")
+AddPremiumSlider(CombatPage, "Aura Smoothness Factor", 0, 10, "AuraSmoothness") -- Thêm UI chỉnh độ nhạy cho Aura
 AddPremiumSlider(CombatPage, "Aura Transparency (%)", 0, 100, "AuraTransparency")
 AddAuraColorSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Priority Lowest Health", "PriorityLowestHealth")
@@ -1114,7 +1116,7 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.4.0 - English Integration Ready")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.5.0 - Smooth Aura Engine Integrated")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1271,7 +1273,12 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Aura then
         AuraActiveTarget = GetAuraTarget()
         if AuraActiveTarget then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, AuraActiveTarget.Position)
+            -- ÁP DỤNG SMOOTHNESS (ĐỘ NHẠY LERP) CHO AURA
+            local LerpFactor = 1
+            if Config.AuraSmoothness > 0 then
+                LerpFactor = math.clamp(1 / (Config.AuraSmoothness * 3 + 1), 0.01, 1)
+            end
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, AuraActiveTarget.Position), LerpFactor)
         end
     end
 
@@ -1338,8 +1345,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.4.0",
-        Text = "Aura Wall-Check added successfully. Language configuration updated to English!",
+        Title = "WANGCAOS CLIENT V6.5.0",
+        Text = "Aura Smoothness Lerp Engine injected successfully! Ready to dominate.",
         Duration = 7
     })
 end)

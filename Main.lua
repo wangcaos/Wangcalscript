@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.5.0 - ENGLISH VERSION WITH AURA SMOOTHNESS
+-- WANGCAOS PREMIUM CLIENT V6.7.0 - BOW ENGINE & 3RD PERSON VIEW
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -34,7 +34,7 @@ local Config = {
     AuraKeybind = Enum.KeyCode.H,
     TeamCheckAura = true,
     AuraWallCheck = true,
-    AuraSmoothness = 5, -- Thêm độ nhạy cho Aura theo lệnh đại ca
+    AuraSmoothness = 5,
     AuraRadius = 30,
     AuraColor = Color3.fromRGB(0, 170, 255),
     AuraTransparency = 50,
@@ -50,6 +50,12 @@ local Config = {
     
     AutoFarmPlayer = false,
     AutoFarmDelay = 0.05,
+    
+    BowDown = false,
+    BowAngle = 45,
+    
+    ThirdPerson = false,
+    ThirdPersonDist = 15,
     
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
@@ -85,6 +91,7 @@ local Config = {
     ShowMobileSpeed = false,
     ShowMobileFarm = false,
     ShowMobileAura = false,
+    ShowMobileTP = false,
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -117,7 +124,7 @@ for _, old in pairs(SafeParent:GetChildren()) do
 end
 
 -- ==============================================================================
--- 3. DRAWING & AURA OBJECT ALLOCATION
+-- 3. DRAWING & CACHE ALLOCATION
 -- ==============================================================================
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor
@@ -143,6 +150,7 @@ AuraVisual.ZIndex = 5
 
 local Tracer_Cache = {}
 local Character_Cache = {}
+local NeckCache = {}
 
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
@@ -253,8 +261,19 @@ local function CheckTriggerWall(Position)
 end
 
 -- ==============================================================================
--- 5. TARGET LOCK ENGINE
+-- 5. HITBOX SELECTOR & TARGET LOCK ENGINE
 -- ==============================================================================
+local function GetDesiredHitbox(Character)
+    if Config.TargetPart == "Head" then
+        return Character:FindFirstChild("Head")
+    elseif Config.TargetPart == "Torso" then
+        return Character:FindFirstChild("HumanoidRootPart") or Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")
+    elseif Config.TargetPart == "Legs" then
+        return Character:FindFirstChild("Right Leg") or Character:FindFirstChild("RightLowerLeg") or Character:FindFirstChild("Left Leg") or Character:FindFirstChild("LeftLowerLeg") or Character:FindFirstChild("HumanoidRootPart")
+    end
+    return Character:FindFirstChild("Head")
+end
+
 local function GetClosestPlayerToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ClosestTarget = nil
@@ -265,8 +284,9 @@ local function GetClosestPlayerToCrosshair()
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
             if Config.TeamCheck and IsTeammate(Player) then continue end
             
-            local TargetPartInstance = Player.Character:FindFirstChild(Config.TargetPart)
+            local TargetPartInstance = GetDesiredHitbox(Player.Character)
             local Hum = Player.Character:FindFirstChildOfClass("Humanoid")
+            
             if TargetPartInstance and Hum then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(TargetPartInstance.Position)
                 if OnScreen and CheckWallOcclusion(TargetPartInstance, Player.Character) then
@@ -290,7 +310,6 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
-
 local function GetAuraTarget()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -304,12 +323,12 @@ local function GetAuraTarget()
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
             if Config.TeamCheckAura and IsTeammate(Player) then continue end
             
-            local EnemyHead = Player.Character:FindFirstChild("Head")
+            local TargetPartInstance = GetDesiredHitbox(Player.Character)
             local EnemyRoot = Player.Character:FindFirstChild("HumanoidRootPart")
             local Hum = Player.Character:FindFirstChildOfClass("Humanoid")
             
-            if EnemyHead and EnemyRoot and Hum then
-                if Config.AuraWallCheck and not CheckWallOcclusion(EnemyHead, Player.Character) then continue end
+            if TargetPartInstance and EnemyRoot and Hum then
+                if Config.AuraWallCheck and not CheckWallOcclusion(TargetPartInstance, Player.Character) then continue end
                 
                 local MyPosFlat = Vector3.new(MyRoot.Position.X, 0, MyRoot.Position.Z)
                 local EnemyPosFlat = Vector3.new(EnemyRoot.Position.X, 0, EnemyRoot.Position.Z)
@@ -319,12 +338,12 @@ local function GetAuraTarget()
                     if Config.PriorityLowestHealth then
                         if Hum.Health < LowestHealth then
                             LowestHealth = Hum.Health
-                            BestTarget = EnemyHead
+                            BestTarget = TargetPartInstance
                         end
                     else
                         if DistFlat < ClosestDist then
                             ClosestDist = DistFlat
-                            BestTarget = EnemyHead
+                            BestTarget = TargetPartInstance
                         end
                     end
                 end
@@ -333,6 +352,7 @@ local function GetAuraTarget()
     end
     return BestTarget
 end
+
 local function GetPlayerColor(Player)
     return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Config.EspColor
 end
@@ -351,7 +371,8 @@ local function PerformTriggerbotClick()
         local Plr = Players:GetPlayerFromCharacter(Char)
         if Plr and Plr ~= LocalPlayer and IsAlive(Char) then
             if Config.TeamCheck and IsTeammate(Plr) then return end
-            local TargetPart = Char:FindFirstChild("Head") or Char:FindFirstChild("HumanoidRootPart")
+            
+            local TargetPart = GetDesiredHitbox(Char)
             if TargetPart and CheckTriggerWall(TargetPart.Position) then
                 pcall(function() mouse1click() end)
             end
@@ -408,7 +429,6 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
-
 -- ==============================================================================
 -- 6. DYNAMIC UI CORE ENGINE (FIXED DRAG & TOUCH ENGINE)
 -- ==============================================================================
@@ -471,6 +491,7 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
         end
     end)
 end
+
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
@@ -494,12 +515,12 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
-
 local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
 local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
 local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
+local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Color3.fromRGB(150, 150, 150), UDim2.new(0.85, 0, 0.70, 0))
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
@@ -606,7 +627,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 600)
+    page.CanvasSize = UDim2.new(0, 0, 0, 650)
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
@@ -670,6 +691,7 @@ local function UpdateToggleVisual(Key)
         elseif Key == "SpeedToggle" then MData.Btn.Text = state and "SPD\nON" or "SPD\nOFF"
         elseif Key == "AutoFarmPlayer" then MData.Btn.Text = state and "FRM\nON" or "FRM\nOFF"
         elseif Key == "Aura" then MData.Btn.Text = state and "AUR\nON" or "AUR\nOFF"
+        elseif Key == "ThirdPerson" then MData.Btn.Text = state and "3RD\nON" or "3RD\nOFF"
         end
     end
 end
@@ -758,7 +780,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         end)
     end
 end
-
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -895,7 +916,7 @@ local function AddHitboxSelector(Page)
     HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12)
     HitboxBtn.Size = UDim2.new(0, 105, 0, 24)
     HitboxBtn.Font = Enum.Font.GothamBold
-    HitboxBtn.Text = Config.TargetPart == "Head" and "HEAD" or "TORSO"
+    HitboxBtn.Text = Config.TargetPart:upper()
     HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     HitboxBtn.TextSize = 11
     Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4)
@@ -903,8 +924,11 @@ local function AddHitboxSelector(Page)
 
     RegisterTouchFriendlyClick(HitboxBtn, function()
         if Config.TargetPart == "Head" then
-            Config.TargetPart = "HumanoidRootPart"
+            Config.TargetPart = "Torso"
             HitboxBtn.Text = "TORSO"
+        elseif Config.TargetPart == "Torso" then
+            Config.TargetPart = "Legs"
+            HitboxBtn.Text = "LEGS"
         else
             Config.TargetPart = "Head"
             HitboxBtn.Text = "HEAD"
@@ -947,7 +971,6 @@ local function AddSyncedEspColorSelector(Page)
         ColorBtn.BackgroundColor3 = Config.EspColor
     end)
 end
-
 local function AddAuraColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -983,6 +1006,7 @@ local function AddAuraColorSelector(Page)
         ColorBtn.BackgroundColor3 = Config.AuraColor
     end)
 end
+
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1044,12 +1068,11 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 11
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
-
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
 AddPremiumSlider(CombatPage, "Aura Field Radius", 5, 150, "AuraRadius")
-AddPremiumSlider(CombatPage, "Aura Smoothness Factor", 0, 10, "AuraSmoothness") -- Thêm UI chỉnh độ nhạy cho Aura
+AddPremiumSlider(CombatPage, "Aura Smoothness Factor", 0, 10, "AuraSmoothness")
 AddPremiumSlider(CombatPage, "Aura Transparency (%)", 0, 100, "AuraTransparency")
 AddAuraColorSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Priority Lowest Health", "PriorityLowestHealth")
@@ -1062,6 +1085,9 @@ AddHitboxSelector(CombatPage)
 AddPremiumToggle(CombatPage, "Triggerbot Click Engine", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
 AddPremiumToggle(CombatPage, "Triggerbot Wall Check", "TriggerWallCheck")
 
+-- TÍNH NĂNG CÚI ĐẦU ĐƯỢC CHÈN VÀO ĐÂY THEO LỆNH ĐẠI CA
+AddPremiumToggle(PlayerPage, "Enable Character Head Bow", "BowDown", nil, nil, nil)
+AddPremiumSlider(PlayerPage, "Head Bow Angle Degree", 0, 90, "BowAngle")
 AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
 AddPremiumSlider(PlayerPage, "Farm TP Intervallic Delay", 0.01, 5, "AutoFarmDelay")
 AddPremiumToggle(PlayerPage, "FullBright Atmosphere", "FullBright", function(state)
@@ -1091,17 +1117,19 @@ AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
 AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
 
+-- TÍNH NĂNG GÓC NHÌN THỨ 3 (THIRD PERSON) CHÈN VÀO MISC THEO LỆNH ĐẠI CA
+AddPremiumToggle(MiscPage, "Force Third Person View", "ThirdPerson", nil, nil, nil)
+AddPremiumSlider(MiscPage, "Third Person Distance", 5, 100, "ThirdPersonDist")
 AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Perimeter Range", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Alignment Dot", "CrosshairDot")
-
+AddPremiumToggle(MiscPage, "Display Mobile 3RD Button", "ShowMobileTP", function(state) GlobalMobileButtons["ThirdPerson"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Aura Trigger", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Aim Trigger", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Trigger Clicker", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
-
 AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
@@ -1110,13 +1138,21 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
     pcall(function() mouse1release() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
+    
+    -- Khôi phục C0 gốc của cổ nếu Uninject
+    for neck, origC0 in pairs(NeckCache) do
+        if neck and neck.Parent then pcall(function() neck.C0 = origC0 end) end
+    end
+    LocalPlayer.CameraMinZoomDistance = 0.5
+    LocalPlayer.CameraMaxZoomDistance = 400
+    
     Lighting.Ambient = Config.StoredAmbient
     Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.5.0 - Smooth Aura Engine Integrated")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.7.0 - Head Bow & Third Person Sync")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1137,6 +1173,8 @@ RegisterMobileClick(MobTrig, "Triggerbot")
 RegisterMobileClick(MobSpeed, "SpeedToggle")
 RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 RegisterMobileClick(MobAura, "Aura")
+RegisterMobileClick(MobTP, "ThirdPerson")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
@@ -1166,7 +1204,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
         UpdateToggleVisual("JumpToggle")
     end
 end)
-
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
@@ -1237,6 +1274,15 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         Dot_Drawing.Visible = true
     else Dot_Drawing.Visible = false end
 
+    -- LOGIC THIRD PERSON
+    if Config.ThirdPerson then
+        LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist
+        LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist
+    else
+        LocalPlayer.CameraMinZoomDistance = 0.5
+        LocalPlayer.CameraMaxZoomDistance = 400
+    end
+
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
     
@@ -1250,6 +1296,22 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         if Config.Spinbot then
             CurrentSpinAngle = (CurrentSpinAngle + Config.SpinSpeed) % 360
             MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
+        end
+        
+        -- LOGIC CÚI ĐẦU (HEAD BOW)
+        local headInstance = MyChar:FindFirstChild("Head")
+        local torsoInstance = MyChar:FindFirstChild("UpperTorso") or MyChar:FindFirstChild("Torso")
+        local neckJoint = (headInstance and headInstance:FindFirstChild("Neck")) or (torsoInstance and torsoInstance:FindFirstChild("Neck"))
+        
+        if neckJoint and neckJoint:IsA("Motor6D") then
+            if not NeckCache[neckJoint] then
+                NeckCache[neckJoint] = neckJoint.C0
+            end
+            if Config.BowDown then
+                neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0)
+            else
+                neckJoint.C0 = NeckCache[neckJoint]
+            end
         end
         
         if Config.Aura then
@@ -1273,7 +1335,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Aura then
         AuraActiveTarget = GetAuraTarget()
         if AuraActiveTarget then
-            -- ÁP DỤNG SMOOTHNESS (ĐỘ NHẠY LERP) CHO AURA
             local LerpFactor = 1
             if Config.AuraSmoothness > 0 then
                 LerpFactor = math.clamp(1 / (Config.AuraSmoothness * 3 + 1), 0.01, 1)
@@ -1292,7 +1353,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
         end
     end
-
     for Char, Data in pairs(Character_Cache) do
         if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
@@ -1345,8 +1405,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.5.0",
-        Text = "Aura Smoothness Lerp Engine injected successfully! Ready to dominate.",
+        Title = "WANGCAOS CLIENT V6.7.0",
+        Text = "Head Bow & Mobile 3rd Person mechanics initialized for Dai Ca Wang!",
         Duration = 7
     })
 end)

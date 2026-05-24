@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.8.2 - ENGLISH VERSION & PE TOGGLE LOCK
+-- WANGCAOS PREMIUM CLIENT V6.9.0 - PE POSITION SAVER & BUTTON LOCK
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -20,7 +20,7 @@ local MasterLoop
 
 local Config = {
     MenuVisible = true,
-    MenuKeybind = Enum.KeyCode.RightShift, -- Changed to RightShift per Dai Ca's order
+    MenuKeybind = Enum.KeyCode.RightShift,
     
     Aimbot = false,
     AimbotKeybind = Enum.KeyCode.E,
@@ -90,6 +90,7 @@ local Config = {
     ShowMobileFarm = false,
     ShowMobileAura = false,
     ShowMobileTP = false,
+    LockMobileButtons = false, -- TÍNH NĂNG KHOÁ NÚT THEO LỆNH ĐẠI CA
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -101,7 +102,10 @@ local CurrentSpinAngle = 0
 local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
 local LastFarmTime = 0
 local CurrentFarmIndex = 1
+
 local UI_Refresh_Functions = {}
+local GlobalMobileButtons = {} -- Forward declare for Settings Import
+local GlobalSyncToggles = {}
 
 local function GetSafeGui()
     local success, hui = pcall(function() return gethui() end)
@@ -158,6 +162,17 @@ local function ImportSettings(hexStr)
             end
         end
         for _, refresh in pairs(UI_Refresh_Functions) do pcall(refresh) end
+        
+        -- Cập nhật tọa độ ngay lập tức cho các nút Mobile khi Import thành công
+        for key, mData in pairs(GlobalMobileButtons) do
+            local xs = Config["MobilePos_"..key.."_XS"]
+            local xo = Config["MobilePos_"..key.."_XO"]
+            local ys = Config["MobilePos_"..key.."_YS"]
+            local yo = Config["MobilePos_"..key.."_YO"]
+            if xs and xo and ys and yo and mData.Btn then
+                pcall(function() mData.Btn.Position = UDim2.new(xs, xo, ys, yo) end)
+            end
+        end
     end)
     return success
 end
@@ -443,20 +458,29 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
-local GlobalMobileButtons = {}
-local GlobalSyncToggles = {}
-
-local function MakeDraggable(UIElement, DragHandle)
+local function MakeDraggable(UIElement, DragHandle, PosKey)
     local dragging = false
     local dragInput, mousePos, framePos
 
     DragHandle.InputBegan:Connect(function(input)
+        -- TÍNH NĂNG KHOÁ VỊ TRÍ MOBILE NÚT THEO LỆNH ĐẠI CA
+        if Config.LockMobileButtons and PosKey then return end 
+        
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             mousePos = input.Position
             framePos = UIElement.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                if input.UserInputState == Enum.UserInputState.End then 
+                    dragging = false 
+                    -- LƯU VỊ TRÍ VÀO CẤU HÌNH ĐỂ EXPORT
+                    if PosKey then
+                        Config["MobilePos_"..PosKey.."_XS"] = UIElement.Position.X.Scale
+                        Config["MobilePos_"..PosKey.."_XO"] = UIElement.Position.X.Offset
+                        Config["MobilePos_"..PosKey.."_YS"] = UIElement.Position.Y.Scale
+                        Config["MobilePos_"..PosKey.."_YO"] = UIElement.Position.Y.Offset
+                    end
+                end
             end)
         end
     end)
@@ -483,12 +507,24 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
 end
 
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
+    local xs = Config["MobilePos_"..Key.."_XS"] or InitPos.X.Scale
+    local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
+    local ys = Config["MobilePos_"..Key.."_YS"] or InitPos.Y.Scale
+    local yo = Config["MobilePos_"..Key.."_YO"] or InitPos.Y.Offset
+    
+    if not Config["MobilePos_"..Key.."_XS"] then
+        Config["MobilePos_"..Key.."_XS"] = xs
+        Config["MobilePos_"..Key.."_XO"] = xo
+        Config["MobilePos_"..Key.."_YS"] = ys
+        Config["MobilePos_"..Key.."_YO"] = yo
+    end
+
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
     ShortcutBtn.Parent = ScreenGui
     ShortcutBtn.BackgroundColor3 = DefaultColor
     ShortcutBtn.BackgroundTransparency = 0.2
-    ShortcutBtn.Position = InitPos
+    ShortcutBtn.Position = UDim2.new(xs, xo, ys, yo)
     ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
     ShortcutBtn.Font = Enum.Font.GothamBold
     ShortcutBtn.Text = TextOff
@@ -499,7 +535,7 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     local Stroke = Instance.new("UIStroke", ShortcutBtn)
     Stroke.Color = Color3.fromRGB(255, 255, 255)
     Stroke.Thickness = 1.5
-    MakeDraggable(ShortcutBtn, ShortcutBtn)
+    MakeDraggable(ShortcutBtn, ShortcutBtn, Key)
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
@@ -511,12 +547,20 @@ local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF",
 local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
 local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Color3.fromRGB(150, 150, 150), UDim2.new(0.85, 0, 0.70, 0))
 
+local lxs = Config["MobilePos_MainLogo_XS"] or 0
+local lxo = Config["MobilePos_MainLogo_XO"] or 20
+local lys = Config["MobilePos_MainLogo_YS"] or 0
+local lyo = Config["MobilePos_MainLogo_YO"] or 20
+if not Config["MobilePos_MainLogo_XS"] then
+    Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo
+end
+
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui
 ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
 ToggleButton.Size = UDim2.new(0, 45, 0, 45)
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "W"
@@ -526,10 +570,9 @@ Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
 Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 
--- [MODIFIED]: Show and drag logo on PE only, hide on PC
 ToggleButton.Visible = IsMobile
-MakeDraggable(ToggleButton, ToggleButton)
-
+GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
+MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -585,9 +628,10 @@ CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
 CloseBtn.TextSize = 22
 
-MakeDraggable(MainFrame, TopNavBar)
+MakeDraggable(MainFrame, TopNavBar, nil) -- Không lưu vị trí Menu PC
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
 RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
+
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -648,7 +692,6 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
-
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -670,6 +713,7 @@ local function UpdateToggleVisual(Key)
     end
 end
 
+-- BỘ CHẶN BẬT NÚT MOBILE NẾU ĐANG CHƠI TRÊN PC THEO LỆNH ĐẠI CA
 local RestrictedKeys = {
     ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
     ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true
@@ -710,16 +754,9 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     Btn.Text = ""
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
-    
     RegisterTouchFriendlyClick(Btn, function() 
         if RestrictedKeys[Key] and not IsMobile then
-            pcall(function()
-                StarterGui:SetCore("SendNotification", {
-                    Title = "WANGCAOS", 
-                    Text = "Button enable only for PE!", 
-                    Duration = 3
-                })
-            end)
+            pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
             return
         end
         Config[Key] = not Config[Key] 
@@ -760,7 +797,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
-
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -832,6 +868,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     end)
 end
+
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -860,7 +897,6 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
-
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1005,7 +1041,6 @@ local function AddTracerModeSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
-
 local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1048,6 +1083,7 @@ local function AddExportBox(Page)
         end
     end)
 end
+
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1084,7 +1120,7 @@ local function AddImportBox(Page)
         if code and code ~= "" then
             local success = ImportSettings(code)
             if success then
-                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success!", Duration = 3})
+                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3})
                 Box.Text = ""
             else
                 StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3})
@@ -1120,7 +1156,6 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 11
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
-
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
@@ -1170,6 +1205,10 @@ AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Perimeter Range", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Alignment Dot", "CrosshairDot")
 AddPremiumToggle(MiscPage, "Anti-AFK Auto Interactor", "AntiAFK", nil, Color3.fromRGB(210, 50, 140))
+
+-- NÚT KHOÁ VỊ TRÍ MOBILE NẰM Ở ĐÂY ĐẠI CA NHÉ
+AddPremiumToggle(MiscPage, "Lock Mobile Buttons Position", "LockMobileButtons", nil, Color3.fromRGB(200, 50, 50))
+
 AddExportBox(MiscPage)
 AddImportBox(MiscPage)
 
@@ -1198,7 +1237,7 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.8.2 - English UI & PC Mobile Lock")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Ultimate PE Control Matrix")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1363,8 +1402,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.8.2",
-        Text = "Fully translated to English. PE toggles locked for PC!",
+        Title = "WANGCAOS CLIENT V6.9.0",
+        Text = "Successfully implemented Mobile Button Position Lock & Save System!",
         Duration = 7
     })
 end)

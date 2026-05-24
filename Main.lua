@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.8.0 - THE ULTIMATE MERGE EDITION
+-- WANGCAOS PREMIUM CLIENT V6.8.2 - ENGLISH VERSION & PE TOGGLE LOCK
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -20,7 +20,7 @@ local MasterLoop
 
 local Config = {
     MenuVisible = true,
-    MenuKeybind = Enum.KeyCode.LeftBracket,
+    MenuKeybind = Enum.KeyCode.RightShift, -- Changed to RightShift per Dai Ca's order
     
     Aimbot = false,
     AimbotKeybind = Enum.KeyCode.E,
@@ -179,7 +179,7 @@ Dot_Drawing.Transparency = 1
 Dot_Drawing.Visible = false
 
 local AuraVisual = Instance.new("CylinderHandleAdornment")
-AuraVisual.Name = "BéAuraCircle"
+AuraVisual.Name = "WangAuraCircle"
 AuraVisual.AlwaysOnTop = false
 AuraVisual.ZIndex = 5
 
@@ -206,9 +206,9 @@ end
 
 local function CleanCharacterVisuals(Character)
     if not Character then return end
-    local OldBox = Character:FindFirstChild("BéBoxFill", true)
+    local OldBox = Character:FindFirstChild("WangBoxFill", true)
     if OldBox then OldBox:Destroy() end
-    local OldTag = Character:FindFirstChild("BéInfoTag", true)
+    local OldTag = Character:FindFirstChild("WangInfoTag", true)
     if OldTag then OldTag:Destroy() end
 end
 
@@ -526,7 +526,9 @@ Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
 Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 
-if not IsMobile then MakeDraggable(ToggleButton, ToggleButton) end
+-- [MODIFIED]: Show and drag logo on PE only, hide on PC
+ToggleButton.Visible = IsMobile
+MakeDraggable(ToggleButton, ToggleButton)
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -668,6 +670,11 @@ local function UpdateToggleVisual(Key)
     end
 end
 
+local RestrictedKeys = {
+    ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
+    ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true
+}
+
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -703,7 +710,22 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     Btn.Text = ""
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
-    RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) if Callback then Callback(Config[Key]) end end)
+    
+    RegisterTouchFriendlyClick(Btn, function() 
+        if RestrictedKeys[Key] and not IsMobile then
+            pcall(function()
+                StarterGui:SetCore("SendNotification", {
+                    Title = "WANGCAOS", 
+                    Text = "Button enable only for PE!", 
+                    Duration = 3
+                })
+            end)
+            return
+        end
+        Config[Key] = not Config[Key] 
+        UpdateToggleVisual(Key) 
+        if Callback then Callback(Config[Key]) end 
+    end)
 
     if BindKey then
         local BindBtn = Instance.new("TextButton", TFrame)
@@ -1026,7 +1048,6 @@ local function AddExportBox(Page)
         end
     end)
 end
-
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1177,7 +1198,7 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.8.0 - Ultimate Merged Engine")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.8.2 - English UI & PC Mobile Lock")
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1226,10 +1247,10 @@ local function RenderVisuals(Player, Character)
     
     CleanCharacterVisuals(Character)
     local Box = Instance.new("BoxHandleAdornment")
-    Box.Name = "BéBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 Box.Size = Vector3.new(4, 6, 4) Box.Visible = false
+    Box.Name = "WangBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 Box.Size = Vector3.new(4, 6, 4) Box.Visible = false
 
     local Gui = Instance.new("BillboardGui")
-    Gui.Name = "BéInfoTag" Gui.Adornee = Head Gui.Size = UDim2.new(0, 200, 0, 100) Gui.StudsOffset = Vector3.new(0, 4, 0) Gui.AlwaysOnTop = true
+    Gui.Name = "WangInfoTag" Gui.Adornee = Head Gui.Size = UDim2.new(0, 200, 0, 100) Gui.StudsOffset = Vector3.new(0, 4, 0) Gui.AlwaysOnTop = true
 
     local Label = Instance.new("TextLabel", Gui)
     Label.Size = UDim2.new(1, 0, 0, 40) Label.BackgroundTransparency = 1 Label.Font = Enum.Font.Code Label.TextSize = 13 Label.TextColor3 = Config.EspColor
@@ -1342,8 +1363,8 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.8.0",
-        Text = "Ultimate Edition Compiled Successfully for Dai Ca Wang!",
+        Title = "WANGCAOS CLIENT V6.8.2",
+        Text = "Fully translated to English. PE toggles locked for PC!",
         Duration = 7
     })
 end)

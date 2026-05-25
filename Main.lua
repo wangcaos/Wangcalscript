@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.5 - FIXED NO-TOGGLE MOBILE GUI
+-- WANGCAOS PREMIUM CLIENT V6.9.6 - SUPER FIXED
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -82,7 +82,7 @@ IntroTitle.BackgroundTransparency = 1
 IntroTitle.Size = UDim2.new(1, 0, 0, 50)
 IntroTitle.Position = UDim2.new(0, 0, 0, 15)
 IntroTitle.Font = Enum.Font.GothamBold
-IntroTitle.Text = "WANGCAOS PREMIUM V6.9.5"
+IntroTitle.Text = "WANGCAOS PREMIUM V6.9.6"
 IntroTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 IntroTitle.TextSize = 18
 
@@ -1063,6 +1063,121 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 10
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
+local function AddExportBox(Page)
+    local TFrame = Instance.new("Frame", Page)
+    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    TFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
+
+    local Box = Instance.new("TextBox", TFrame)
+    Box.BackgroundTransparency = 0.2
+    Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
+    Box.Position = UDim2.new(0, 10, 0.5, -12)
+    Box.Size = UDim2.new(1, -85, 0, 24)
+    Box.Font = Enum.Font.Gotham
+    Box.Text = ""
+    Box.PlaceholderText = "Exported Code Here"
+    Box.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Box.TextSize = 10
+    Box.ClearTextOnFocus = false
+    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
+
+    local ActionBtn = Instance.new("TextButton", TFrame)
+    ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230)
+    ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 60, 0, 24)
+    ActionBtn.Font = Enum.Font.GothamBold
+    ActionBtn.Text = "EXPORT"
+    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ActionBtn.TextSize = 10
+    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
+
+    RegisterTouchFriendlyClick(ActionBtn, function()
+        local code = ExportSettings()
+        Box.Text = code
+        if setclipboard then
+            setclipboard(code)
+            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Code copied to clipboard!", Duration = 3})
+        else
+            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Please copy from the text box!", Duration = 3})
+        end
+    end)
+end
+
+local function AddImportBox(Page)
+    local TFrame = Instance.new("Frame", Page)
+    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
+    TFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
+
+    local Box = Instance.new("TextBox", TFrame)
+    Box.BackgroundTransparency = 0.2
+    Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
+    Box.Position = UDim2.new(0, 10, 0.5, -12)
+    Box.Size = UDim2.new(1, -85, 0, 24)
+    Box.Font = Enum.Font.Gotham
+    Box.Text = ""
+    Box.PlaceholderText = "Paste Code Here"
+    Box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Box.TextSize = 10
+    Box.ClearTextOnFocus = false
+    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
+
+    local ActionBtn = Instance.new("TextButton", TFrame)
+    ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75)
+    ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 60, 0, 24)
+    ActionBtn.Font = Enum.Font.GothamBold
+    ActionBtn.Text = "IMPORT"
+    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ActionBtn.TextSize = 10
+    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
+
+    RegisterTouchFriendlyClick(ActionBtn, function()
+        local code = Box.Text
+        if code and code ~= "" then
+            local success = ImportSettings(code)
+            if success then
+                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3})
+                Box.Text = ""
+            else
+                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3})
+            end
+        end
+    end)
+end
+
+local function AddPremiumCreditBox(Page, Title, Description)
+    local CFrame = Instance.new("Frame", Page)
+    CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30)
+    CFrame.BackgroundTransparency = 0.3
+    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(50, 52, 56)
+
+    local TitleLbl = Instance.new("TextLabel", CFrame)
+    TitleLbl.BackgroundTransparency = 1
+    TitleLbl.Position = UDim2.new(0, 10, 0, 4)
+    TitleLbl.Size = UDim2.new(1, -20, 0, 16)
+    TitleLbl.Font = Enum.Font.GothamBold
+    TitleLbl.Text = Title
+    TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLbl.TextSize = 11
+    TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local DescLbl = Instance.new("TextLabel", CFrame)
+    DescLbl.BackgroundTransparency = 1
+    DescLbl.Position = UDim2.new(0, 10, 0, 20)
+    DescLbl.Size = UDim2.new(1, -20, 0, 16)
+    DescLbl.Font = Enum.Font.Gotham
+    DescLbl.Text = Description
+    DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180)
+    DescLbl.TextSize = 10
+    DescLbl.TextXAlignment = Enum.TextXAlignment.Left
+end
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
@@ -1152,7 +1267,7 @@ AddPremiumButton(MiscPage, "Join Community", "DISCORD", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.5 - Mobile Fixed Edition")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.6 - Mobile Fixed Edition")
 AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
 
 CreatePremiumTab("⚔", "Combat", 1, CombatPage)
@@ -1213,7 +1328,7 @@ local function RenderVisuals(Player, Character)
 
     Gui.Parent = Head
     Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, HealthBG = HealthBG, HealthBar = HealthBar, Player = Player }
-end reception
+end
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end
@@ -1315,7 +1430,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
 
                 if Config.EspBox and Dist <= Config.MaxDistance then Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100 else Data.Box.Visible = false end
-                if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
+                if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
                 if Config.EspHealth and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.HealthBG.Visible = true local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1) Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0) Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1) else Data.HealthBG.Visible = false end
 
                 local Tracer = Tracer_Cache[Data.Player]
@@ -1335,7 +1450,7 @@ for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.5", Text = "Loaded Mobile Fixed Edition successfully!", Duration = 5})
+    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.6", Text = "Loaded Super Fixed Edition successfully!", Duration = 5})
 end)
 -- ==============================================================================
 -- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)

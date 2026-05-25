@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.3 - DISCORD INTRO & GREEN TEAM ESP
+-- WANGCAOS PREMIUM CLIENT V6.9.3 - THE ULTIMATE EDITION (DISCORD INTRO)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -178,6 +178,11 @@ IntroSub.Text = "Loading Framework Modules..."
 IntroSub.TextColor3 = Color3.fromRGB(150, 150, 150)
 IntroSub.TextSize = 12
 
+pcall(function()
+    if setclipboard then setclipboard("Https://discord.gg/GkAKn4zzH")
+    elseif toclipboard then toclipboard("Https://discord.gg/GkAKn4zzH") end
+end)
+
 task.spawn(function()
     task.wait(1.5)
     IntroSub.Text = "Framework successfully loaded!"
@@ -191,7 +196,6 @@ task.spawn(function()
     task.wait(1.5)
     if IntroScreen then IntroScreen:Destroy() end
 end)
--- ==============================================================================
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
@@ -490,6 +494,7 @@ local function GetEquippedTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
     return Tool and Tool.Name or "None"
 end
+
 local function PerformTriggerbotClick()
     local TargetInstance = Mouse.Target
     if TargetInstance and TargetInstance.Parent then
@@ -553,7 +558,6 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
@@ -605,6 +609,7 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
         end
     end)
 end
+
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
     local xs = Config["MobilePos_"..Key.."_XS"] or InitPos.X.Scale
     local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
@@ -673,7 +678,6 @@ Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -718,6 +722,7 @@ TabLayout.Padding = UDim.new(0, 4)
 local TabPad = Instance.new("UIPadding", TabMenuContainer)
 TabPad.PaddingLeft = UDim.new(0, 6)
 TabPad.PaddingTop = UDim.new(0, 6)
+
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = TopNavBar
 CloseBtn.BackgroundTransparency = 1
@@ -931,7 +936,8 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Bar.Position = UDim2.new(0, 10, 0, 26)
     Bar.Size = UDim2.new(1, -20, 0, 3)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-        local Fill = Instance.new("Frame", Bar)
+
+    local Fill = Instance.new("Frame", Bar)
     Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
@@ -1033,7 +1039,6 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
-
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1070,6 +1075,7 @@ local function AddSyncedEspColorSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.EspColor end)
 end
+
 local function AddAuraColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1257,6 +1263,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 11
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
+
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
@@ -1345,9 +1352,6 @@ AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wan
 AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.3 - Discord Intro Edition")
 AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
 
--- =========================================
--- ĐÂY, NÚT DISCORD MỚI NẰM Ở MISC PAGE LUÔN
--- =========================================
 AddPremiumButton(MiscPage, "Join Community", "COPY DISCORD", function()
     if setclipboard then
         setclipboard("Https://discord.gg/GkAKn4zzH")
@@ -1374,7 +1378,6 @@ RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 RegisterMobileClick(MobAura, "Aura")
 RegisterMobileClick(MobTP, "ThirdPerson")
 RegisterMobileClick(MobFly, "Fly")
-
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Config.MenuKeybind then Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible

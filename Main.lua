@@ -538,35 +538,12 @@ CustomBackgroundImage.ZIndex = 0
 CustomBackgroundImage.Visible = Config.CustomBackground
 Instance.new("UICorner", CustomBackgroundImage).CornerRadius = Style_CornerRadius
 
--- Re-styled Side Menu Button
-local SideMenuBtn = Instance.new("TextButton")
-SideMenuBtn.Name = "SideMenuBtn"
-SideMenuBtn.Parent = MainFrame
-SideMenuBtn.Size = UDim2.new(0, 30, 1, 0)
-SideMenuBtn.Position = UDim2.new(0, 0, 0, 0)
-SideMenuBtn.BackgroundColor3 = Style_SubBg
-SideMenuBtn.BackgroundTransparency = 0.5
-SideMenuBtn.Font = Enum.Font.GothamBold
-SideMenuBtn.Text = "<"
-SideMenuBtn.TextColor3 = Style_Text_Primary
-SideMenuBtn.TextSize = 16
-SideMenuBtn.ZIndex = 5
-Instance.new("UICorner", SideMenuBtn).CornerRadius = Style_CornerRadius
-
 local SettingsPanel = Instance.new("Frame")
 SettingsPanel.Name = "SettingsPanel"
 SettingsPanel.Parent = MainFrame
-SettingsPanel.Position = UDim2.new(0, 35, 0, 0)
-SettingsPanel.Size = UDim2.new(1, -35, 1, 0)
+SettingsPanel.Position = UDim2.new(0, 0, 0, 0) -- Fixed to full width
+SettingsPanel.Size = UDim2.new(1, 0, 1, 0) -- Full Width
 SettingsPanel.BackgroundTransparency = 1
-
-local SettingsExpanded = true
-RegisterTouchFriendlyClick(SideMenuBtn, function()
-    SettingsExpanded = not SettingsExpanded
-    local TargetMainSize = SettingsExpanded and UDim2.new(0, 450, 0, 300) or UDim2.new(0, 30, 0, 300)
-    SideMenuBtn.Text = SettingsExpanded and "<" or ">"
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out), {Size = TargetMainSize}):Play()
-end)
 
 -- Re-styled Top NavBar with Minimal Tabs
 local TopNavBar = Instance.new("Frame")
@@ -617,12 +594,13 @@ local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
 local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
 
--- Set pages structure with UIListLayout for sections (like provided image)
+-- Fixed Auto-Scrolling logic here
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 650)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- Added for auto scrolling
+    page.CanvasSize = UDim2.new(0, 0, 0, 0) -- Reset canvas size to fix bug
     page.ScrollBarThickness = 1 -- Minimal scrollbar
     page.ScrollBarImageColor3 = Style_Inactive
     page.Visible = false
@@ -633,6 +611,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     local pagePadding = Instance.new("UIPadding", page)
     pagePadding.PaddingLeft = UDim.new(0, 10)
     pagePadding.PaddingRight = UDim.new(0, 10)
+    pagePadding.PaddingBottom = UDim.new(0, 20) -- Bottom padding to avoid cutting off
 end
 CombatPage.Visible = true
 -- Helper to create bold section titles like in the image

@@ -176,7 +176,6 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
-
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor; FOV_Drawing.Thickness = Config.FovThickness; FOV_Drawing.NumSides = Config.FovSides
 FOV_Drawing.Filled = Config.FovFilled; FOV_Drawing.Transparency = Config.FovTransparency; FOV_Drawing.Visible = false
@@ -324,7 +323,6 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
-
 local function GetAuraTarget()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -414,6 +412,7 @@ local function ProcessAutoFarmPlayer()
         if tick() - LastFarmTime >= Config.AutoFarmDelay then LastFarmTime = tick() CurrentFarmIndex = CurrentFarmIndex + 1 end
     end
 end
+
 -- ==============================================================================
 -- UI FRAMEWORK - Re-designed with Modernism/Dark Theme (Minimalism)
 -- ==============================================================================
@@ -483,7 +482,6 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
-
 local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
@@ -503,10 +501,11 @@ local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui;
 ToggleButton.BackgroundColor3 = Style_SubBg; ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo); ShortcutBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo); ToggleButton.Size = UDim2.new(0, 45, 0, 45)
 ToggleButton.Font = Enum.Font.GothamBold; ToggleButton.Text = "W"; ToggleButton.TextColor3 = Style_Text_Primary; ToggleButton.TextSize = 20
 Instance.new("UICorner", ToggleButton).CornerRadius = Style_CornerRadius
-Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60); ShortcutBtn.Thickness = 1
+local TogStroke = Instance.new("UIStroke", ToggleButton)
+TogStroke.Color = Color3.fromRGB(60, 60, 60); TogStroke.Thickness = 1
 
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
@@ -523,8 +522,9 @@ MainFrame.ClipsDescendants = true
 MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = Style_CornerRadius
 -- Thin modern border
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
-MainFrame.UIStroke.Thickness = 1
+local MFrameStroke = Instance.new("UIStroke", MainFrame)
+MFrameStroke.Color = Color3.fromRGB(45, 47, 50)
+MFrameStroke.Thickness = 1
 
 local CustomBackgroundImage = Instance.new("ImageLabel")
 CustomBackgroundImage.Name = "MenuCustomWallpaper"
@@ -572,7 +572,7 @@ end)
 local TopNavBar = Instance.new("Frame")
 TopNavBar.Parent = SettingsPanel
 TopNavBar.BackgroundColor3 = Style_Bg
-TopNavBar.BackgroundTransparency = 0 -- Keep fully dark for blur effect integration if needed later
+TopNavBar.BackgroundTransparency = 0 
 TopNavBar.Position = UDim2.new(0, 0, 0, 10)
 TopNavBar.Size = UDim2.new(1, -10, 0, 42)
 TopNavBar.ZIndex = 2
@@ -635,7 +635,6 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     pagePadding.PaddingRight = UDim.new(0, 10)
 end
 CombatPage.Visible = true
-
 -- Helper to create bold section titles like in the image
 local function CreateSectionTitle(Page, Text)
     local Title = Instance.new("TextLabel", Page)
@@ -655,10 +654,10 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Style_Bg -- Consistent with background
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 60, Order == 1 and 30 or 28) -- Slightly smaller if not active for subtle selection
+    TabBtn.Size = UDim2.new(0, 60, Order == 1 and 30 or 28) 
     TabBtn.Font = Order == 1 and Enum.Font.GothamBold or Style_Font
     TabBtn.LayoutOrder = Order
-    TabBtn.Text = IconText -- Use IconText as defined in call
+    TabBtn.Text = IconText 
     TabBtn.TextColor3 = Order == 1 and Style_Text_Primary or Style_Text_Secondary
     TabBtn.TextSize = 14
     Instance.new("UICorner", TabBtn).CornerRadius = Style_CornerRadius
@@ -690,15 +689,12 @@ local function UpdateToggleVisual(Key)
     local state = Config[Key]
     local Ball = TargetData.Ball; local SwitchBg = TargetData.SwitchBg
     
-    -- Sleek modern switch animation using Style_Accent
     TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = state and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
     TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Style_Accent or Style_Inactive}):Play()
     
     if GlobalMobileButtons[Key] then
         local MData = GlobalMobileButtons[Key]
-        -- Use accent when mobile feature is ON
         MData.Btn.BackgroundColor3 = state and Style_Accent or TargetData.DefMobColor
-        -- Maintain original Mobile Button text behavior
         if Key == "Aimbot" then MData.Btn.Text = state and "AIM\nON" or "AIM\nOFF"
         elseif Key == "Triggerbot" then MData.Btn.Text = state and "TRIG\nON" or "TRIG\nOFF"
         elseif Key == "SpeedToggle" then MData.Btn.Text = state and "SPD\nON" or "SPD\nOFF"
@@ -709,10 +705,6 @@ local function UpdateToggleVisual(Key)
     end
 end
 
--- ==============================================================================
--- RE-STYLED Helper functions to add controls within sections
--- ==============================================================================
-
 local RestrictedKeys = { ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true }
 
 -- Re-styled modern toggle (like provided image)
@@ -722,13 +714,14 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     TFrame.BackgroundTransparency = 0.2
     TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", TFrame).CornerRadius = Style_CornerRadius
-    -- Very thin stroke for modern look
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    
+    local TFrameStroke = Instance.new("UIStroke", TFrame)
+    TFrameStroke.Color = Color3.fromRGB(35, 37, 40); TFrameStroke.Thickness = 0.5
     
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(1, -60, 1, 0) -- Adjusted for switch on right
+    Lbl.Size = UDim2.new(1, -60, 1, 0) 
     Lbl.Font = Style_Font
     Lbl.Text = LabelText
     Lbl.TextColor3 = Style_Text_Primary
@@ -737,7 +730,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Style_Accent or Style_Inactive
-    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8) -- Move right
+    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8) 
     SwitchBg.Size = UDim2.new(0, 32, 0, 16)
     Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
 
@@ -765,7 +758,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     if BindKey then
         local BindBtn = Instance.new("TextButton", TFrame)
-        BindBtn.BackgroundColor3 = Style_SubBg -- Keep modern background
+        BindBtn.BackgroundColor3 = Style_SubBg 
         BindBtn.Position = UDim2.new(1, -100, 0.5, -10)
         BindBtn.Size = UDim2.new(0, 45, 0, 20)
         BindBtn.Font = Enum.Font.GothamBold
@@ -773,7 +766,8 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         BindBtn.TextColor3 = Style_Text_Primary
         BindBtn.TextSize = 10
         Instance.new("UICorner", BindBtn).CornerRadius = Style_CornerRadius
-        Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60); ShortcutBtn.Thickness = 0.5
+        local BStroke = Instance.new("UIStroke", BindBtn)
+        BStroke.Color = Color3.fromRGB(55, 57, 60); BStroke.Thickness = 0.5
 
         local Listening = false; local ListenConnection
         local function EndListening(NewKey)
@@ -793,7 +787,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
-
 -- Re-styled modern slider (like provided image)
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
@@ -801,7 +794,8 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     SFrame.BackgroundTransparency = 0.2
     SFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", SFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", SFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local SFrameStroke = Instance.new("UIStroke", SFrame)
+    SFrameStroke.Color = Color3.fromRGB(35, 37, 40); SFrameStroke.Thickness = 0.5
 
     local Lbl = Instance.new("TextLabel", SFrame)
     Lbl.BackgroundTransparency = 1
@@ -809,19 +803,19 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Lbl.Size = UDim2.new(0.4, 0, 1, 0)
     Lbl.Font = Style_Font
     Lbl.Text = LabelText
-    Lbl.TextColor3 = Style_Text_Secondary -- Use secondary text for description
+    Lbl.TextColor3 = Style_Text_Secondary 
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local Bar = Instance.new("Frame", SFrame)
-    Bar.BackgroundColor3 = Style_Inactive -- Use Inactive color for bar
+    Bar.BackgroundColor3 = Style_Inactive 
     Bar.BorderSizePixel = 0
     Bar.Position = UDim2.new(1, -160, 0.5, -2)
-    Bar.Size = UDim2.new(0, 100, 0, 4) -- Minimalist bar
+    Bar.Size = UDim2.new(0, 100, 0, 4) 
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
-    Fill.BackgroundColor3 = Style_Accent -- Modern accent fill
+    Fill.BackgroundColor3 = Style_Accent 
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
@@ -829,7 +823,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SliderBall = Instance.new("Frame", Fill)
     SliderBall.BackgroundColor3 = Style_Text_Primary
     SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
-    SliderBall.Size = UDim2.new(0, 8, 0, 8) -- Subtle modern ball
+    SliderBall.Size = UDim2.new(0, 8, 0, 8) 
     Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
 
     local ValTxt = Instance.new("TextLabel", SFrame)
@@ -875,7 +869,8 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     BFrame.BackgroundTransparency = 0.2
     BFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", BFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", BFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local BFrameStroke = Instance.new("UIStroke", BFrame)
+    BFrameStroke.Color = Color3.fromRGB(35, 37, 40); BFrameStroke.Thickness = 0.5
     
     local Lbl = Instance.new("TextLabel", BFrame)
     Lbl.BackgroundTransparency = 1
@@ -888,7 +883,7 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local ActionBtn = Instance.new("TextButton", BFrame)
-    ActionBtn.BackgroundColor3 = Style_Accent -- Re-use accent for prominent buttons
+    ActionBtn.BackgroundColor3 = Style_Accent 
     ActionBtn.Position = UDim2.new(1, -95, 0.5, -12)
     ActionBtn.Size = UDim2.new(0, 85, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
@@ -906,7 +901,8 @@ local function AddHitboxSelector(Page)
     HFrame.BackgroundTransparency = 0.2
     HFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", HFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", HFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local HFrameStroke = Instance.new("UIStroke", HFrame)
+    HFrameStroke.Color = Color3.fromRGB(35, 37, 40); HFrameStroke.Thickness = 0.5
 
     local Lbl = Instance.new("TextLabel", HFrame)
     Lbl.BackgroundTransparency = 1
@@ -919,7 +915,7 @@ local function AddHitboxSelector(Page)
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local HitboxBtn = Instance.new("TextButton", HFrame)
-    HitboxBtn.BackgroundColor3 = Style_SubBg -- Integrated background
+    HitboxBtn.BackgroundColor3 = Style_SubBg 
     HitboxBtn.Position = UDim2.new(1, -95, 0.5, -12)
     HitboxBtn.Size = UDim2.new(0, 85, 0, 24)
     HitboxBtn.Font = Enum.Font.GothamBold
@@ -927,7 +923,8 @@ local function AddHitboxSelector(Page)
     HitboxBtn.TextColor3 = Style_Text_Primary
     HitboxBtn.TextSize = 11
     Instance.new("UICorner", HitboxBtn).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65); ShortcutBtn.Thickness = 0.5 -- Very subtle border
+    local HBStroke = Instance.new("UIStroke", HitboxBtn)
+    HBStroke.Color = Color3.fromRGB(60, 62, 65); HBStroke.Thickness = 0.5 
 
     RegisterTouchFriendlyClick(HitboxBtn, function()
         if Config.TargetPart == "Head" then Config.TargetPart = "Torso" HitboxBtn.Text = "TORSO"
@@ -936,7 +933,6 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
-
 -- Re-styled minimalist color selector
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
@@ -944,7 +940,8 @@ local function AddSyncedEspColorSelector(Page)
     CFrame.BackgroundTransparency = 0.2
     CFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", CFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local CFrameStroke = Instance.new("UIStroke", CFrame)
+    CFrameStroke.Color = Color3.fromRGB(35, 37, 40); CFrameStroke.Thickness = 0.5
 
     local Lbl = Instance.new("TextLabel", CFrame)
     Lbl.BackgroundTransparency = 1
@@ -959,11 +956,12 @@ local function AddSyncedEspColorSelector(Page)
     local ColorBox = Instance.new("TextButton", CFrame)
     ColorBox.Name = "ColorBox"
     ColorBox.Position = UDim2.new(1, -35, 0.5, -9) 
-    ColorBox.Size = UDim2.new(0, 25, 0, 18) -- Minimal color display
+    ColorBox.Size = UDim2.new(0, 25, 0, 18) 
     ColorBox.BackgroundColor3 = Config.EspColor
     ColorBox.Text = ""
     Instance.new("UICorner", ColorBox).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", ColorBox).Color = Color3.fromRGB(55, 57, 60); ShortcutBtn.Thickness = 0.5
+    local CBStroke = Instance.new("UIStroke", ColorBox)
+    CBStroke.Color = Color3.fromRGB(55, 57, 60); CBStroke.Thickness = 0.5
 
     local palette = {Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230), Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 255, 255)}
     local colorIdx = 1
@@ -982,7 +980,8 @@ local function AddAuraColorSelector(Page)
     CFrame.BackgroundTransparency = 0.2
     CFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", CFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local CFrameStroke = Instance.new("UIStroke", CFrame)
+    CFrameStroke.Color = Color3.fromRGB(35, 37, 40); CFrameStroke.Thickness = 0.5
 
     local Lbl = Instance.new("TextLabel", CFrame)
     Lbl.BackgroundTransparency = 1
@@ -997,11 +996,12 @@ local function AddAuraColorSelector(Page)
     local ColorBox = Instance.new("TextButton", CFrame)
     ColorBox.Name = "ColorBox"
     ColorBox.Position = UDim2.new(1, -35, 0.5, -9)
-    ColorBox.Size = UDim2.new(0, 25, 0, 18) -- Minimal color display
+    ColorBox.Size = UDim2.new(0, 25, 0, 18) 
     ColorBox.BackgroundColor3 = Config.AuraColor
     ColorBox.Text = ""
     Instance.new("UICorner", ColorBox).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", ColorBox).Color = Color3.fromRGB(55, 57, 60); ShortcutBtn.Thickness = 0.5
+    local CBStroke = Instance.new("UIStroke", ColorBox)
+    CBStroke.Color = Color3.fromRGB(55, 57, 60); CBStroke.Thickness = 0.5
 
     local palette = {Color3.fromRGB(0, 170, 255), Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230)}
     local colorIdx = 1
@@ -1020,7 +1020,8 @@ local function AddTracerModeSelector(Page)
     MFrame.BackgroundTransparency = 0.2
     MFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", MFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local MFrameStroke = Instance.new("UIStroke", MFrame)
+    MFrameStroke.Color = Color3.fromRGB(35, 37, 40); MFrameStroke.Thickness = 0.5
 
     local Lbl = Instance.new("TextLabel", MFrame)
     Lbl.BackgroundTransparency = 1
@@ -1033,7 +1034,7 @@ local function AddTracerModeSelector(Page)
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local ModeBtn = Instance.new("TextButton", MFrame)
-    ModeBtn.BackgroundColor3 = Style_SubBg -- Integrated background
+    ModeBtn.BackgroundColor3 = Style_SubBg 
     ModeBtn.Position = UDim2.new(1, -95, 0.5, -12)
     ModeBtn.Size = UDim2.new(0, 85, 0, 24)
     ModeBtn.Font = Enum.Font.GothamBold
@@ -1041,7 +1042,8 @@ local function AddTracerModeSelector(Page)
     ModeBtn.TextColor3 = Style_Text_Primary
     ModeBtn.TextSize = 11
     Instance.new("UICorner", ModeBtn).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65); ShortcutBtn.Thickness = 0.5 -- Subtle border
+    local MBStroke = Instance.new("UIStroke", ModeBtn)
+    MBStroke.Color = Color3.fromRGB(60, 62, 65); MBStroke.Thickness = 0.5 
 
     RegisterTouchFriendlyClick(ModeBtn, function()
         Config.TracerMode = Config.TracerMode == "Bottom" and "Center" or "Bottom"
@@ -1055,15 +1057,16 @@ local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
     TFrame.BackgroundTransparency = 0.2
-    TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 4) -- Slightly larger for TextBox integration
+    TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 4) 
     Instance.new("UICorner", TFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local TFrameStroke = Instance.new("UIStroke", TFrame)
+    TFrameStroke.Color = Color3.fromRGB(35, 37, 40); TFrameStroke.Thickness = 0.5
 
     local Box = Instance.new("TextBox", TFrame)
-    Box.BackgroundTransparency = 1 -- Transparent logic, integrated into frame look
+    Box.BackgroundTransparency = 1 
     Box.BackgroundColor3 = Style_SubBg
     Box.Position = UDim2.new(0, 10, 0.5, -12)
-    Box.Size = UDim2.new(1, -85, 0, 24) -- Adjusted for minimalist modern textbox look
+    Box.Size = UDim2.new(1, -85, 0, 24) 
     Box.Font = Style_Font
     Box.Text = ""
     Box.PlaceholderText = "Exported Code Here"
@@ -1071,10 +1074,11 @@ local function AddExportBox(Page)
     Box.TextSize = 10
     Box.ClearTextOnFocus = false
     Instance.new("UICorner", Box).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60); ShortcutBtn.Thickness = 0.5 -- Very subtle border
+    local BxStroke = Instance.new("UIStroke", Box)
+    BxStroke.Color = Color3.fromRGB(55, 57, 60); BxStroke.Thickness = 0.5 
 
     local ActionBtn = Instance.new("TextButton", TFrame)
-    ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230) -- Blue for Export
+    ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230) 
     ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
     ActionBtn.Size = UDim2.new(0, 60, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
@@ -1094,32 +1098,33 @@ local function AddExportBox(Page)
         end
     end)
 end
-
 -- Re-styled minimalist Import Code input area
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
     TFrame.BackgroundTransparency = 0.2
-    TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 4) -- Slightly larger
+    TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 4) 
     Instance.new("UICorner", TFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40); ShortcutBtn.Thickness = 0.5
+    local TFrameStroke = Instance.new("UIStroke", TFrame)
+    TFrameStroke.Color = Color3.fromRGB(35, 37, 40); TFrameStroke.Thickness = 0.5
 
     local Box = Instance.new("TextBox", TFrame)
-    Box.BackgroundTransparency = 1 -- Transparent integrated logic
+    Box.BackgroundTransparency = 1 
     Box.BackgroundColor3 = Style_SubBg
     Box.Position = UDim2.new(0, 10, 0.5, -12)
     Box.Size = UDim2.new(1, -85, 0, 24)
     Box.Font = Style_Font
     Box.Text = ""
     Box.PlaceholderText = "Paste Code Here"
-    Box.TextColor3 = Style_Text_Primary -- Use primary text color for pasted code
+    Box.TextColor3 = Style_Text_Primary 
     Box.TextSize = 10
     Box.ClearTextOnFocus = false
     Instance.new("UICorner", Box).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60); ShortcutBtn.Thickness = 0.5 -- Very subtle border
+    local BxStroke = Instance.new("UIStroke", Box)
+    BxStroke.Color = Color3.fromRGB(55, 57, 60); BxStroke.Thickness = 0.5 
 
     local ActionBtn = Instance.new("TextButton", TFrame)
-    ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75) -- Green for Import
+    ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75) 
     ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
     ActionBtn.Size = UDim2.new(0, 60, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
@@ -1145,17 +1150,18 @@ end
 -- Re-styled minimalist modern Credit Box
 local function AddPremiumCreditBox(Page, Title, Description)
     local CFrame = Instance.new("Frame", Page)
-    CFrame.BackgroundColor3 = Style_SubBg -- integrated modern look
+    CFrame.BackgroundColor3 = Style_SubBg 
     CFrame.BackgroundTransparency = 0.2
-    CFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 6) -- Slightly larger for double text
+    CFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight + 6) 
     Instance.new("UICorner", CFrame).CornerRadius = Style_CornerRadius
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(50, 52, 56); ShortcutBtn.Thickness = 0.5 -- Very subtle modern border
+    local CFrameStroke = Instance.new("UIStroke", CFrame)
+    CFrameStroke.Color = Color3.fromRGB(50, 52, 56); CFrameStroke.Thickness = 0.5 
 
     local TitleLbl = Instance.new("TextLabel", CFrame)
     TitleLbl.BackgroundTransparency = 1
     TitleLbl.Position = UDim2.new(0, 10, 0, 4)
     TitleLbl.Size = UDim2.new(1, -20, 0, 16)
-    TitleLbl.Font = Enum.Font.GothamBold -- Use Bold text for credit title
+    TitleLbl.Font = Enum.Font.GothamBold 
     TitleLbl.Text = Title
     TitleLbl.TextColor3 = Style_Text_Primary
     TitleLbl.TextSize = 11
@@ -1167,17 +1173,18 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.Size = UDim2.new(1, -20, 0, 16)
     DescLbl.Font = Style_Font
     DescLbl.Text = Description
-    DescLbl.TextColor3 = Style_Text_Secondary -- Use secondary text for description
+    DescLbl.TextColor3 = Style_Text_Secondary 
     DescLbl.TextSize = 10
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
+
 -- ==============================================================================
 -- POPULATE Re-styled UI PAGES WITH SECTIONS AND CONTROLS
 -- ==============================================================================
 
 -- --- COMBAT PAGE ---
 CreateSectionTitle(CombatPage, "Aim Assist Bot")
-AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind") -- Re-use original colors for distinction if mobile button exists
+AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind") 
 AddPremiumToggle(CombatPage, "Aimbot Team Guard", "TeamCheck")
 AddPremiumToggle(CombatPage, "Aimbot Wall Occlusion", "WallCheck")
 AddPremiumSlider(CombatPage, "Aimbot Smoothness Factor", 0, 10, "Smoothness")
@@ -1235,7 +1242,6 @@ AddSyncedEspColorSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
 AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
-
 -- --- MISC PAGE ---
 CreateSectionTitle(MiscPage, "Settings Management")
 AddExportBox(MiscPage)
@@ -1261,7 +1267,6 @@ AddPremiumToggle(MiscPage, "Display Mobile Fly Toggle", "ShowMobileFly", functio
 AddPremiumToggle(MiscPage, "Display Mobile 3RD Button", "ShowMobileTP", function(state) GlobalMobileButtons["ThirdPerson"].Btn.Visible = (state and IsMobile) end)
 
 CreateSectionTitle(MiscPage, "Process Control")
--- Reddish-orange prominently for risk highlight in modern design
 AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
@@ -1342,30 +1347,27 @@ local function RenderVisuals(Player, Character)
     
     CleanCharacterVisuals(Character)
     
-    -- Re-style modern Box Chameleon Box (Chams)
     local Box = Instance.new("BoxHandleAdornment")
     Box.Name = "WangBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 
-    Box.Size = Vector3.new(4, 6, 4) -- Chunky chunky boxes
+    Box.Size = Vector3.new(4, 6, 4) 
     Box.Visible = false
 
-    -- Re-style clean Character Tags (like in image)
     local Gui = Instance.new("BillboardGui")
     Gui.Name = "WangInfoTag" Gui.Adornee = Head 
-    Gui.Size = UDim2.new(0, 150, 0, 80) -- Minimal size
+    Gui.Size = UDim2.new(0, 150, 0, 80) 
     Gui.StudsOffset = Vector3.new(0, 4, 0) Gui.AlwaysOnTop = true
 
     local Label = Instance.new("TextLabel", Gui)
     Label.Size = UDim2.new(1, 0, 0, 30) Label.BackgroundTransparency = 1 
-    Label.Font = Enum.Font.Code -- Monospace Code look for clean informative text
+    Label.Font = Enum.Font.Code 
     Label.TextSize = 12 Label.TextColor3 = Config.EspColor
     
-    -- Re-style clean Health Meter (integrated modern look)
     local HealthBG = Instance.new("Frame", Gui)
-    HealthBG.Name = "HealthBG" HealthBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0) HealthBG.BorderSizePixel = 0 -- Modern borderless look
+    HealthBG.Name = "HealthBG" HealthBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0) HealthBG.BorderSizePixel = 0 
     HealthBG.Position = UDim2.new(0, 0, 0, 35) HealthBG.Size = UDim2.new(1, 0, 0, 3) HealthBG.Visible = false
     
     local HealthBar = Instance.new("Frame", HealthBG)
-    HealthBar.Name = "HealthBar" HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100) -- Integrated color withinHSV loop logic
+    HealthBar.Name = "HealthBar" HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100) 
     HealthBar.BorderSizePixel = 0 HealthBar.Size = UDim2.new(1, 0, 1, 0)
 
     Gui.Parent = Head
@@ -1377,7 +1379,6 @@ local function MonitorPlayer(Player)
     Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
-
 -- ==============================================================================
 -- MASTER RENDER STEPPED LOOP
 -- ==============================================================================
@@ -1475,7 +1476,6 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
 
-                -- Maintain original logic behavior with re-styled visual elements
                 if Config.EspBox and Dist <= Config.MaxDistance then Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100 else Data.Box.Visible = false end
                 if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
                 if Config.EspHealth and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.HealthBG.Visible = true local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1) Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0) Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1) else Data.HealthBG.Visible = false end

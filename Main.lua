@@ -666,7 +666,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
     RegisterTouchFriendlyClick(Btn, function() 
-        if RestrictedKeys[Key] and not IsMobile orient then
+        if RestrictedKeys[Key] and not IsMobile then
             pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
             return
         end
@@ -1213,7 +1213,7 @@ local function RenderVisuals(Player, Character)
 
     Gui.Parent = Head
     Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, HealthBG = HealthBG, HealthBar = HealthBar, Player = Player }
-end
+end reception
 
 local function MonitorPlayer(Player)
     if Player == LocalPlayer then return end

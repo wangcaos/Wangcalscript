@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.0 - PE POSITION SAVER & BUTTON LOCK
+-- WANGCAOS PREMIUM CLIENT V6.9.3 - DISCORD INTRO & GREEN TEAM ESP
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -58,6 +58,7 @@ local Config = {
     
     EspMaster = false,
     EspMasterKeybind = Enum.KeyCode.O,
+    EspTeamCheck = false, 
     FovCircle = false,
     FovRadius = 120,
     FovThickness = 1.5,
@@ -82,6 +83,11 @@ local Config = {
     JumpToggle = false,
     JumpKeybind = Enum.KeyCode.G,
     JumpPower = 50,
+    
+    Fly = false, 
+    FlyKeybind = Enum.KeyCode.F,
+    FlySpeed = 50,
+    
     FullBright = false,
     
     ShowMobileAim = false,
@@ -90,7 +96,8 @@ local Config = {
     ShowMobileFarm = false,
     ShowMobileAura = false,
     ShowMobileTP = false,
-    LockMobileButtons = false, -- TÍNH NĂNG KHOÁ NÚT THEO LỆNH ĐẠI CA
+    ShowMobileFly = false,
+    LockMobileButtons = false, 
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -104,8 +111,11 @@ local LastFarmTime = 0
 local CurrentFarmIndex = 1
 
 local UI_Refresh_Functions = {}
-local GlobalMobileButtons = {} -- Forward declare for Settings Import
+local GlobalMobileButtons = {} 
 local GlobalSyncToggles = {}
+
+local flyBodyGyro
+local flyBodyVelocity
 
 local function GetSafeGui()
     local success, hui = pcall(function() return gethui() end)
@@ -119,9 +129,69 @@ local SafeParent = GetSafeGui()
 if not SafeParent then return end
 
 for _, old in pairs(SafeParent:GetChildren()) do
-    if old.Name == "Wangcaos_Premium_Figma_UI" then old:Destroy() end
+    if old.Name == "Wangcaos_Premium_Figma_UI" or old.Name == "WangcaosIntro" then old:Destroy() end
 end
 
+-- ==============================================================================
+-- HIỆU ỨNG INTRO & THÔNG TIN DISCORD LÚC MỚI VÀO
+-- ==============================================================================
+local IntroScreen = Instance.new("ScreenGui")
+IntroScreen.Name = "WangcaosIntro"
+IntroScreen.Parent = SafeParent
+IntroScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local IntroFrame = Instance.new("Frame", IntroScreen)
+IntroFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17)
+IntroFrame.BackgroundTransparency = 0.1
+IntroFrame.BorderSizePixel = 0
+IntroFrame.Position = UDim2.new(0.5, -175, 0.5, -75)
+IntroFrame.Size = UDim2.new(0, 350, 0, 150)
+Instance.new("UICorner", IntroFrame).CornerRadius = UDim.new(0, 10)
+local IntroStroke = Instance.new("UIStroke", IntroFrame)
+IntroStroke.Color = Color3.fromRGB(0, 255, 255)
+IntroStroke.Thickness = 2
+
+local IntroTitle = Instance.new("TextLabel", IntroFrame)
+IntroTitle.BackgroundTransparency = 1
+IntroTitle.Size = UDim2.new(1, 0, 0, 50)
+IntroTitle.Position = UDim2.new(0, 0, 0, 15)
+IntroTitle.Font = Enum.Font.GothamBold
+IntroTitle.Text = "WANGCAOS PREMIUM V6.9.3"
+IntroTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntroTitle.TextSize = 18
+
+local IntroDisc = Instance.new("TextLabel", IntroFrame)
+IntroDisc.BackgroundTransparency = 1
+IntroDisc.Size = UDim2.new(1, 0, 0, 30)
+IntroDisc.Position = UDim2.new(0, 0, 0, 60)
+IntroDisc.Font = Enum.Font.GothamBold
+IntroDisc.Text = "Discord: Https://discord.gg/GkAKn4zzH"
+IntroDisc.TextColor3 = Color3.fromRGB(0, 255, 255)
+IntroDisc.TextSize = 14
+
+local IntroSub = Instance.new("TextLabel", IntroFrame)
+IntroSub.BackgroundTransparency = 1
+IntroSub.Size = UDim2.new(1, 0, 0, 30)
+IntroSub.Position = UDim2.new(0, 0, 0, 95)
+IntroSub.Font = Enum.Font.Gotham
+IntroSub.Text = "Loading Framework Modules..."
+IntroSub.TextColor3 = Color3.fromRGB(150, 150, 150)
+IntroSub.TextSize = 12
+
+task.spawn(function()
+    task.wait(1.5)
+    IntroSub.Text = "Framework successfully loaded!"
+    task.wait(2.5)
+    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    TweenService:Create(IntroFrame, tweenInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(IntroTitle, tweenInfo, {TextTransparency = 1}):Play()
+    TweenService:Create(IntroDisc, tweenInfo, {TextTransparency = 1}):Play()
+    TweenService:Create(IntroSub, tweenInfo, {TextTransparency = 1}):Play()
+    TweenService:Create(IntroStroke, tweenInfo, {Transparency = 1}):Play()
+    task.wait(1.5)
+    if IntroScreen then IntroScreen:Destroy() end
+end)
+-- ==============================================================================
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
@@ -163,7 +233,6 @@ local function ImportSettings(hexStr)
         end
         for _, refresh in pairs(UI_Refresh_Functions) do pcall(refresh) end
         
-        -- Cập nhật tọa độ ngay lập tức cho các nút Mobile khi Import thành công
         for key, mData in pairs(GlobalMobileButtons) do
             local xs = Config["MobilePos_"..key.."_XS"]
             local xo = Config["MobilePos_"..key.."_XO"]
@@ -176,6 +245,7 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
+
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor
 FOV_Drawing.Thickness = Config.FovThickness
@@ -269,7 +339,6 @@ local function IsTeammate(Player)
     if CheckHiddenValues(LocalPlayer.Character, Player.Character) then return true end
     return false
 end
-
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck and not Config.AuraWallCheck then return true end
     local Origin = Camera.CFrame.Position
@@ -302,6 +371,36 @@ local function GetDesiredHitbox(Character)
     end
     return Character:FindFirstChild("Head")
 end
+
+local function ToggleFlyState(state)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local root = character.HumanoidRootPart
+    local hum = character:FindFirstChildOfClass("Humanoid")
+
+    if state then
+        if flyBodyGyro then flyBodyGyro:Destroy() end
+        if flyBodyVelocity then flyBodyVelocity:Destroy() end
+        
+        flyBodyGyro = Instance.new("BodyGyro")
+        flyBodyGyro.P = 9e4
+        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyGyro.CFrame = root.CFrame
+        flyBodyGyro.Parent = root
+        
+        flyBodyVelocity = Instance.new("BodyVelocity")
+        flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyVelocity.Parent = root
+        
+        if hum then hum.PlatformStand = true end
+    else
+        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+        if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
+        if hum then hum.PlatformStand = false end
+    end
+end
+
 local function GetClosestPlayerToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ClosestTarget = nil
@@ -381,14 +480,16 @@ local function GetAuraTarget()
 end
 
 local function GetPlayerColor(Player)
-    return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Config.EspColor
+    if Config.EspTeamCheck and IsTeammate(Player) then
+        return Color3.fromRGB(0, 255, 0)
+    end
+    return Config.EspColor
 end
 
 local function GetEquippedTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
     return Tool and Tool.Name or "None"
 end
-
 local function PerformTriggerbotClick()
     local TargetInstance = Mouse.Target
     if TargetInstance and TargetInstance.Parent then
@@ -452,6 +553,7 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
@@ -463,7 +565,6 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
     local dragInput, mousePos, framePos
 
     DragHandle.InputBegan:Connect(function(input)
-        -- TÍNH NĂNG KHOÁ VỊ TRÍ MOBILE NÚT THEO LỆNH ĐẠI CA
         if Config.LockMobileButtons and PosKey then return end 
         
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -473,7 +574,6 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then 
                     dragging = false 
-                    -- LƯU VỊ TRÍ VÀO CẤU HÌNH ĐỂ EXPORT
                     if PosKey then
                         Config["MobilePos_"..PosKey.."_XS"] = UIElement.Position.X.Scale
                         Config["MobilePos_"..PosKey.."_XO"] = UIElement.Position.X.Offset
@@ -505,7 +605,6 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
         end
     end)
 end
-
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
     local xs = Config["MobilePos_"..Key.."_XS"] or InitPos.X.Scale
     local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
@@ -546,6 +645,7 @@ local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "
 local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
 local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
 local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Color3.fromRGB(150, 150, 150), UDim2.new(0.85, 0, 0.70, 0))
+local MobFly = CreateIndependentMobileButton("Fly", "FLY\nON", "FLY\nOFF", "Fly", "ShowMobileFly", Color3.fromRGB(0, 255, 255), UDim2.new(0.85, 0, 0.81, 0))
 
 local lxs = Config["MobilePos_MainLogo_XS"] or 0
 local lxo = Config["MobilePos_MainLogo_XO"] or 20
@@ -573,6 +673,7 @@ Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -617,7 +718,6 @@ TabLayout.Padding = UDim.new(0, 4)
 local TabPad = Instance.new("UIPadding", TabMenuContainer)
 TabPad.PaddingLeft = UDim.new(0, 6)
 TabPad.PaddingTop = UDim.new(0, 6)
-
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = TopNavBar
 CloseBtn.BackgroundTransparency = 1
@@ -628,7 +728,7 @@ CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
 CloseBtn.TextSize = 22
 
-MakeDraggable(MainFrame, TopNavBar, nil) -- Không lưu vị trí Menu PC
+MakeDraggable(MainFrame, TopNavBar, nil) 
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
 RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
 
@@ -692,6 +792,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
+
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -709,14 +810,13 @@ local function UpdateToggleVisual(Key)
         elseif Key == "AutoFarmPlayer" then MData.Btn.Text = state and "FRM\nON" or "FRM\nOFF"
         elseif Key == "Aura" then MData.Btn.Text = state and "AUR\nON" or "AUR\nOFF"
         elseif Key == "ThirdPerson" then MData.Btn.Text = state and "3RD\nON" or "3RD\nOFF"
+        elseif Key == "Fly" then MData.Btn.Text = state and "FLY\nON" or "FLY\nOFF" 
         end
     end
 end
-
--- BỘ CHẶN BẬT NÚT MOBILE NẾU ĐANG CHƠI TRÊN PC THEO LỆNH ĐẠI CA
 local RestrictedKeys = {
     ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
-    ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true
+    ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true
 }
 
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
@@ -797,6 +897,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -830,8 +931,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     Bar.Position = UDim2.new(0, 10, 0, 26)
     Bar.Size = UDim2.new(1, -20, 0, 3)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-
-    local Fill = Instance.new("Frame", Bar)
+        local Fill = Instance.new("Frame", Bar)
     Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Fill.BorderSizePixel = 0
     Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
@@ -897,6 +997,7 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
+
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -969,7 +1070,6 @@ local function AddSyncedEspColorSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.EspColor end)
 end
-
 local function AddAuraColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1041,6 +1141,7 @@ local function AddTracerModeSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
+
 local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1184,12 +1285,15 @@ end)
 AddPremiumToggle(PlayerPage, "Enable Spinbot Axis", "Spinbot", nil, nil, "SpinbotKeybind")
 AddPremiumSlider(PlayerPage, "Spinbot Rotate Velocity", 5, 100, "SpinSpeed")
 
+AddPremiumToggle(MovementPage, "Enable Flight Hack", "Fly", ToggleFlyState, Color3.fromRGB(0, 255, 255), "FlyKeybind")
+AddPremiumSlider(MovementPage, "Flight Speed Velocity", 10, 300, "FlySpeed")
 AddPremiumToggle(MovementPage, "WalkSpeed Safe Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
 AddPremiumSlider(MovementPage, "Speed Core Value", 16, 200, "WalkSpeed")
 AddPremiumToggle(MovementPage, "JumpPower Boost Axis", "JumpToggle", nil, nil, "JumpKeybind")
 AddPremiumSlider(MovementPage, "Jump Force Magnitude", 50, 350, "JumpPower")
 
 AddPremiumToggle(VisualPage, "Master ESP Overlay Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
+AddPremiumToggle(VisualPage, "Highlight Team (Green)", "EspTeamCheck")
 AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
 AddPremiumSlider(VisualPage, "Chams Opacity Multiplier", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers Vector", "EspTracer")
@@ -1205,8 +1309,6 @@ AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
 AddPremiumSlider(MiscPage, "FOV Perimeter Range", 30, 500, "FovRadius")
 AddPremiumToggle(MiscPage, "Crosshair Center Alignment Dot", "CrosshairDot")
 AddPremiumToggle(MiscPage, "Anti-AFK Auto Interactor", "AntiAFK", nil, Color3.fromRGB(210, 50, 140))
-
--- NÚT KHOÁ VỊ TRÍ MOBILE NẰM Ở ĐÂY ĐẠI CA NHÉ
 AddPremiumToggle(MiscPage, "Lock Mobile Buttons Position", "LockMobileButtons", nil, Color3.fromRGB(200, 50, 50))
 
 AddExportBox(MiscPage)
@@ -1218,6 +1320,8 @@ AddPremiumToggle(MiscPage, "Display Mobile Aim Trigger", "ShowMobileAim", functi
 AddPremiumToggle(MiscPage, "Display Mobile Trigger Clicker", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(MiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(MiscPage, "Display Mobile Fly Toggle", "ShowMobileFly", function(state) GlobalMobileButtons["Fly"].Btn.Visible = (state and IsMobile) end)
+
 AddPremiumToggle(MiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
 
 AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
@@ -1226,6 +1330,7 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
     pcall(function() Dot_Drawing:Remove() end)
     pcall(function() AuraVisual:Remove() end)
     pcall(function() mouse1release() end)
+    ToggleFlyState(false)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     for neck, origC0 in pairs(NeckCache) do if neck and neck.Parent then pcall(function() neck.C0 = origC0 end) end end
@@ -1237,7 +1342,20 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Ultimate PE Control Matrix")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.3 - Discord Intro Edition")
+AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
+
+-- =========================================
+-- ĐÂY, NÚT DISCORD MỚI NẰM Ở MISC PAGE LUÔN
+-- =========================================
+AddPremiumButton(MiscPage, "Join Community", "COPY DISCORD", function()
+    if setclipboard then
+        setclipboard("Https://discord.gg/GkAKn4zzH")
+        StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Copied Discord Link!", Duration = 3})
+    else
+        StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Https://discord.gg/GkAKn4zzH", Duration = 5})
+    end
+end)
 
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
@@ -1247,7 +1365,7 @@ CreatePremiumTab("Misc", "⚙", 5, MiscPage)
 CreatePremiumTab("Credits", "👑", 6, CreditsPage)
 
 local function RegisterMobileClick(Btn, Key)
-    RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) end)
+    RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) if Key == "Fly" then ToggleFlyState(Config.Fly) end end)
 end
 RegisterMobileClick(MobAim, "Aimbot")
 RegisterMobileClick(MobTrig, "Triggerbot")
@@ -1255,6 +1373,8 @@ RegisterMobileClick(MobSpeed, "SpeedToggle")
 RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 RegisterMobileClick(MobAura, "Aura")
 RegisterMobileClick(MobTP, "ThirdPerson")
+RegisterMobileClick(MobFly, "Fly")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Config.MenuKeybind then Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible
@@ -1265,6 +1385,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
     elseif input.KeyCode == Config.EspMasterKeybind and Config.EspMasterKeybind ~= Enum.KeyCode.Unknown then Config.EspMaster = not Config.EspMaster UpdateToggleVisual("EspMaster")
     elseif input.KeyCode == Config.SpeedKeybind and Config.SpeedKeybind ~= Enum.KeyCode.Unknown then Config.SpeedToggle = not Config.SpeedToggle UpdateToggleVisual("SpeedToggle")
     elseif input.KeyCode == Config.JumpKeybind and Config.JumpKeybind ~= Enum.KeyCode.Unknown then Config.JumpToggle = not Config.JumpToggle UpdateToggleVisual("JumpToggle")
+    elseif input.KeyCode == Config.FlyKeybind and Config.FlyKeybind ~= Enum.KeyCode.Unknown then Config.Fly = not Config.Fly UpdateToggleVisual("Fly") ToggleFlyState(Config.Fly)
     end
 end)
 
@@ -1334,6 +1455,21 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
         end
         
+        if Config.Fly and flyBodyGyro and flyBodyVelocity then
+            local moveDir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Camera.CFrame.RightVector end
+            
+            if MyHum and moveDir.Magnitude == 0 and MyHum.MoveDirection.Magnitude > 0 then
+                moveDir = Camera.CFrame.LookVector * MyHum.MoveDirection.Z * -1 + Camera.CFrame.RightVector * MyHum.MoveDirection.X
+            end
+            
+            flyBodyGyro.CFrame = Camera.CFrame
+            flyBodyVelocity.Velocity = moveDir * Config.FlySpeed
+        end
+        
         local headInstance = MyChar:FindFirstChild("Head")
         local torsoInstance = MyChar:FindFirstChild("UpperTorso") or MyChar:FindFirstChild("Torso")
         local neckJoint = (headInstance and headInstance:FindFirstChild("Neck")) or (torsoInstance and torsoInstance:FindFirstChild("Neck"))
@@ -1376,7 +1512,10 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
             local Hum = Char:FindFirstChildOfClass("Humanoid")
-            if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum then
+            
+            local isTarget = true 
+            
+            if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum and isTarget then
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
 
@@ -1399,14 +1538,6 @@ Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 
 for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
-
-pcall(function()
-    StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.9.0",
-        Text = "Successfully implemented Mobile Button Position Lock & Save System!",
-        Duration = 7
-    })
-end)
 -- ==============================================================================
 -- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

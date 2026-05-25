@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.3 - THE ULTIMATE EDITION (DISCORD INTRO)
+-- WANGCAOS PREMIUM CLIENT V6.9.4 - COMPACT UI & DISCORD INTRO
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -19,90 +19,19 @@ local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
 
 local Config = {
-    MenuVisible = true,
-    MenuKeybind = Enum.KeyCode.RightShift,
-    
-    Aimbot = false,
-    AimbotKeybind = Enum.KeyCode.E,
-    TeamCheck = true,
-    WallCheck = true,
-    Smoothness = 5,
-    TargetPart = "Head",
-    
-    Aura = false,
-    AuraKeybind = Enum.KeyCode.H,
-    TeamCheckAura = true,
-    AuraWallCheck = true,
-    AuraSmoothness = 5,
-    AuraRadius = 30,
-    AuraColor = Color3.fromRGB(0, 170, 255),
-    AuraTransparency = 50,
-    PriorityLowestHealth = false,
-    
-    Triggerbot = false,
-    TriggerbotKeybind = Enum.KeyCode.T,
-    TriggerWallCheck = true,
-    
-    Spinbot = false,
-    SpinbotKeybind = Enum.KeyCode.K,
-    SpinSpeed = 25,
-    
-    AutoFarmPlayer = false,
-    AutoFarmDelay = 0.05,
-    
-    BowDown = false,
-    BowAngle = 45,
-    ThirdPerson = false,
-    ThirdPersonDist = 15,
-    AntiAFK = false,
-    
-    EspMaster = false,
-    EspMasterKeybind = Enum.KeyCode.O,
-    EspTeamCheck = false, 
-    FovCircle = false,
-    FovRadius = 120,
-    FovThickness = 1.5,
-    FovSides = 64,
-    FovColor = Color3.fromRGB(255, 255, 255),
-    FovTransparency = 0.8,
-    FovFilled = false,
-    
-    CrosshairDot = false,
-    EspBox = false,
-    EspTracer = false,
-    TracerMode = "Bottom",
-    EspColor = Color3.fromRGB(255, 50, 50),
-    EspName = false,
-    EspHealth = false,
-    EspTransparency = 80,
-    MaxDistance = 5000,
-    
-    SpeedToggle = false,
-    SpeedKeybind = Enum.KeyCode.Q,
-    WalkSpeed = 16,
-    JumpToggle = false,
-    JumpKeybind = Enum.KeyCode.G,
-    JumpPower = 50,
-    
-    Fly = false, 
-    FlyKeybind = Enum.KeyCode.F,
-    FlySpeed = 50,
-    
-    FullBright = false,
-    
-    ShowMobileAim = false,
-    ShowMobileTrig = false,
-    ShowMobileSpeed = false,
-    ShowMobileFarm = false,
-    ShowMobileAura = false,
-    ShowMobileTP = false,
-    ShowMobileFly = false,
-    LockMobileButtons = false, 
-    
-    CustomBackground = true,
-    BackgroundAssetId = "rbxassetid://118670919014080",
-    StoredAmbient = Lighting.Ambient,
-    StoredOutdoorAmbient = Lighting.OutdoorAmbient
+    MenuVisible = true, MenuKeybind = Enum.KeyCode.RightShift,
+    Aimbot = false, AimbotKeybind = Enum.KeyCode.E, TeamCheck = true, WallCheck = true, Smoothness = 5, TargetPart = "Head",
+    Aura = false, AuraKeybind = Enum.KeyCode.H, TeamCheckAura = true, AuraWallCheck = true, AuraSmoothness = 5, AuraRadius = 30, AuraColor = Color3.fromRGB(0, 170, 255), AuraTransparency = 50, PriorityLowestHealth = false,
+    Triggerbot = false, TriggerbotKeybind = Enum.KeyCode.T, TriggerWallCheck = true,
+    Spinbot = false, SpinbotKeybind = Enum.KeyCode.K, SpinSpeed = 25,
+    AutoFarmPlayer = false, AutoFarmDelay = 0.05,
+    BowDown = false, BowAngle = 45, ThirdPerson = false, ThirdPersonDist = 15, AntiAFK = false,
+    EspMaster = false, EspMasterKeybind = Enum.KeyCode.O, EspTeamCheck = false, FovCircle = false, FovRadius = 120, FovThickness = 1.5, FovSides = 64, FovColor = Color3.fromRGB(255, 255, 255), FovTransparency = 0.8, FovFilled = false,
+    CrosshairDot = false, EspBox = false, EspTracer = false, TracerMode = "Bottom", EspColor = Color3.fromRGB(255, 50, 50), EspName = false, EspHealth = false, EspTransparency = 80, MaxDistance = 5000,
+    SpeedToggle = false, SpeedKeybind = Enum.KeyCode.Q, WalkSpeed = 16, JumpToggle = false, JumpKeybind = Enum.KeyCode.G, JumpPower = 50,
+    Fly = false, FlyKeybind = Enum.KeyCode.F, FlySpeed = 50, FullBright = false,
+    ShowMobileAim = false, ShowMobileTrig = false, ShowMobileSpeed = false, ShowMobileFarm = false, ShowMobileAura = false, ShowMobileTP = false, ShowMobileFly = false, LockMobileButtons = false, 
+    CustomBackground = true, BackgroundAssetId = "rbxassetid://118670919014080", StoredAmbient = Lighting.Ambient, StoredOutdoorAmbient = Lighting.OutdoorAmbient
 }
 
 local CurrentSpinAngle = 0
@@ -132,9 +61,6 @@ for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" or old.Name == "WangcaosIntro" then old:Destroy() end
 end
 
--- ==============================================================================
--- HIỆU ỨNG INTRO & THÔNG TIN DISCORD LÚC MỚI VÀO
--- ==============================================================================
 local IntroScreen = Instance.new("ScreenGui")
 IntroScreen.Name = "WangcaosIntro"
 IntroScreen.Parent = SafeParent
@@ -156,7 +82,7 @@ IntroTitle.BackgroundTransparency = 1
 IntroTitle.Size = UDim2.new(1, 0, 0, 50)
 IntroTitle.Position = UDim2.new(0, 0, 0, 15)
 IntroTitle.Font = Enum.Font.GothamBold
-IntroTitle.Text = "WANGCAOS PREMIUM V6.9.3"
+IntroTitle.Text = "WANGCAOS PREMIUM V6.9.4"
 IntroTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 IntroTitle.TextSize = 18
 
@@ -199,13 +125,9 @@ end)
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
-        if type(v) == "boolean" or type(v) == "number" or type(v) == "string" then
-            exportTable[k] = v
-        elseif typeof(v) == "EnumItem" then
-            exportTable[k] = {__type = "EnumItem", EnumType = tostring(v.EnumType), Name = v.Name}
-        elseif typeof(v) == "Color3" then
-            exportTable[k] = {__type = "Color3", R = v.R, G = v.G, B = v.B}
-        end
+        if type(v) == "boolean" or type(v) == "number" or type(v) == "string" then exportTable[k] = v
+        elseif typeof(v) == "EnumItem" then exportTable[k] = {__type = "EnumItem", EnumType = tostring(v.EnumType), Name = v.Name}
+        elseif typeof(v) == "Color3" then exportTable[k] = {__type = "Color3", R = v.R, G = v.G, B = v.B} end
     end
     local success, json = pcall(function() return HttpService:JSONEncode(exportTable) end)
     if not success then return "" end
@@ -228,49 +150,28 @@ local function ImportSettings(hexStr)
                 if v.__type == "EnumItem" then
                     local enumType = string.split(v.EnumType, ".")[3] or v.EnumType
                     pcall(function() Config[k] = Enum[enumType][v.Name] end)
-                elseif v.__type == "Color3" then
-                    Config[k] = Color3.new(v.R, v.G, v.B)
-                end
-            else
-                Config[k] = v
-            end
+                elseif v.__type == "Color3" then Config[k] = Color3.new(v.R, v.G, v.B) end
+            else Config[k] = v end
         end
         for _, refresh in pairs(UI_Refresh_Functions) do pcall(refresh) end
-        
         for key, mData in pairs(GlobalMobileButtons) do
-            local xs = Config["MobilePos_"..key.."_XS"]
-            local xo = Config["MobilePos_"..key.."_XO"]
-            local ys = Config["MobilePos_"..key.."_YS"]
-            local yo = Config["MobilePos_"..key.."_YO"]
-            if xs and xo and ys and yo and mData.Btn then
-                pcall(function() mData.Btn.Position = UDim2.new(xs, xo, ys, yo) end)
-            end
+            local xs, xo, ys, yo = Config["MobilePos_"..key.."_XS"], Config["MobilePos_"..key.."_XO"], Config["MobilePos_"..key.."_YS"], Config["MobilePos_"..key.."_YO"]
+            if xs and xo and ys and yo and mData.Btn then pcall(function() mData.Btn.Position = UDim2.new(xs, xo, ys, yo) end) end
         end
     end)
     return success
 end
 
 local FOV_Drawing = Drawing.new("Circle")
-FOV_Drawing.Color = Config.FovColor
-FOV_Drawing.Thickness = Config.FovThickness
-FOV_Drawing.NumSides = Config.FovSides
-FOV_Drawing.Filled = Config.FovFilled
-FOV_Drawing.Transparency = Config.FovTransparency
-FOV_Drawing.Visible = false
+FOV_Drawing.Color = Config.FovColor; FOV_Drawing.Thickness = Config.FovThickness; FOV_Drawing.NumSides = Config.FovSides
+FOV_Drawing.Filled = Config.FovFilled; FOV_Drawing.Transparency = Config.FovTransparency; FOV_Drawing.Visible = false
 
 local Dot_Drawing = Drawing.new("Circle")
-Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
-Dot_Drawing.Thickness = 1
-Dot_Drawing.Radius = 3
-Dot_Drawing.NumSides = 16
-Dot_Drawing.Filled = true
-Dot_Drawing.Transparency = 1
-Dot_Drawing.Visible = false
+Dot_Drawing.Color = Color3.fromRGB(255, 255, 255); Dot_Drawing.Thickness = 1; Dot_Drawing.Radius = 3
+Dot_Drawing.NumSides = 16; Dot_Drawing.Filled = true; Dot_Drawing.Transparency = 1; Dot_Drawing.Visible = false
 
 local AuraVisual = Instance.new("CylinderHandleAdornment")
-AuraVisual.Name = "WangAuraCircle"
-AuraVisual.AlwaysOnTop = false
-AuraVisual.ZIndex = 5
+AuraVisual.Name = "WangAuraCircle"; AuraVisual.AlwaysOnTop = false; AuraVisual.ZIndex = 5
 
 local Tracer_Cache = {}
 local Character_Cache = {}
@@ -279,18 +180,12 @@ local NeckCache = {}
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
     local Line = Drawing.new("Line")
-    Line.Thickness = 1.2
-    Line.Color = Config.EspColor
-    Line.Transparency = 1
-    Line.Visible = false
+    Line.Thickness = 1.2; Line.Color = Config.EspColor; Line.Transparency = 1; Line.Visible = false
     Tracer_Cache[Player] = Line
 end
 
 local function ClearTracerObject(Player)
-    if Tracer_Cache[Player] then
-        pcall(function() Tracer_Cache[Player].Visible = false Tracer_Cache[Player]:Remove() end)
-        Tracer_Cache[Player] = nil
-    end
+    if Tracer_Cache[Player] then pcall(function() Tracer_Cache[Player].Visible = false Tracer_Cache[Player]:Remove() end) Tracer_Cache[Player] = nil end
 end
 
 local function CleanCharacterVisuals(Character)
@@ -316,12 +211,10 @@ local function IsTeammate(Player)
     end
     local teamKeywords = {"Team", "Faction", "Gang", "Role", "Group", "Side"}
     for _, attr in pairs(teamKeywords) do
-        local myAttr = LocalPlayer:GetAttribute(attr)
-        local targetAttr = Player:GetAttribute(attr)
+        local myAttr = LocalPlayer:GetAttribute(attr); local targetAttr = Player:GetAttribute(attr)
         if myAttr and targetAttr and myAttr == targetAttr then return true end
         if LocalPlayer.Character and Player.Character then
-            local myCharAttr = LocalPlayer.Character:GetAttribute(attr)
-            local targetCharAttr = Player.Character:GetAttribute(attr)
+            local myCharAttr = LocalPlayer.Character:GetAttribute(attr); local targetCharAttr = Player.Character:GetAttribute(attr)
             if myCharAttr and targetCharAttr and myCharAttr == targetCharAttr then return true end
         end
     end
@@ -343,60 +236,42 @@ local function IsTeammate(Player)
     if CheckHiddenValues(LocalPlayer.Character, Player.Character) then return true end
     return false
 end
+
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck and not Config.AuraWallCheck then return true end
-    local Origin = Camera.CFrame.Position
-    local Direction = TargetPart.Position - Origin
-    local Params = RaycastParams.new()
-    Params.FilterType = Enum.RaycastFilterType.Exclude
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
-    local Result = workspace:Raycast(Origin, Direction, Params)
-    return Result == nil
+    local Origin = Camera.CFrame.Position; local Direction = TargetPart.Position - Origin
+    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude; Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
+    return workspace:Raycast(Origin, Direction, Params) == nil
 end
 
 local function CheckTriggerWall(Position)
     if not Config.TriggerWallCheck then return true end
-    local Origin = Camera.CFrame.Position
-    local Direction = Position - Origin
-    local Params = RaycastParams.new()
-    Params.FilterType = Enum.RaycastFilterType.Exclude
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    local Origin = Camera.CFrame.Position; local Direction = Position - Origin
+    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude; Params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
     local Result = workspace:Raycast(Origin, Direction, Params)
     return Result == nil or Result.Instance:IsDescendantOf(workspace)
 end
 
 local function GetDesiredHitbox(Character)
-    if Config.TargetPart == "Head" then
-        return Character:FindFirstChild("Head")
-    elseif Config.TargetPart == "Torso" then
-        return Character:FindFirstChild("HumanoidRootPart") or Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")
-    elseif Config.TargetPart == "Legs" then
-        return Character:FindFirstChild("Right Leg") or Character:FindFirstChild("RightLowerLeg") or Character:FindFirstChild("Left Leg") or Character:FindFirstChild("LeftLowerLeg") or Character:FindFirstChild("HumanoidRootPart")
-    end
+    if Config.TargetPart == "Head" then return Character:FindFirstChild("Head")
+    elseif Config.TargetPart == "Torso" then return Character:FindFirstChild("HumanoidRootPart") or Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")
+    elseif Config.TargetPart == "Legs" then return Character:FindFirstChild("Right Leg") or Character:FindFirstChild("RightLowerLeg") or Character:FindFirstChild("Left Leg") or Character:FindFirstChild("LeftLowerLeg") or Character:FindFirstChild("HumanoidRootPart") end
     return Character:FindFirstChild("Head")
 end
-
 local function ToggleFlyState(state)
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local root = character.HumanoidRootPart
-    local hum = character:FindFirstChildOfClass("Humanoid")
+    local root = character.HumanoidRootPart; local hum = character:FindFirstChildOfClass("Humanoid")
 
     if state then
         if flyBodyGyro then flyBodyGyro:Destroy() end
         if flyBodyVelocity then flyBodyVelocity:Destroy() end
         
-        flyBodyGyro = Instance.new("BodyGyro")
-        flyBodyGyro.P = 9e4
-        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyGyro.CFrame = root.CFrame
-        flyBodyGyro.Parent = root
+        flyBodyGyro = Instance.new("BodyGyro"); flyBodyGyro.P = 9e4
+        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9); flyBodyGyro.CFrame = root.CFrame; flyBodyGyro.Parent = root
         
-        flyBodyVelocity = Instance.new("BodyVelocity")
-        flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyBodyVelocity.Parent = root
-        
+        flyBodyVelocity = Instance.new("BodyVelocity"); flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9); flyBodyVelocity.Parent = root
         if hum then hum.PlatformStand = true end
     else
         if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
@@ -407,9 +282,7 @@ end
 
 local function GetClosestPlayerToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local ClosestTarget = nil
-    local MaxDist = Config.FovRadius
-    local LowestHealth = math.huge
+    local ClosestTarget = nil; local MaxDist = Config.FovRadius; local LowestHealth = math.huge
 
     for _, Player in pairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
@@ -422,15 +295,9 @@ local function GetClosestPlayerToCrosshair()
                     local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
                     if Dist < Config.FovRadius then
                         if Config.PriorityLowestHealth then
-                            if Hum.Health < LowestHealth then
-                                LowestHealth = Hum.Health
-                                ClosestTarget = TargetPartInstance
-                            end
+                            if Hum.Health < LowestHealth then LowestHealth = Hum.Health ClosestTarget = TargetPartInstance end
                         else
-                            if Dist < MaxDist then
-                                MaxDist = Dist
-                                ClosestTarget = TargetPartInstance
-                            end
+                            if Dist < MaxDist then MaxDist = Dist ClosestTarget = TargetPartInstance end
                         end
                     end
                 end
@@ -445,36 +312,26 @@ local function GetAuraTarget()
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
     if not MyRoot then return nil end
 
-    local BestTarget = nil
-    local LowestHealth = math.huge
-    local ClosestDist = Config.AuraRadius
+    local BestTarget = nil; local LowestHealth = math.huge; local ClosestDist = Config.AuraRadius
 
     for _, Player in pairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer and Player.Character and IsAlive(Player.Character) then
             if Config.TeamCheckAura and IsTeammate(Player) then continue end
-            
             local TargetPartInstance = GetDesiredHitbox(Player.Character)
             local EnemyRoot = Player.Character:FindFirstChild("HumanoidRootPart")
             local Hum = Player.Character:FindFirstChildOfClass("Humanoid")
             
             if TargetPartInstance and EnemyRoot and Hum then
                 if Config.AuraWallCheck and not CheckWallOcclusion(TargetPartInstance, Player.Character) then continue end
-                
                 local MyPosFlat = Vector3.new(MyRoot.Position.X, 0, MyRoot.Position.Z)
                 local EnemyPosFlat = Vector3.new(EnemyRoot.Position.X, 0, EnemyRoot.Position.Z)
                 local DistFlat = (EnemyPosFlat - MyPosFlat).Magnitude
                 
                 if DistFlat <= Config.AuraRadius then
                     if Config.PriorityLowestHealth then
-                        if Hum.Health < LowestHealth then
-                            LowestHealth = Hum.Health
-                            BestTarget = TargetPartInstance
-                        end
+                        if Hum.Health < LowestHealth then LowestHealth = Hum.Health BestTarget = TargetPartInstance end
                     else
-                        if DistFlat < ClosestDist then
-                            ClosestDist = DistFlat
-                            BestTarget = TargetPartInstance
-                        end
+                        if DistFlat < ClosestDist then ClosestDist = DistFlat BestTarget = TargetPartInstance end
                     end
                 end
             end
@@ -484,9 +341,7 @@ local function GetAuraTarget()
 end
 
 local function GetPlayerColor(Player)
-    if Config.EspTeamCheck and IsTeammate(Player) then
-        return Color3.fromRGB(0, 255, 0)
-    end
+    if Config.EspTeamCheck and IsTeammate(Player) then return Color3.fromRGB(0, 255, 0) end
     return Config.EspColor
 end
 
@@ -504,9 +359,7 @@ local function PerformTriggerbotClick()
         if Plr and Plr ~= LocalPlayer and IsAlive(Char) then
             if Config.TeamCheck and IsTeammate(Plr) then return end
             local TargetPart = GetDesiredHitbox(Char)
-            if TargetPart and CheckTriggerWall(TargetPart.Position) then
-                pcall(function() mouse1click() end)
-            end
+            if TargetPart and CheckTriggerWall(TargetPart.Position) then pcall(function() mouse1click() end) end
         end
     end
 end
@@ -517,7 +370,6 @@ local function ProcessAutoFarmPlayer()
         if IsFiring then IsFiring = false pcall(function() mouse1release() end) end
         return 
     end
-    
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
     if not MyRoot or not IsAlive(MyChar) then return end
@@ -531,31 +383,17 @@ local function ProcessAutoFarmPlayer()
             if TRoot and THead then table.insert(Targets, {Root = TRoot, Head = THead}) end
         end
     end
-    
-    if #Targets == 0 then 
-        if IsFiring then IsFiring = false pcall(function() mouse1release() end) end
-        return 
-    end
-    
+    if #Targets == 0 then if IsFiring then IsFiring = false pcall(function() mouse1release() end) end return end
     if CurrentFarmIndex > #Targets then CurrentFarmIndex = 1 end
     local ActiveTargetData = Targets[CurrentFarmIndex]
-    local EnemyRoot = ActiveTargetData.Root
-    local EnemyHead = ActiveTargetData.Head
+    local EnemyRoot = ActiveTargetData.Root; local EnemyHead = ActiveTargetData.Head
     
     if EnemyRoot and EnemyHead then
         local BehindPosition = EnemyRoot.Position - (EnemyRoot.CFrame.LookVector * 3)
         MyRoot.CFrame = CFrame.new(BehindPosition, EnemyRoot.Position)
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, EnemyHead.Position)
-        
-        if not IsFiring then
-            IsFiring = true
-            pcall(function() mouse1press() end)
-        end
-        
-        if tick() - LastFarmTime >= Config.AutoFarmDelay then
-            LastFarmTime = tick()
-            CurrentFarmIndex = CurrentFarmIndex + 1
-        end
+        if not IsFiring then IsFiring = true pcall(function() mouse1press() end) end
+        if tick() - LastFarmTime >= Config.AutoFarmDelay then LastFarmTime = tick() CurrentFarmIndex = CurrentFarmIndex + 1 end
     end
 end
 local ScreenGui = Instance.new("ScreenGui")
@@ -565,16 +403,12 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = SafeParent
 
 local function MakeDraggable(UIElement, DragHandle, PosKey)
-    local dragging = false
-    local dragInput, mousePos, framePos
+    local dragging = false; local dragInput, mousePos, framePos
 
     DragHandle.InputBegan:Connect(function(input)
         if Config.LockMobileButtons and PosKey then return end 
-        
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            mousePos = input.Position
-            framePos = UIElement.Position
+            dragging = true; mousePos = input.Position; framePos = UIElement.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then 
                     dragging = false 
@@ -603,11 +437,7 @@ local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     TextButton.MouseButton1Click:Connect(function() if not HoldingTouch then Callback() end end)
     TextButton.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then HoldingTouch = true end end)
-    TextButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            if HoldingTouch then HoldingTouch = false Callback() end
-        end
-    end)
+    TextButton.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then if HoldingTouch then HoldingTouch = false Callback() end end end)
 end
 
 local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
@@ -616,29 +446,17 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     local ys = Config["MobilePos_"..Key.."_YS"] or InitPos.Y.Scale
     local yo = Config["MobilePos_"..Key.."_YO"] or InitPos.Y.Offset
     
-    if not Config["MobilePos_"..Key.."_XS"] then
-        Config["MobilePos_"..Key.."_XS"] = xs
-        Config["MobilePos_"..Key.."_XO"] = xo
-        Config["MobilePos_"..Key.."_YS"] = ys
-        Config["MobilePos_"..Key.."_YO"] = yo
-    end
+    if not Config["MobilePos_"..Key.."_XS"] then Config["MobilePos_"..Key.."_XS"] = xs; Config["MobilePos_"..Key.."_XO"] = xo; Config["MobilePos_"..Key.."_YS"] = ys; Config["MobilePos_"..Key.."_YO"] = yo end
 
     local ShortcutBtn = Instance.new("TextButton")
     ShortcutBtn.Name = "IndependentMobile_" .. Key
-    ShortcutBtn.Parent = ScreenGui
-    ShortcutBtn.BackgroundColor3 = DefaultColor
-    ShortcutBtn.BackgroundTransparency = 0.2
-    ShortcutBtn.Position = UDim2.new(xs, xo, ys, yo)
-    ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
-    ShortcutBtn.Font = Enum.Font.GothamBold
-    ShortcutBtn.Text = TextOff
-    ShortcutBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ShortcutBtn.TextSize = 9
+    ShortcutBtn.Parent = ScreenGui; ShortcutBtn.BackgroundColor3 = DefaultColor; ShortcutBtn.BackgroundTransparency = 0.2
+    ShortcutBtn.Position = UDim2.new(xs, xo, ys, yo); ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
+    ShortcutBtn.Font = Enum.Font.GothamBold; ShortcutBtn.Text = TextOff; ShortcutBtn.TextColor3 = Color3.fromRGB(255, 255, 255); ShortcutBtn.TextSize = 9
     ShortcutBtn.Visible = (Config[ShowKey] and IsMobile)
     Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
     local Stroke = Instance.new("UIStroke", ShortcutBtn)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1.5
+    Stroke.Color = Color3.fromRGB(255, 255, 255); Stroke.Thickness = 1.5
     MakeDraggable(ShortcutBtn, ShortcutBtn, Key)
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
@@ -656,24 +474,15 @@ local lxs = Config["MobilePos_MainLogo_XS"] or 0
 local lxo = Config["MobilePos_MainLogo_XO"] or 20
 local lys = Config["MobilePos_MainLogo_YS"] or 0
 local lyo = Config["MobilePos_MainLogo_YO"] or 20
-if not Config["MobilePos_MainLogo_XS"] then
-    Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo
-end
+if not Config["MobilePos_MainLogo_XS"] then Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo end
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
-ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
-ToggleButton.Size = UDim2.new(0, 45, 0, 45)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "W"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 20
+ToggleButton.Parent = ScreenGui; ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20); ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo); ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Font = Enum.Font.GothamBold; ToggleButton.Text = "W"; ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255); ToggleButton.TextSize = 20
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
-Instance.new("UIStroke", ToggleButton).Thickness = 1.5
+Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60); Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
@@ -682,12 +491,11 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17)
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 450, 0, 300) 
+MainFrame.ClipsDescendants = true
 MainFrame.Visible = Config.MenuVisible
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
 MainFrame.UIStroke.Thickness = 1.5
 
@@ -701,21 +509,50 @@ CustomBackgroundImage.ImageTransparency = 0.75
 CustomBackgroundImage.ScaleType = Enum.ScaleType.Crop
 CustomBackgroundImage.ZIndex = 0
 CustomBackgroundImage.Visible = Config.CustomBackground
-Instance.new("UICorner", CustomBackgroundImage).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", CustomBackgroundImage).CornerRadius = UDim.new(0, 8)
+
+local SideMenuBtn = Instance.new("TextButton")
+SideMenuBtn.Name = "SideMenuBtn"
+SideMenuBtn.Parent = MainFrame
+SideMenuBtn.Size = UDim2.new(0, 30, 1, 0)
+SideMenuBtn.Position = UDim2.new(0, 0, 0, 0)
+SideMenuBtn.BackgroundColor3 = Color3.fromRGB(22, 24, 27)
+SideMenuBtn.BackgroundTransparency = 0.5
+SideMenuBtn.Font = Enum.Font.GothamBold
+SideMenuBtn.Text = "<"
+SideMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SideMenuBtn.TextSize = 16
+SideMenuBtn.ZIndex = 5
+Instance.new("UICorner", SideMenuBtn).CornerRadius = UDim.new(0, 8)
+
+local SettingsPanel = Instance.new("Frame")
+SettingsPanel.Name = "SettingsPanel"
+SettingsPanel.Parent = MainFrame
+SettingsPanel.Position = UDim2.new(0, 35, 0, 0)
+SettingsPanel.Size = UDim2.new(1, -35, 1, 0)
+SettingsPanel.BackgroundTransparency = 1
+
+local SettingsExpanded = true
+RegisterTouchFriendlyClick(SideMenuBtn, function()
+    SettingsExpanded = not SettingsExpanded
+    local TargetMainSize = SettingsExpanded and UDim2.new(0, 450, 0, 300) or UDim2.new(0, 30, 0, 300)
+    SideMenuBtn.Text = SettingsExpanded and "<" or ">"
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out), {Size = TargetMainSize}):Play()
+end)
 
 local TopNavBar = Instance.new("Frame")
-TopNavBar.Parent = MainFrame
+TopNavBar.Parent = SettingsPanel
 TopNavBar.BackgroundColor3 = Color3.fromRGB(23, 24, 26)
 TopNavBar.BackgroundTransparency = 0.3
-TopNavBar.Position = UDim2.new(0, 10, 0, 10)
-TopNavBar.Size = UDim2.new(1, -20, 0, 42)
+TopNavBar.Position = UDim2.new(0, 0, 0, 10)
+TopNavBar.Size = UDim2.new(1, -10, 0, 42)
 TopNavBar.ZIndex = 2
 Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
 
 local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Parent = TopNavBar
 TabMenuContainer.BackgroundTransparency = 1
-TabMenuContainer.Size = UDim2.new(1, -45, 1, 0)
+TabMenuContainer.Size = UDim2.new(1, -40, 1, 0)
 local TabLayout = Instance.new("UIListLayout", TabMenuContainer)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.Padding = UDim.new(0, 4)
@@ -726,7 +563,7 @@ TabPad.PaddingTop = UDim.new(0, 6)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = TopNavBar
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -34, 0.5, -13)
+CloseBtn.Position = UDim2.new(1, -30, 0.5, -13)
 CloseBtn.Size = UDim2.new(0, 26, 0, 26)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "×"
@@ -738,10 +575,10 @@ RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainF
 RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
 
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Parent = MainFrame
+ContentContainer.Parent = SettingsPanel
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 15, 0, 65)
-ContentContainer.Size = UDim2.new(1, -30, 1, -80)
+ContentContainer.Position = UDim2.new(0, 0, 0, 60)
+ContentContainer.Size = UDim2.new(1, -5, 1, -70)
 ContentContainer.ZIndex = 2
 
 local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
@@ -760,7 +597,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
     local grid = Instance.new("UIGridLayout", page)
-    grid.CellSize = UDim2.new(0, 275, 0, 42)
+    grid.CellSize = UDim2.new(1, -12, 0, 38)
     grid.CellPadding = UDim2.new(0, 12, 0, 8)
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
@@ -770,12 +607,12 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 88, 0, 30)
+    TabBtn.Size = UDim2.new(0, 60, 0, 30)
     TabBtn.Font = Enum.Font.GothamBold
     TabBtn.LayoutOrder = Order
-    TabBtn.Text = IconText .. " " .. Name
+    TabBtn.Text = IconText
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 143, 148)
-    TabBtn.TextSize = 11
+    TabBtn.TextSize = 14
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     local TStroke = Instance.new("UIStroke", TabBtn)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
@@ -784,16 +621,12 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
         for _, btn in pairs(TabMenuContainer:GetChildren()) do
             if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                btn.BackgroundTransparency = 1
-                btn.TextColor3 = Color3.fromRGB(140, 143, 148)
-                btn.UIStroke.Enabled = false
+                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0); btn.BackgroundTransparency = 1
+                btn.TextColor3 = Color3.fromRGB(140, 143, 148); btn.UIStroke.Enabled = false
             end
         end
-        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37)
-        TabBtn.BackgroundTransparency = 0
-        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TStroke.Enabled = true
+        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37); TabBtn.BackgroundTransparency = 0
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255); TStroke.Enabled = true
         TargetPage.Visible = true
     end)
 end
@@ -802,8 +635,7 @@ local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
     local state = Config[Key]
-    local Ball = TargetData.Ball
-    local SwitchBg = TargetData.SwitchBg
+    local Ball = TargetData.Ball; local SwitchBg = TargetData.SwitchBg
     TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = state and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
     TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)}):Play()
     if GlobalMobileButtons[Key] then
@@ -815,14 +647,10 @@ local function UpdateToggleVisual(Key)
         elseif Key == "AutoFarmPlayer" then MData.Btn.Text = state and "FRM\nON" or "FRM\nOFF"
         elseif Key == "Aura" then MData.Btn.Text = state and "AUR\nON" or "AUR\nOFF"
         elseif Key == "ThirdPerson" then MData.Btn.Text = state and "3RD\nON" or "3RD\nOFF"
-        elseif Key == "Fly" then MData.Btn.Text = state and "FLY\nON" or "FLY\nOFF" 
-        end
+        elseif Key == "Fly" then MData.Btn.Text = state and "FLY\nON" or "FLY\nOFF" end
     end
 end
-local RestrictedKeys = {
-    ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
-    ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true
-}
+local RestrictedKeys = { ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true }
 
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
@@ -834,7 +662,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     local Lbl = Instance.new("TextLabel", TFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(1, -110, 1, 0)
+    Lbl.Size = UDim2.new(0.5, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = LabelText
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
@@ -873,7 +701,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         local BindBtn = Instance.new("TextButton", TFrame)
         BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
         BindBtn.Position = UDim2.new(1, -100, 0.5, -10)
-        BindBtn.Size = UDim2.new(0, 50, 0, 20)
+        BindBtn.Size = UDim2.new(0, 45, 0, 20)
         BindBtn.Font = Enum.Font.GothamBold
         BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE"
         BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
@@ -881,8 +709,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         Instance.new("UICorner", BindBtn).CornerRadius = UDim.new(0, 4)
         Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60)
 
-        local Listening = false
-        local ListenConnection
+        local Listening = false; local ListenConnection
         local function EndListening(NewKey)
             Listening = false
             if ListenConnection then ListenConnection:Disconnect() end
@@ -891,9 +718,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         end
         RegisterTouchFriendlyClick(BindBtn, function()
             if Listening then return end
-            Listening = true
-            BindBtn.Text = "..."
-            BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
+            Listening = true; BindBtn.Text = "..."; BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
             task.delay(5, function() if Listening then EndListening(nil) end end)
             ListenConnection = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Keyboard then EndListening(input.KeyCode) end
@@ -912,29 +737,19 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
 
     local Lbl = Instance.new("TextLabel", SFrame)
     Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 4)
-    Lbl.Size = UDim2.new(1, -70, 0, 16)
+    Lbl.Position = UDim2.new(0, 10, 0, 0)
+    Lbl.Size = UDim2.new(0.4, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = LabelText
     Lbl.TextColor3 = Color3.fromRGB(180, 183, 188)
     Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local ValTxt = Instance.new("TextLabel", SFrame)
-    ValTxt.BackgroundTransparency = 1
-    ValTxt.Position = UDim2.new(1, -65, 0, 4)
-    ValTxt.Size = UDim2.new(0, 55, 0, 16)
-    ValTxt.Font = Enum.Font.GothamBold
-    ValTxt.Text = tostring(Config[Key])
-    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ValTxt.TextSize = 11
-    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
-
     local Bar = Instance.new("Frame", SFrame)
     Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50)
     Bar.BorderSizePixel = 0
-    Bar.Position = UDim2.new(0, 10, 0, 26)
-    Bar.Size = UDim2.new(1, -20, 0, 3)
+    Bar.Position = UDim2.new(1, -160, 0.5, -2)
+    Bar.Size = UDim2.new(0, 100, 0, 4)
     Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
 
     local Fill = Instance.new("Frame", Bar)
@@ -948,6 +763,16 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
     SliderBall.Size = UDim2.new(0, 8, 0, 8)
     Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
+
+    local ValTxt = Instance.new("TextLabel", SFrame)
+    ValTxt.BackgroundTransparency = 1
+    ValTxt.Position = UDim2.new(1, -50, 0, 0)
+    ValTxt.Size = UDim2.new(0, 40, 1, 0)
+    ValTxt.Font = Enum.Font.GothamBold
+    ValTxt.Text = tostring(Config[Key])
+    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValTxt.TextSize = 11
+    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
 
     local Btn = Instance.new("TextButton", Bar)
     Btn.BackgroundTransparency = 1
@@ -974,7 +799,6 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     end)
 end
-
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -985,17 +809,17 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local Lbl = Instance.new("TextLabel", BFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Size = UDim2.new(0.5, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = LabelText
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local ActionBtn = Instance.new("TextButton", BFrame)
     ActionBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    ActionBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 105, 0, 24)
+    ActionBtn.Position = UDim2.new(1, -95, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 85, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
     ActionBtn.Text = ButtonText
     ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1014,17 +838,17 @@ local function AddHitboxSelector(Page)
     local Lbl = Instance.new("TextLabel", HFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Size = UDim2.new(0.5, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = "Aimbot Target Hitbox"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local HitboxBtn = Instance.new("TextButton", HFrame)
     HitboxBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
-    HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    HitboxBtn.Size = UDim2.new(0, 105, 0, 24)
+    HitboxBtn.Position = UDim2.new(1, -95, 0.5, -12)
+    HitboxBtn.Size = UDim2.new(0, 85, 0, 24)
     HitboxBtn.Font = Enum.Font.GothamBold
     HitboxBtn.Text = Config.TargetPart:upper()
     HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1039,6 +863,7 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
+
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1049,31 +874,30 @@ local function AddSyncedEspColorSelector(Page)
     local Lbl = Instance.new("TextLabel", CFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Size = UDim2.new(0.6, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = "ESP & Tracer Color"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local ColorBtn = Instance.new("TextButton", CFrame)
-    ColorBtn.BackgroundColor3 = Config.EspColor
-    ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ColorBtn.Size = UDim2.new(0, 105, 0, 24)
-    ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "CHANGE COLOR"
-    ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ColorBtn.TextSize = 10
-    Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
+    local ColorBox = Instance.new("TextButton", CFrame)
+    ColorBox.Name = "ColorBox"
+    ColorBox.Position = UDim2.new(1, -35, 0.5, -9) 
+    ColorBox.Size = UDim2.new(0, 25, 0, 18)
+    ColorBox.BackgroundColor3 = Config.EspColor
+    ColorBox.Text = ""
+    Instance.new("UICorner", ColorBox).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", ColorBox).Color = Color3.fromRGB(55, 57, 60)
 
     local palette = {Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230), Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 255, 255)}
     local colorIdx = 1
-    RegisterTouchFriendlyClick(ColorBtn, function()
+    RegisterTouchFriendlyClick(ColorBox, function()
         colorIdx = (colorIdx % #palette) + 1
         Config.EspColor = palette[colorIdx]
-        ColorBtn.BackgroundColor3 = Config.EspColor
+        ColorBox.BackgroundColor3 = Config.EspColor
     end)
-    table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.EspColor end)
+    table.insert(UI_Refresh_Functions, function() ColorBox.BackgroundColor3 = Config.EspColor end)
 end
 
 local function AddAuraColorSelector(Page)
@@ -1086,31 +910,30 @@ local function AddAuraColorSelector(Page)
     local Lbl = Instance.new("TextLabel", CFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Size = UDim2.new(0.6, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = "Aura Circle Color"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local ColorBtn = Instance.new("TextButton", CFrame)
-    ColorBtn.BackgroundColor3 = Config.AuraColor
-    ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ColorBtn.Size = UDim2.new(0, 105, 0, 24)
-    ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "SWAP COLOR"
-    ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ColorBtn.TextSize = 11
-    Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
+    local ColorBox = Instance.new("TextButton", CFrame)
+    ColorBox.Name = "ColorBox"
+    ColorBox.Position = UDim2.new(1, -35, 0.5, -9)
+    ColorBox.Size = UDim2.new(0, 25, 0, 18)
+    ColorBox.BackgroundColor3 = Config.AuraColor
+    ColorBox.Text = ""
+    Instance.new("UICorner", ColorBox).CornerRadius = UDim.new(0, 4)
+    Instance.new("UIStroke", ColorBox).Color = Color3.fromRGB(55, 57, 60)
 
     local palette = {Color3.fromRGB(0, 170, 255), Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230)}
     local colorIdx = 1
-    RegisterTouchFriendlyClick(ColorBtn, function()
+    RegisterTouchFriendlyClick(ColorBox, function()
         colorIdx = (colorIdx % #palette) + 1
         Config.AuraColor = palette[colorIdx]
-        ColorBtn.BackgroundColor3 = Config.AuraColor
+        ColorBox.BackgroundColor3 = Config.AuraColor
     end)
-    table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.AuraColor end)
+    table.insert(UI_Refresh_Functions, function() ColorBox.BackgroundColor3 = Config.AuraColor end)
 end
 
 local function AddTracerModeSelector(Page)
@@ -1123,17 +946,17 @@ local function AddTracerModeSelector(Page)
     local Lbl = Instance.new("TextLabel", MFrame)
     Lbl.BackgroundTransparency = 1
     Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
+    Lbl.Size = UDim2.new(0.5, 0, 1, 0)
     Lbl.Font = Enum.Font.Gotham
     Lbl.Text = "Tracer Origin Mode"
     Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
+    Lbl.TextSize = 11
     Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local ModeBtn = Instance.new("TextButton", MFrame)
     ModeBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
-    ModeBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ModeBtn.Size = UDim2.new(0, 105, 0, 24)
+    ModeBtn.Position = UDim2.new(1, -95, 0.5, -12)
+    ModeBtn.Size = UDim2.new(0, 85, 0, 24)
     ModeBtn.Font = Enum.Font.GothamBold
     ModeBtn.Text = Config.TracerMode:upper()
     ModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1147,7 +970,6 @@ local function AddTracerModeSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
-
 local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1159,7 +981,7 @@ local function AddExportBox(Page)
     Box.BackgroundTransparency = 0.2
     Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
     Box.Position = UDim2.new(0, 10, 0.5, -12)
-    Box.Size = UDim2.new(1, -95, 0, 24)
+    Box.Size = UDim2.new(1, -85, 0, 24)
     Box.Font = Enum.Font.Gotham
     Box.Text = ""
     Box.PlaceholderText = "Exported Code Here"
@@ -1171,12 +993,12 @@ local function AddExportBox(Page)
 
     local ActionBtn = Instance.new("TextButton", TFrame)
     ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230)
-    ActionBtn.Position = UDim2.new(1, -80, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 70, 0, 24)
+    ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 60, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
     ActionBtn.Text = "EXPORT"
     ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActionBtn.TextSize = 11
+    ActionBtn.TextSize = 10
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
 
     RegisterTouchFriendlyClick(ActionBtn, function()
@@ -1202,7 +1024,7 @@ local function AddImportBox(Page)
     Box.BackgroundTransparency = 0.2
     Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
     Box.Position = UDim2.new(0, 10, 0.5, -12)
-    Box.Size = UDim2.new(1, -95, 0, 24)
+    Box.Size = UDim2.new(1, -85, 0, 24)
     Box.Font = Enum.Font.Gotham
     Box.Text = ""
     Box.PlaceholderText = "Paste Code Here"
@@ -1214,12 +1036,12 @@ local function AddImportBox(Page)
 
     local ActionBtn = Instance.new("TextButton", TFrame)
     ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75)
-    ActionBtn.Position = UDim2.new(1, -80, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 70, 0, 24)
+    ActionBtn.Position = UDim2.new(1, -70, 0.5, -12)
+    ActionBtn.Size = UDim2.new(0, 60, 0, 24)
     ActionBtn.Font = Enum.Font.GothamBold
     ActionBtn.Text = "IMPORT"
     ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActionBtn.TextSize = 11
+    ActionBtn.TextSize = 10
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
 
     RegisterTouchFriendlyClick(ActionBtn, function()
@@ -1250,7 +1072,7 @@ local function AddPremiumCreditBox(Page, Title, Description)
     TitleLbl.Font = Enum.Font.GothamBold
     TitleLbl.Text = Title
     TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLbl.TextSize = 12
+    TitleLbl.TextSize = 11
     TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local DescLbl = Instance.new("TextLabel", CFrame)
@@ -1260,10 +1082,9 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.Font = Enum.Font.Gotham
     DescLbl.Text = Description
     DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180)
-    DescLbl.TextSize = 11
+    DescLbl.TextSize = 10
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
-
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
@@ -1309,7 +1130,6 @@ AddSyncedEspColorSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
 AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
-
 AddPremiumToggle(MiscPage, "Force Third Person View", "ThirdPerson", nil, nil, nil)
 AddPremiumSlider(MiscPage, "Third Person Distance", 5, 100, "ThirdPersonDist")
 AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
@@ -1348,36 +1168,28 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
     ScreenGui:Destroy()
 end)
 
-AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.3 - Discord Intro Edition")
-AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
-
-AddPremiumButton(MiscPage, "Join Community", "COPY DISCORD", function()
-    if setclipboard then
-        setclipboard("Https://discord.gg/GkAKn4zzH")
-        StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Copied Discord Link!", Duration = 3})
-    else
-        StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Https://discord.gg/GkAKn4zzH", Duration = 5})
-    end
+AddPremiumButton(MiscPage, "Join Community", "DISCORD", function()
+    if setclipboard then setclipboard("Https://discord.gg/GkAKn4zzH") StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Copied Discord Link!", Duration = 3})
+    else StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Https://discord.gg/GkAKn4zzH", Duration = 5}) end
 end)
 
-CreatePremiumTab("Combat", "⚔", 1, CombatPage)
-CreatePremiumTab("Player", "👤", 2, PlayerPage)
-CreatePremiumTab("Movement", "🏃", 3, MovementPage)
-CreatePremiumTab("Visuals", "👁", 4, VisualPage)
-CreatePremiumTab("Misc", "⚙", 5, MiscPage)
-CreatePremiumTab("Credits", "👑", 6, CreditsPage)
+AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Proprietor)")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.4 - Compact GUI Edition")
+AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
+
+CreatePremiumTab("⚔", "Combat", 1, CombatPage)
+CreatePremiumTab("👤", "Player", 2, PlayerPage)
+CreatePremiumTab("🏃", "Move", 3, MovementPage)
+CreatePremiumTab("👁", "Visual", 4, VisualPage)
+CreatePremiumTab("⚙", "Misc", 5, MiscPage)
+CreatePremiumTab("👑", "Credit", 6, CreditsPage)
 
 local function RegisterMobileClick(Btn, Key)
     RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) if Key == "Fly" then ToggleFlyState(Config.Fly) end end)
 end
-RegisterMobileClick(MobAim, "Aimbot")
-RegisterMobileClick(MobTrig, "Triggerbot")
-RegisterMobileClick(MobSpeed, "SpeedToggle")
-RegisterMobileClick(MobFarm, "AutoFarmPlayer")
-RegisterMobileClick(MobAura, "Aura")
-RegisterMobileClick(MobTP, "ThirdPerson")
-RegisterMobileClick(MobFly, "Fly")
+RegisterMobileClick(MobAim, "Aimbot"); RegisterMobileClick(MobTrig, "Triggerbot"); RegisterMobileClick(MobSpeed, "SpeedToggle")
+RegisterMobileClick(MobFarm, "AutoFarmPlayer"); RegisterMobileClick(MobAura, "Aura"); RegisterMobileClick(MobTP, "ThirdPerson"); RegisterMobileClick(MobFly, "Fly")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Config.MenuKeybind then Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible
@@ -1388,10 +1200,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
     elseif input.KeyCode == Config.EspMasterKeybind and Config.EspMasterKeybind ~= Enum.KeyCode.Unknown then Config.EspMaster = not Config.EspMaster UpdateToggleVisual("EspMaster")
     elseif input.KeyCode == Config.SpeedKeybind and Config.SpeedKeybind ~= Enum.KeyCode.Unknown then Config.SpeedToggle = not Config.SpeedToggle UpdateToggleVisual("SpeedToggle")
     elseif input.KeyCode == Config.JumpKeybind and Config.JumpKeybind ~= Enum.KeyCode.Unknown then Config.JumpToggle = not Config.JumpToggle UpdateToggleVisual("JumpToggle")
-    elseif input.KeyCode == Config.FlyKeybind and Config.FlyKeybind ~= Enum.KeyCode.Unknown then Config.Fly = not Config.Fly UpdateToggleVisual("Fly") ToggleFlyState(Config.Fly)
-    end
+    elseif input.KeyCode == Config.FlyKeybind and Config.FlyKeybind ~= Enum.KeyCode.Unknown then Config.Fly = not Config.Fly UpdateToggleVisual("Fly") ToggleFlyState(Config.Fly) end
 end)
-
 pcall(function()
     LocalPlayer.Idled:Connect(function()
         if Config.AntiAFK then
@@ -1404,8 +1214,7 @@ end)
 
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
-    local Root = Character:WaitForChild("HumanoidRootPart", 5)
-    local Head = Character:WaitForChild("Head", 5)
+    local Root = Character:WaitForChild("HumanoidRootPart", 5); local Head = Character:WaitForChild("Head", 5)
     if not Root or not Head then return end
     
     CleanCharacterVisuals(Character)
@@ -1465,12 +1274,18 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Camera.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Camera.CFrame.RightVector end
             
-            if MyHum and moveDir.Magnitude == 0 and MyHum.MoveDirection.Magnitude > 0 then
-                moveDir = Camera.CFrame.LookVector * MyHum.MoveDirection.Z * -1 + Camera.CFrame.RightVector * MyHum.MoveDirection.X
+            if MyHum and MyHum.MoveDirection.Magnitude > 0 then
+                local look = Camera.CFrame.LookVector; local right = Camera.CFrame.RightVector
+                local flatLook = Vector3.new(look.X, 0, look.Z); local flatRight = Vector3.new(right.X, 0, right.Z)
+                if flatLook.Magnitude > 0 then flatLook = flatLook.Unit end
+                if flatRight.Magnitude > 0 then flatRight = flatRight.Unit end
+                local forwardIntent = MyHum.MoveDirection:Dot(flatLook)
+                local rightIntent = MyHum.MoveDirection:Dot(flatRight)
+                if moveDir.Magnitude == 0 then moveDir = (look * forwardIntent) + (right * rightIntent) end
             end
             
+            if moveDir.Magnitude > 0 then flyBodyVelocity.Velocity = moveDir.Unit * Config.FlySpeed else flyBodyVelocity.Velocity = Vector3.new(0, 0, 0) end
             flyBodyGyro.CFrame = Camera.CFrame
-            flyBodyVelocity.Velocity = moveDir * Config.FlySpeed
         end
         
         local headInstance = MyChar:FindFirstChild("Head")
@@ -1478,8 +1293,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         local neckJoint = (headInstance and headInstance:FindFirstChild("Neck")) or (torsoInstance and torsoInstance:FindFirstChild("Neck"))
         if neckJoint and neckJoint:IsA("Motor6D") then
             if not NeckCache[neckJoint] then NeckCache[neckJoint] = neckJoint.C0 end
-            if Config.BowDown then neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0)
-            else neckJoint.C0 = NeckCache[neckJoint] end
+            if Config.BowDown then neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0) else neckJoint.C0 = NeckCache[neckJoint] end
         end
         
         if Config.Aura then
@@ -1541,6 +1355,10 @@ Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 
 for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
+
+pcall(function()
+    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Compact GUI Edition successfully!", Duration = 5})
+end)
 -- ==============================================================================
--- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
+-- END OF SCRIPT - COMPACT EDITION CREATED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

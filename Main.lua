@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.4 - COMPACT UI & DISCORD INTRO
+-- WANGCAOS PREMIUM CLIENT V6.9.5 - FIXED NO-TOGGLE MOBILE GUI
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -82,7 +82,7 @@ IntroTitle.BackgroundTransparency = 1
 IntroTitle.Size = UDim2.new(1, 0, 0, 50)
 IntroTitle.Position = UDim2.new(0, 0, 0, 15)
 IntroTitle.Font = Enum.Font.GothamBold
-IntroTitle.Text = "WANGCAOS PREMIUM V6.9.4"
+IntroTitle.Text = "WANGCAOS PREMIUM V6.9.5"
 IntroTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 IntroTitle.TextSize = 18
 
@@ -491,8 +491,8 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
-MainFrame.Size = UDim2.new(0, 450, 0, 300) 
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -120)
+MainFrame.Size = UDim2.new(0, 380, 0, 240) 
 MainFrame.ClipsDescendants = true
 MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
@@ -511,64 +511,42 @@ CustomBackgroundImage.ZIndex = 0
 CustomBackgroundImage.Visible = Config.CustomBackground
 Instance.new("UICorner", CustomBackgroundImage).CornerRadius = UDim.new(0, 8)
 
-local SideMenuBtn = Instance.new("TextButton")
-SideMenuBtn.Name = "SideMenuBtn"
-SideMenuBtn.Parent = MainFrame
-SideMenuBtn.Size = UDim2.new(0, 30, 1, 0)
-SideMenuBtn.Position = UDim2.new(0, 0, 0, 0)
-SideMenuBtn.BackgroundColor3 = Color3.fromRGB(22, 24, 27)
-SideMenuBtn.BackgroundTransparency = 0.5
-SideMenuBtn.Font = Enum.Font.GothamBold
-SideMenuBtn.Text = "<"
-SideMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SideMenuBtn.TextSize = 16
-SideMenuBtn.ZIndex = 5
-Instance.new("UICorner", SideMenuBtn).CornerRadius = UDim.new(0, 8)
-
 local SettingsPanel = Instance.new("Frame")
 SettingsPanel.Name = "SettingsPanel"
 SettingsPanel.Parent = MainFrame
-SettingsPanel.Position = UDim2.new(0, 35, 0, 0)
-SettingsPanel.Size = UDim2.new(1, -35, 1, 0)
+SettingsPanel.Position = UDim2.new(0, 0, 0, 0)
+SettingsPanel.Size = UDim2.new(1, 0, 1, 0)
 SettingsPanel.BackgroundTransparency = 1
-
-local SettingsExpanded = true
-RegisterTouchFriendlyClick(SideMenuBtn, function()
-    SettingsExpanded = not SettingsExpanded
-    local TargetMainSize = SettingsExpanded and UDim2.new(0, 450, 0, 300) or UDim2.new(0, 30, 0, 300)
-    SideMenuBtn.Text = SettingsExpanded and "<" or ">"
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out), {Size = TargetMainSize}):Play()
-end)
 
 local TopNavBar = Instance.new("Frame")
 TopNavBar.Parent = SettingsPanel
 TopNavBar.BackgroundColor3 = Color3.fromRGB(23, 24, 26)
 TopNavBar.BackgroundTransparency = 0.3
-TopNavBar.Position = UDim2.new(0, 0, 0, 10)
-TopNavBar.Size = UDim2.new(1, -10, 0, 42)
+TopNavBar.Position = UDim2.new(0, 6, 0, 6)
+TopNavBar.Size = UDim2.new(1, -12, 0, 36)
 TopNavBar.ZIndex = 2
-Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 6)
 
 local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Parent = TopNavBar
 TabMenuContainer.BackgroundTransparency = 1
-TabMenuContainer.Size = UDim2.new(1, -40, 1, 0)
+TabMenuContainer.Size = UDim2.new(1, -35, 1, 0)
 local TabLayout = Instance.new("UIListLayout", TabMenuContainer)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.Padding = UDim.new(0, 4)
 local TabPad = Instance.new("UIPadding", TabMenuContainer)
-TabPad.PaddingLeft = UDim.new(0, 6)
-TabPad.PaddingTop = UDim.new(0, 6)
+TabPad.PaddingLeft = UDim.new(0, 4)
+TabPad.PaddingTop = UDim.new(0, 4)
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = TopNavBar
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -30, 0.5, -13)
-CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -26, 0.5, -11)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "×"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
-CloseBtn.TextSize = 22
+CloseBtn.TextSize = 20
 
 MakeDraggable(MainFrame, TopNavBar, nil) 
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
@@ -577,8 +555,8 @@ RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Con
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = SettingsPanel
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 0, 0, 60)
-ContentContainer.Size = UDim2.new(1, -5, 1, -70)
+ContentContainer.Position = UDim2.new(0, 6, 0, 48)
+ContentContainer.Size = UDim2.new(1, -12, 1, -54)
 ContentContainer.ZIndex = 2
 
 local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
@@ -597,8 +575,8 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
     local grid = Instance.new("UIGridLayout", page)
-    grid.CellSize = UDim2.new(1, -12, 0, 38)
-    grid.CellPadding = UDim2.new(0, 12, 0, 8)
+    grid.CellSize = UDim2.new(1, -6, 0, 36)
+    grid.CellPadding = UDim2.new(0, 6, 0, 6)
     grid.SortOrder = Enum.SortOrder.LayoutOrder
 end
 CombatPage.Visible = true
@@ -607,13 +585,13 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
-    TabBtn.Size = UDim2.new(0, 60, 0, 30)
+    TabBtn.Size = UDim2.new(0, 50, 0, 26)
     TabBtn.Font = Enum.Font.GothamBold
     TabBtn.LayoutOrder = Order
     TabBtn.Text = IconText
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 143, 148)
-    TabBtn.TextSize = 14
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    TabBtn.TextSize = 12
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 5)
     local TStroke = Instance.new("UIStroke", TabBtn)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
     TStroke.Enabled = Order == 1
@@ -688,7 +666,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
     RegisterTouchFriendlyClick(Btn, function() 
-        if RestrictedKeys[Key] and not IsMobile then
+        if RestrictedKeys[Key] and not IsMobile orient then
             pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
             return
         end
@@ -1174,7 +1152,7 @@ AddPremiumButton(MiscPage, "Join Community", "DISCORD", function()
 end)
 
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.4 - Compact GUI Edition")
+AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.5 - Mobile Fixed Edition")
 AddPremiumCreditBox(CreditsPage, "Official Discord Community", "Https://discord.gg/GkAKn4zzH")
 
 CreatePremiumTab("⚔", "Combat", 1, CombatPage)
@@ -1357,8 +1335,8 @@ for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Compact GUI Edition successfully!", Duration = 5})
+    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.5", Text = "Loaded Mobile Fixed Edition successfully!", Duration = 5})
 end)
 -- ==============================================================================
--- END OF SCRIPT - COMPACT EDITION CREATED BY BE FOR DAI CA WANG (2026)
+-- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

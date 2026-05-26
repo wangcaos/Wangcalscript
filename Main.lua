@@ -281,19 +281,18 @@ local function IsTeammate(Player)
     if CheckHiddenValues(LocalPlayer.Character, Player.Character) then return true end
     return false
 end
+
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck and not Config.AuraWallCheck then return true end
     local Origin = Camera.CFrame.Position; local Direction = TargetPart.Position - Origin
-    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude;
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
+    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude; Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
     return workspace:Raycast(Origin, Direction, Params) == nil
 end
 
 local function CheckTriggerWall(Position)
     if not Config.TriggerWallCheck then return true end
     local Origin = Camera.CFrame.Position; local Direction = Position - Origin
-    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude;
-    Params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude; Params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
     local Result = workspace:Raycast(Origin, Direction, Params)
     return Result == nil or Result.Instance:IsDescendantOf(workspace)
 end
@@ -386,7 +385,6 @@ local function GetAuraTarget()
     end
     return BestTarget
 end
-
 local function GetPlayerColor(Player)
     if Config.EspTeamCheck and IsTeammate(Player) then return Color3.fromRGB(0, 255, 0) end
     return Config.EspColor
@@ -396,6 +394,7 @@ local function GetEquippedTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
     return Tool and Tool.Name or "None"
 end
+
 local function PerformTriggerbotClick()
     local TargetInstance = Mouse.Target
     if TargetInstance and TargetInstance.Parent then
@@ -512,6 +511,7 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
 end
+
 local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
 local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
 local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
@@ -528,18 +528,15 @@ if not Config["MobilePos_MainLogo_XS"] then Config["MobilePos_MainLogo_XS"] = lx
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
-ToggleButton.Parent = ScreenGui;
-ToggleButton.BackgroundColor3 = Style_SubBg; ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Parent = ScreenGui; ToggleButton.BackgroundColor3 = Style_SubBg; ToggleButton.BackgroundTransparency = 0.2
 ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo); ToggleButton.Size = UDim2.new(0, 45, 0, 45)
 ToggleButton.Font = Enum.Font.GothamBold; ToggleButton.Text = "W"; ToggleButton.TextColor3 = Style_Text_Primary; ToggleButton.TextSize = 20
 Instance.new("UICorner", ToggleButton).CornerRadius = Style_CornerRadius
 local TogStroke = Instance.new("UIStroke", ToggleButton)
 TogStroke.Color = Color3.fromRGB(60, 60, 60); TogStroke.Thickness = 1
-
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -638,6 +635,7 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     pagePadding.PaddingBottom = UDim.new(0, 20) 
 end
 CombatPage.Visible = true
+
 local function CreateSectionTitle(Page, Text)
     local Title = Instance.new("TextLabel", Page)
     Title.BackgroundTransparency = 1
@@ -689,7 +687,6 @@ local function UpdateToggleVisual(Key)
     local state = Config[Key]
     local Ball = TargetData.Ball; local SwitchBg = TargetData.SwitchBg
     
-    -- Reverted back to the sliding pill animation
     TweenService:Create(Ball, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Position = state and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
     TweenService:Create(SwitchBg, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Style_Accent or Style_Inactive}):Play()
     
@@ -708,14 +705,12 @@ end
 
 local RestrictedKeys = { ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true }
 
--- Reverted back to sliding pill toggle design
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
     TFrame.BackgroundTransparency = 0.2
     TFrame.Size = UDim2.new(1, 0, 0, Style_ElementHeight)
     Instance.new("UICorner", TFrame).CornerRadius = Style_CornerRadius
-    
     local TFrameStroke = Instance.new("UIStroke", TFrame)
     TFrameStroke.Color = Color3.fromRGB(35, 37, 40); TFrameStroke.Thickness = 0.5
     
@@ -788,6 +783,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Style_SubBg
@@ -931,6 +927,7 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
+
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg
@@ -1307,8 +1304,7 @@ CreatePremiumTab("👑", "Credit", 6, CreditsPage)
 local function RegisterMobileClick(Btn, Key)
     RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) if Key == "Fly" then ToggleFlyState(Config.Fly) end end)
 end
-RegisterMobileClick(MobAim, "Aimbot");
-RegisterMobileClick(MobTrig, "Triggerbot"); RegisterMobileClick(MobSpeed, "SpeedToggle")
+RegisterMobileClick(MobAim, "Aimbot"); RegisterMobileClick(MobTrig, "Triggerbot"); RegisterMobileClick(MobSpeed, "SpeedToggle")
 RegisterMobileClick(MobFarm, "AutoFarmPlayer"); RegisterMobileClick(MobAura, "Aura"); RegisterMobileClick(MobTP, "ThirdPerson"); RegisterMobileClick(MobFly, "Fly")
 
 UserInputService.InputBegan:Connect(function(input, processed)
@@ -1336,8 +1332,7 @@ end)
 
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
-    local Root = Character:WaitForChild("HumanoidRootPart", 5);
-    local Head = Character:WaitForChild("Head", 5)
+    local Root = Character:WaitForChild("HumanoidRootPart", 5); local Head = Character:WaitForChild("Head", 5)
     if not Root or not Head then return end
     
     CleanCharacterVisuals(Character)
@@ -1367,7 +1362,8 @@ local function RenderVisuals(Player, Character)
     HealthBar.Name = "HealthBar" HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100) 
     HealthBar.BorderSizePixel = 0 HealthBar.Size = UDim2.new(1, 0, 1, 0)
 
-    Gui.Parent = Head
+    -- Đã sửa Parent thành ScreenGui ở đây
+    Gui.Parent = ScreenGui
     Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, HealthBG = HealthBG, HealthBar = HealthBar, Player = Player }
 end
 
@@ -1477,13 +1473,15 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                 local RootPos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
 
                 -- 2D Box Logic Implementation
-                if Config.EspBox and Dist <= Config.MaxDistance and OnScreen then 
-                    local HeadPos = Camera:WorldToViewportPoint(Head.Position + Vector3.new(0, 0.5, 0))
-                    local LegPos = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+                -- Đã thêm kiểm tra logic chiều sâu Z ở đây!
+                local HeadPos = Camera:WorldToViewportPoint(Head.Position + Vector3.new(0, 0.5, 0))
+                local LegPos = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+
+                if Config.EspBox and Dist <= Config.MaxDistance and OnScreen and HeadPos.Z > 0 and LegPos.Z > 0 then 
                     local height = math.abs(HeadPos.Y - LegPos.Y)
                     local width = height / 2
                     Data.Box.Size = Vector2.new(width, height)
-                    Data.Box.Position = Vector2.new(RootPos.X - width / 2, HeadPos.Y)
+                    Data.Box.Position = Vector2.new(RootPos.X - width / 2, math.min(HeadPos.Y, LegPos.Y))
                     Data.Box.Color = PColor
                     Data.Box.Transparency = 1 - (Config.EspTransparency / 100)
                     Data.Box.Visible = true 

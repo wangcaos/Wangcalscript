@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- WANGCAOS PREMIUM CLIENT V6.9.4 - COMPACT UI & DISCORD INTRO
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
--- UI Design inspired by provided image (Minimalism/Dark/Blur/Boxes)
+-- UI Design inspired by provided image (Minimalism/Dark/Blur/Boxes/Pill Toggles)
 -- ==============================================================================
 
 local Players = game:GetService("Players")
@@ -74,7 +74,7 @@ for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" or old.Name == "WangcaosIntro" then old:Destroy() end
 end
 
--- Re-styled Intro Screen with Dark Theme
+-- Animated Intro Loading Screen
 local IntroScreen = Instance.new("ScreenGui")
 IntroScreen.Name = "WangcaosIntro"
 IntroScreen.Parent = SafeParent
@@ -93,7 +93,7 @@ IntroStroke.Thickness = 1.5
 
 local IntroTitle = Instance.new("TextLabel", IntroFrame)
 IntroTitle.BackgroundTransparency = 1
-IntroTitle.Size = UDim2.new(1, 0, 0, 50)
+IntroTitle.Size = UDim2.new(1, 0, 0, 40)
 IntroTitle.Position = UDim2.new(0, 0, 0, 15)
 IntroTitle.Font = Enum.Font.GothamBold
 IntroTitle.Text = "WANGCAOS PREMIUM V6.9.4"
@@ -102,21 +102,33 @@ IntroTitle.TextSize = 18
 
 local IntroDisc = Instance.new("TextLabel", IntroFrame)
 IntroDisc.BackgroundTransparency = 1
-IntroDisc.Size = UDim2.new(1, 0, 0, 30)
-IntroDisc.Position = UDim2.new(0, 0, 0, 60)
+IntroDisc.Size = UDim2.new(1, 0, 0, 20)
+IntroDisc.Position = UDim2.new(0, 0, 0, 50)
 IntroDisc.Font = Enum.Font.GothamBold
 IntroDisc.Text = "Discord: Https://discord.gg/GkAKn4zzH"
 IntroDisc.TextColor3 = Style_Accent
-IntroDisc.TextSize = 14
+IntroDisc.TextSize = 12
 
 local IntroSub = Instance.new("TextLabel", IntroFrame)
 IntroSub.BackgroundTransparency = 1
-IntroSub.Size = UDim2.new(1, 0, 0, 30)
-IntroSub.Position = UDim2.new(0, 0, 0, 95)
+IntroSub.Size = UDim2.new(1, 0, 0, 20)
+IntroSub.Position = UDim2.new(0, 0, 0, 85)
 IntroSub.Font = Style_Font
-IntroSub.Text = "Loading Framework Modules..."
+IntroSub.Text = "Initializing..."
 IntroSub.TextColor3 = Style_Text_Secondary
 IntroSub.TextSize = 12
+
+-- Dynamic Loading Bar
+local LoadingBg = Instance.new("Frame", IntroFrame)
+LoadingBg.Position = UDim2.new(0, 25, 1, -25)
+LoadingBg.Size = UDim2.new(1, -50, 0, 4)
+LoadingBg.BackgroundColor3 = Style_Inactive
+Instance.new("UICorner", LoadingBg).CornerRadius = UDim.new(1, 0)
+
+local LoadingFill = Instance.new("Frame", LoadingBg)
+LoadingFill.Size = UDim2.new(0, 0, 1, 0)
+LoadingFill.BackgroundColor3 = Style_Accent
+Instance.new("UICorner", LoadingFill).CornerRadius = UDim.new(1, 0)
 
 pcall(function()
     if setclipboard then setclipboard("Https://discord.gg/GkAKn4zzH")
@@ -124,19 +136,32 @@ pcall(function()
 end)
 
 task.spawn(function()
-    task.wait(1.5)
+    IntroSub.Text = "Loading Core Modules..."
+    TweenService:Create(LoadingFill, TweenInfo.new(0.6, Enum.EasingStyle.Linear), {Size = UDim2.new(0.35, 0, 1, 0)}):Play()
+    task.wait(0.6)
+    
+    IntroSub.Text = "Bypassing Security Protocols..."
+    TweenService:Create(LoadingFill, TweenInfo.new(0.8, Enum.EasingStyle.Linear), {Size = UDim2.new(0.75, 0, 1, 0)}):Play()
+    task.wait(0.8)
+    
+    IntroSub.Text = "Injecting Interface..."
+    TweenService:Create(LoadingFill, TweenInfo.new(0.4, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+    task.wait(0.4)
+    
     IntroSub.Text = "Framework successfully loaded!"
-    task.wait(2.5)
-    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    task.wait(1)
+    
+    local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     TweenService:Create(IntroFrame, tweenInfo, {BackgroundTransparency = 1}):Play()
     TweenService:Create(IntroTitle, tweenInfo, {TextTransparency = 1}):Play()
     TweenService:Create(IntroDisc, tweenInfo, {TextTransparency = 1}):Play()
     TweenService:Create(IntroSub, tweenInfo, {TextTransparency = 1}):Play()
     TweenService:Create(IntroStroke, tweenInfo, {Transparency = 1}):Play()
-    task.wait(1.5)
+    TweenService:Create(LoadingBg, tweenInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoadingFill, tweenInfo, {BackgroundTransparency = 1}):Play()
+    task.wait(0.8)
     if IntroScreen then IntroScreen:Destroy() end
 end)
-
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
@@ -176,6 +201,7 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
+
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor; FOV_Drawing.Thickness = Config.FovThickness; FOV_Drawing.NumSides = Config.FovSides
 FOV_Drawing.Filled = Config.FovFilled; FOV_Drawing.Transparency = Config.FovTransparency; FOV_Drawing.Visible = false
@@ -209,7 +235,6 @@ local function CleanCharacterVisuals(Character)
         pcall(function() Character_Cache[Character].Gui:Destroy() end)
         Character_Cache[Character] = nil
     end
-    -- Fallback for safe deletion
     local OldTag = Character:FindFirstChild("WangInfoTag", true)
     if OldTag then OldTag:Destroy() end
     local OldBox = Character:FindFirstChild("WangBoxFill", true)
@@ -256,7 +281,6 @@ local function IsTeammate(Player)
     if CheckHiddenValues(LocalPlayer.Character, Player.Character) then return true end
     return false
 end
-
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck and not Config.AuraWallCheck then return true end
     local Origin = Camera.CFrame.Position; local Direction = TargetPart.Position - Origin
@@ -329,6 +353,7 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
+
 local function GetAuraTarget()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -371,7 +396,6 @@ local function GetEquippedTool(Character)
     local Tool = Character:FindFirstChildOfClass("Tool")
     return Tool and Tool.Name or "None"
 end
-
 local function PerformTriggerbotClick()
     local TargetInstance = Mouse.Target
     if TargetInstance and TargetInstance.Parent then
@@ -420,7 +444,7 @@ local function ProcessAutoFarmPlayer()
 end
 
 -- ==============================================================================
--- UI FRAMEWORK - Re-designed with Modernism/Dark Theme (Minimalism)
+-- UI FRAMEWORK
 -- ==============================================================================
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -502,7 +526,6 @@ local lys = Config["MobilePos_MainLogo_YS"] or 0
 local lyo = Config["MobilePos_MainLogo_YO"] or 20
 if not Config["MobilePos_MainLogo_XS"] then Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo end
 
--- Re-styled Main Toggle Button ("W" Logo)
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui;
@@ -517,7 +540,6 @@ ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
 
--- Re-styled Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -550,7 +572,6 @@ SettingsPanel.Position = UDim2.new(0, 0, 0, 0)
 SettingsPanel.Size = UDim2.new(1, 0, 1, 0) 
 SettingsPanel.BackgroundTransparency = 1
 
--- Re-styled Top NavBar with Minimal Tabs
 local TopNavBar = Instance.new("Frame")
 TopNavBar.Parent = SettingsPanel
 TopNavBar.BackgroundColor3 = Style_Bg
@@ -668,8 +689,8 @@ local function UpdateToggleVisual(Key)
     local state = Config[Key]
     local Ball = TargetData.Ball; local SwitchBg = TargetData.SwitchBg
     
-    -- Changed animation logic to fit the Checkbox dot scaling instead of moving X position
-    TweenService:Create(Ball, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = state and UDim2.new(0, 8, 0, 8) or UDim2.new(0, 0, 0, 0)}):Play()
+    -- Reverted back to the sliding pill animation
+    TweenService:Create(Ball, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Position = state and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
     TweenService:Create(SwitchBg, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Style_Accent or Style_Inactive}):Play()
     
     if GlobalMobileButtons[Key] then
@@ -687,7 +708,7 @@ end
 
 local RestrictedKeys = { ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true }
 
--- Re-styled to be a Box/Checkbox instead of Pill switch
+-- Reverted back to sliding pill toggle design
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -710,23 +731,22 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Style_Accent or Style_Inactive
-    SwitchBg.Position = UDim2.new(1, -26, 0.5, -8) -- Right aligned
-    SwitchBg.Size = UDim2.new(0, 16, 0, 16) -- Perfectly square box
-    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(0, 4) -- Slightly rounded edges for modern feel
+    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8) 
+    SwitchBg.Size = UDim2.new(0, 32, 0, 16)
+    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
 
-    local Dot = Instance.new("Frame", SwitchBg)
-    Dot.BackgroundColor3 = Style_Text_Primary
-    Dot.AnchorPoint = Vector2.new(0.5, 0.5)
-    Dot.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Dot.Size = Config[Key] and UDim2.new(0, 8, 0, 8) or UDim2.new(0, 0, 0, 0)
-    Instance.new("UICorner", Dot).CornerRadius = UDim.new(0, 2)
+    local Ball = Instance.new("Frame", SwitchBg)
+    Ball.BackgroundColor3 = Style_Text_Primary
+    Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+    Ball.Size = UDim2.new(0, 12, 0, 12)
+    Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
 
     local Btn = Instance.new("TextButton", TFrame)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
 
-    GlobalSyncToggles[Key] = {Ball = Dot, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Style_Inactive}
+    GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Style_Inactive}
     RegisterTouchFriendlyClick(Btn, function() 
         if RestrictedKeys[Key] and not IsMobile then
             pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
@@ -1072,6 +1092,7 @@ local function AddExportBox(Page)
         end
     end)
 end
+
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -1149,7 +1170,6 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 10
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
-
 -- ==============================================================================
 -- POPULATE Re-styled UI PAGES WITH SECTIONS AND CONTROLS
 -- ==============================================================================
@@ -1214,6 +1234,7 @@ AddSyncedEspColorSelector(VisualPage)
 AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
 AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
+
 -- --- MISC PAGE ---
 CreateSectionTitle(MiscPage, "Settings Management")
 AddExportBox(MiscPage)
@@ -1279,7 +1300,6 @@ CreatePremiumTab("🏃", "Move", 3, MovementPage)
 CreatePremiumTab("👁", "Visual", 4, VisualPage)
 CreatePremiumTab("⚙", "Misc", 5, MiscPage)
 CreatePremiumTab("👑", "Credit", 6, CreditsPage)
-
 -- ==============================================================================
 -- LOGIC & SERVICES SYNC
 -- ==============================================================================
@@ -1356,6 +1376,7 @@ local function MonitorPlayer(Player)
     Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
+
 -- ==============================================================================
 -- MASTER RENDER STEPPED LOOP
 -- ==============================================================================
@@ -1464,7 +1485,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                     Data.Box.Size = Vector2.new(width, height)
                     Data.Box.Position = Vector2.new(RootPos.X - width / 2, HeadPos.Y)
                     Data.Box.Color = PColor
-                    Data.Box.Transparency = 1 - (Config.EspTransparency / 100) -- Drawing visibility logic
+                    Data.Box.Transparency = 1 - (Config.EspTransparency / 100)
                     Data.Box.Visible = true 
                 else 
                     Data.Box.Visible = false 

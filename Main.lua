@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- WANGCAOS PREMIUM CLIENT V6.9.4 - COMPACT UI & DISCORD INTRO
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
--- UI Design inspired by provided image (Minimalism/Dark/Blur)
+-- UI Design inspired by provided image (Minimalism/Dark/Blur/Boxes)
 -- ==============================================================================
 
 local Players = game:GetService("Players")
@@ -88,7 +88,7 @@ IntroFrame.Position = UDim2.new(0.5, -175, 0.5, -75)
 IntroFrame.Size = UDim2.new(0, 350, 0, 150)
 Instance.new("UICorner", IntroFrame).CornerRadius = Style_CornerRadius
 local IntroStroke = Instance.new("UIStroke", IntroFrame)
-IntroStroke.Color = Style_Accent -- New accent color
+IntroStroke.Color = Style_Accent 
 IntroStroke.Thickness = 1.5
 
 local IntroTitle = Instance.new("TextLabel", IntroFrame)
@@ -204,10 +204,16 @@ end
 
 local function CleanCharacterVisuals(Character)
     if not Character then return end
-    local OldBox = Character:FindFirstChild("WangBoxFill", true)
-    if OldBox then OldBox:Destroy() end
+    if Character_Cache[Character] then
+        pcall(function() Character_Cache[Character].Box.Visible = false Character_Cache[Character].Box:Remove() end)
+        pcall(function() Character_Cache[Character].Gui:Destroy() end)
+        Character_Cache[Character] = nil
+    end
+    -- Fallback for safe deletion
     local OldTag = Character:FindFirstChild("WangInfoTag", true)
     if OldTag then OldTag:Destroy() end
+    local OldBox = Character:FindFirstChild("WangBoxFill", true)
+    if OldBox then OldBox:Destroy() end
 end
 
 local function IsAlive(Character)
@@ -521,7 +527,6 @@ MainFrame.Size = UDim2.new(0, 450, 0, 300)
 MainFrame.ClipsDescendants = true
 MainFrame.Visible = Config.MenuVisible
 Instance.new("UICorner", MainFrame).CornerRadius = Style_CornerRadius
--- Thin modern border
 local MFrameStroke = Instance.new("UIStroke", MainFrame)
 MFrameStroke.Color = Color3.fromRGB(45, 47, 50)
 MFrameStroke.Thickness = 1
@@ -532,7 +537,7 @@ CustomBackgroundImage.Parent = MainFrame
 CustomBackgroundImage.BackgroundTransparency = 1
 CustomBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 CustomBackgroundImage.Image = Config.BackgroundAssetId
-CustomBackgroundImage.ImageTransparency = 0.75 -- Maintain slight transparency for custom backgrounds on dark theme
+CustomBackgroundImage.ImageTransparency = 0.75 
 CustomBackgroundImage.ScaleType = Enum.ScaleType.Crop
 CustomBackgroundImage.ZIndex = 0
 CustomBackgroundImage.Visible = Config.CustomBackground
@@ -541,8 +546,8 @@ Instance.new("UICorner", CustomBackgroundImage).CornerRadius = Style_CornerRadiu
 local SettingsPanel = Instance.new("Frame")
 SettingsPanel.Name = "SettingsPanel"
 SettingsPanel.Parent = MainFrame
-SettingsPanel.Position = UDim2.new(0, 0, 0, 0) -- Fixed to full width
-SettingsPanel.Size = UDim2.new(1, 0, 1, 0) -- Full Width
+SettingsPanel.Position = UDim2.new(0, 0, 0, 0) 
+SettingsPanel.Size = UDim2.new(1, 0, 1, 0) 
 SettingsPanel.BackgroundTransparency = 1
 
 -- Re-styled Top NavBar with Minimal Tabs
@@ -594,27 +599,24 @@ local VisualPage = Instance.new("ScrollingFrame", ContentContainer)
 local MiscPage = Instance.new("ScrollingFrame", ContentContainer)
 local CreditsPage = Instance.new("ScrollingFrame", ContentContainer)
 
--- Fixed Auto-Scrolling logic here
 for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- Added for auto scrolling
-    page.CanvasSize = UDim2.new(0, 0, 0, 0) -- Reset canvas size to fix bug
-    page.ScrollBarThickness = 1 -- Minimal scrollbar
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y 
+    page.CanvasSize = UDim2.new(0, 0, 0, 0) 
+    page.ScrollBarThickness = 1 
     page.ScrollBarImageColor3 = Style_Inactive
     page.Visible = false
-    -- UIListLayout for linear content flow in modern lists
     local listLayout = Instance.new("UIListLayout", page)
     listLayout.Padding = UDim.new(0, 8)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     local pagePadding = Instance.new("UIPadding", page)
     pagePadding.PaddingLeft = UDim.new(0, 10)
     pagePadding.PaddingRight = UDim.new(0, 10)
-    pagePadding.PaddingBottom = UDim.new(0, 20) -- Bottom padding to avoid cutting off
+    pagePadding.PaddingBottom = UDim.new(0, 20) 
 end
 CombatPage.Visible = true
--- Helper to create bold section titles like in the image
 local function CreateSectionTitle(Page, Text)
     local Title = Instance.new("TextLabel", Page)
     Title.BackgroundTransparency = 1
@@ -624,14 +626,13 @@ local function CreateSectionTitle(Page, Text)
     Title.TextColor3 = Style_Text_Primary
     Title.TextSize = 12
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UIPadding", Title).PaddingLeft = UDim.new(0, 4) -- Minor indent
+    Instance.new("UIPadding", Title).PaddingLeft = UDim.new(0, 4) 
     return Title
 end
 
--- Re-styled Tabs function
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
-    TabBtn.BackgroundColor3 = Style_Bg -- Consistent with background
+    TabBtn.BackgroundColor3 = Style_Bg 
     TabBtn.BackgroundTransparency = Order == 1 and 0 or 1
     TabBtn.Size = UDim2.new(0, 60, Order == 1 and 30 or 28) 
     TabBtn.Font = Order == 1 and Enum.Font.GothamBold or Style_Font
@@ -643,7 +644,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     
     local TStroke = Instance.new("UIStroke", TabBtn)
     TStroke.Color = Color3.fromRGB(55, 57, 61)
-    TStroke.Enabled = Order == 1 -- Subtle border for active tab
+    TStroke.Enabled = Order == 1 
 
     RegisterTouchFriendlyClick(TabBtn, function()
         for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
@@ -661,15 +662,15 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     end)
 end
 
--- Re-styled Update Visual for Toggles (Mobile and Menu sync)
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
     local state = Config[Key]
     local Ball = TargetData.Ball; local SwitchBg = TargetData.SwitchBg
     
-    TweenService:Create(Ball, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = state and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
-    TweenService:Create(SwitchBg, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Style_Accent or Style_Inactive}):Play()
+    -- Changed animation logic to fit the Checkbox dot scaling instead of moving X position
+    TweenService:Create(Ball, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = state and UDim2.new(0, 8, 0, 8) or UDim2.new(0, 0, 0, 0)}):Play()
+    TweenService:Create(SwitchBg, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {BackgroundColor3 = state and Style_Accent or Style_Inactive}):Play()
     
     if GlobalMobileButtons[Key] then
         local MData = GlobalMobileButtons[Key]
@@ -686,7 +687,7 @@ end
 
 local RestrictedKeys = { ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true, ShowMobileFly = true }
 
--- Re-styled modern toggle (like provided image)
+-- Re-styled to be a Box/Checkbox instead of Pill switch
 local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -709,22 +710,23 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
 
     local SwitchBg = Instance.new("Frame", TFrame)
     SwitchBg.BackgroundColor3 = Config[Key] and Style_Accent or Style_Inactive
-    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8) 
-    SwitchBg.Size = UDim2.new(0, 32, 0, 16)
-    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
+    SwitchBg.Position = UDim2.new(1, -26, 0.5, -8) -- Right aligned
+    SwitchBg.Size = UDim2.new(0, 16, 0, 16) -- Perfectly square box
+    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(0, 4) -- Slightly rounded edges for modern feel
 
-    local Ball = Instance.new("Frame", SwitchBg)
-    Ball.BackgroundColor3 = Style_Text_Primary
-    Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    Ball.Size = UDim2.new(0, 12, 0, 12)
-    Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
+    local Dot = Instance.new("Frame", SwitchBg)
+    Dot.BackgroundColor3 = Style_Text_Primary
+    Dot.AnchorPoint = Vector2.new(0.5, 0.5)
+    Dot.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Dot.Size = Config[Key] and UDim2.new(0, 8, 0, 8) or UDim2.new(0, 0, 0, 0)
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(0, 2)
 
     local Btn = Instance.new("TextButton", TFrame)
     Btn.BackgroundTransparency = 1
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.Text = ""
 
-    GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Style_Inactive}
+    GlobalSyncToggles[Key] = {Ball = Dot, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Style_Inactive}
     RegisterTouchFriendlyClick(Btn, function() 
         if RestrictedKeys[Key] and not IsMobile then
             pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
@@ -766,7 +768,6 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
--- Re-styled modern slider (like provided image)
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Style_SubBg
@@ -841,7 +842,6 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     end)
 end
 
--- Re-styled modern button (like provided image)
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Style_SubBg
@@ -873,7 +873,6 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
 
--- Re-styled modern selection (cycles through Head/Torso/Legs)
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Style_SubBg
@@ -912,7 +911,6 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
--- Re-styled minimalist color selector
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg
@@ -952,7 +950,6 @@ local function AddSyncedEspColorSelector(Page)
     table.insert(UI_Refresh_Functions, function() ColorBox.BackgroundColor3 = Config.EspColor end)
 end
 
--- Re-styled minimalist Aura Color Selector
 local function AddAuraColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg
@@ -992,7 +989,6 @@ local function AddAuraColorSelector(Page)
     table.insert(UI_Refresh_Functions, function() ColorBox.BackgroundColor3 = Config.AuraColor end)
 end
 
--- Re-styled modern selection (cycles through Bottom/Center for Tracers)
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Style_SubBg
@@ -1031,7 +1027,6 @@ local function AddTracerModeSelector(Page)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
 
--- Re-styled minimalist Export Code input area
 local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -1077,7 +1072,6 @@ local function AddExportBox(Page)
         end
     end)
 end
--- Re-styled minimalist Import Code input area
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -1126,7 +1120,6 @@ local function AddImportBox(Page)
     end)
 end
 
--- Re-styled minimalist modern Credit Box
 local function AddPremiumCreditBox(Page, Title, Description)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg 
@@ -1212,9 +1205,9 @@ AddPremiumSlider(MovementPage, "Jump Force Magnitude", 50, 350, "JumpPower")
 -- --- VISUAL PAGE ---
 CreateSectionTitle(VisualPage, "Character ESP")
 AddPremiumToggle(VisualPage, "Master ESP Overlay Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
-AddPremiumToggle(VisualPage, "Highlight Team (Green)", "EspTeamCheck")
-AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
-AddPremiumSlider(VisualPage, "Chams Opacity Multiplier", 0, 100, "EspTransparency")
+AddPremiumToggle(VisualPage, "ESP Team Guard (Green)", "EspTeamCheck")
+AddPremiumToggle(VisualPage, "Render 2D ESP Box", "EspBox")
+AddPremiumSlider(VisualPage, "ESP Opacity Multiplier", 0, 100, "EspTransparency")
 AddPremiumToggle(VisualPage, "Snapline Tracers Vector", "EspTracer")
 AddTracerModeSelector(VisualPage)
 AddSyncedEspColorSelector(VisualPage)
@@ -1254,7 +1247,10 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
     pcall(function() mouse1release() end)
     ToggleFlyState(false)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
-    for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
+    for C, Data in pairs(Character_Cache) do 
+        pcall(function() Data.Box:Remove() end)
+        CleanCharacterVisuals(C) 
+    end
     for neck, origC0 in pairs(NeckCache) do if neck and neck.Parent then pcall(function() neck.C0 = origC0 end) end end
     LocalPlayer.CameraMinZoomDistance = 0.5
     LocalPlayer.CameraMaxZoomDistance = 400
@@ -1326,10 +1322,12 @@ local function RenderVisuals(Player, Character)
     
     CleanCharacterVisuals(Character)
     
-    local Box = Instance.new("BoxHandleAdornment")
-    Box.Name = "WangBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 
-    Box.Size = Vector3.new(4, 6, 4) 
+    -- Using proper 2D Drawing for ESP Box instead of solid block highlight
+    local Box = Drawing.new("Square")
+    Box.Thickness = 1.5
+    Box.Filled = false
     Box.Visible = false
+    Box.ZIndex = 2
 
     local Gui = Instance.new("BillboardGui")
     Gui.Name = "WangInfoTag" Gui.Adornee = Head 
@@ -1447,22 +1445,38 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     for Char, Data in pairs(Character_Cache) do
         if Char and Char.Parent and IsAlive(Char) then
             local Root = Char:FindFirstChild("HumanoidRootPart")
+            local Head = Char:FindFirstChild("Head")
             local Hum = Char:FindFirstChildOfClass("Humanoid")
             
             local isTarget = true 
             
-            if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum and isTarget then
+            if Config.EspMaster and Root and Head and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum and isTarget then
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
+                local RootPos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
 
-                if Config.EspBox and Dist <= Config.MaxDistance then Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100 else Data.Box.Visible = false end
+                -- 2D Box Logic Implementation
+                if Config.EspBox and Dist <= Config.MaxDistance and OnScreen then 
+                    local HeadPos = Camera:WorldToViewportPoint(Head.Position + Vector3.new(0, 0.5, 0))
+                    local LegPos = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+                    local height = math.abs(HeadPos.Y - LegPos.Y)
+                    local width = height / 2
+                    Data.Box.Size = Vector2.new(width, height)
+                    Data.Box.Position = Vector2.new(RootPos.X - width / 2, HeadPos.Y)
+                    Data.Box.Color = PColor
+                    Data.Box.Transparency = 1 - (Config.EspTransparency / 100) -- Drawing visibility logic
+                    Data.Box.Visible = true 
+                else 
+                    Data.Box.Visible = false 
+                end
+
                 if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
                 if Config.EspHealth and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.HealthBG.Visible = true local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1) Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0) Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1) else Data.HealthBG.Visible = false end
 
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
-                    local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
-                    if OnScreen then Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true else Tracer.Visible = false end
+                    local Leg, IsTracerOnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+                    if IsTracerOnScreen then Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true else Tracer.Visible = false end
                 elseif Tracer then Tracer.Visible = false end
             else Data.Box.Visible = false Data.Label.Visible = false Data.HealthBG.Visible = false if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end end
         else CleanCharacterVisuals(Char) Character_Cache[Char] = nil end
@@ -1476,7 +1490,7 @@ for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Modern Compact Edition successfully!", Duration = 5})
+    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Modern Compact Edition (2D Box) successfully!", Duration = 5})
 end)
 -- ==============================================================================
 -- END OF SCRIPT - MODERN COMPACT EDITION CREATED BY BE FOR DAI CA WANG (2026)

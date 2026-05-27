@@ -1,3 +1,4 @@
+---[Khởi tạo và Cấu hình]----
 -- ==============================================================================
 -- WANGCAOS PREMIUM CLIENT V6.9.0 - PE POSITION SAVER & BUTTON LOCK
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
@@ -176,6 +177,8 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
+---[còn tiếp]----
+---[Hàm Hỗ trợ và Logic Visuals]----
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor
 FOV_Drawing.Thickness = Config.FovThickness
@@ -302,6 +305,7 @@ local function GetDesiredHitbox(Character)
     end
     return Character:FindFirstChild("Head")
 end
+
 local function GetClosestPlayerToCrosshair()
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ClosestTarget = nil
@@ -336,7 +340,8 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
-
+---[còn tiếp]----
+---[Logic Combat & Khởi tạo UI Giao diện]----
 local function GetAuraTarget()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -452,6 +457,7 @@ local function ProcessAutoFarmPlayer()
         end
     end
 end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
@@ -494,7 +500,8 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
         end
     end)
 end
-
+---[còn tiếp]----
+---[Xây dựng Nút Mobile & Khung Menu Main]----
 local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     TextButton.MouseButton1Click:Connect(function() if not HoldingTouch then Callback() end end)
@@ -573,6 +580,7 @@ Instance.new("UIStroke", ToggleButton).Thickness = 1.5
 ToggleButton.Visible = IsMobile
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -631,7 +639,8 @@ CloseBtn.TextSize = 22
 MakeDraggable(MainFrame, TopNavBar, nil) -- Không lưu vị trí Menu PC
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
 RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
-
+---[còn tiếp]----
+---[Tạo Tabs và Elements cho UI]----
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -692,6 +701,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
+
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -763,7 +773,8 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         UpdateToggleVisual(Key) 
         if Callback then Callback(Config[Key]) end 
     end)
-
+---[còn tiếp]----
+---[Quản lý UI và Binding Keys]----
     if BindKey then
         local BindBtn = Instance.new("TextButton", TFrame)
         BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
@@ -797,6 +808,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -897,6 +909,8 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
+---[còn tiếp]----
+---[Tính Năng & Nút Bấm Config Đặc Biệt]----
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1041,6 +1055,8 @@ local function AddTracerModeSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
+---[còn tiếp]----
+---[Hệ thống Lưu, Tải và Nạp Tính Năng]----
 local function AddExportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
@@ -1156,6 +1172,8 @@ local function AddPremiumCreditBox(Page, Title, Description)
     DescLbl.TextSize = 11
     DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
+---[còn tiếp]----
+---[Chèn Nút Giao Diện và Chức Năng Bổ Sung]----
 AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
 AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
 AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
@@ -1235,7 +1253,8 @@ AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", functio
     Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
 end)
-
+---[còn tiếp]----
+---[Vòng Lặp Chính & Xử Lý Sự Kiện Cuối]----
 AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
 AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Ultimate PE Control Matrix")
 
@@ -1410,3 +1429,4 @@ end)
 -- ==============================================================================
 -- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================
+---[hết mục]---

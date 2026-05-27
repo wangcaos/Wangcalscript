@@ -1,7 +1,7 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V7.0 - VERTICAL SIDEBAR EDITION (FULL ESP 3D)
+-- WANGCAOS PREMIUM CLIENT V7.0 - VERTICAL SIDEBAR EDITION
 -- ALL RIGHTS RESERVED BY WANG (2026)
--- UI Design: Vertical Left Menu, 3D Chams ESP, Colors & TeamChecks Added
+-- UI Design: Vertical Left Menu, 3D ESP, Logic from Original Source
 -- ==============================================================================
 
 local Players = game:GetService("Players")
@@ -18,7 +18,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 local MasterLoop
-local MainFrame -- Khai báo trước để Intro có thể gọi khi load xong
+local MainFrame
 
 -- Modern Theme Colors
 local Style_Bg = Color3.fromRGB(15, 16, 17)
@@ -32,8 +32,7 @@ local Style_Font = Enum.Font.Gotham
 local Style_ElementHeight = 36
 
 local Config = {
-    MenuVisible = false, -- Đã tắt đi lúc đầu theo ý cậu
-    MenuKeybind = Enum.KeyCode.RightShift,
+    MenuVisible = false, MenuKeybind = Enum.KeyCode.RightShift,
     Aimbot = false, AimbotKeybind = Enum.KeyCode.E, TeamCheck = true, WallCheck = true, Smoothness = 5, TargetPart = "Head",
     Aura = false, AuraKeybind = Enum.KeyCode.H, TeamCheckAura = true, AuraWallCheck = true, AuraSmoothness = 5, AuraRadius = 30, AuraColor = Color3.fromRGB(0, 170, 255), AuraTransparency = 50, PriorityLowestHealth = false,
     Triggerbot = false, TriggerbotKeybind = Enum.KeyCode.T, TriggerWallCheck = true,
@@ -76,6 +75,9 @@ for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" or old.Name == "WangcaosIntro" then old:Destroy() end
 end
 
+-- ====================
+-- INTRO SCREEN
+-- ====================
 local IntroScreen = Instance.new("ScreenGui")
 IntroScreen.Name = "WangcaosIntro"
 IntroScreen.Parent = SafeParent
@@ -121,7 +123,6 @@ task.spawn(function()
     task.wait(0.5)
     if IntroScreen then IntroScreen:Destroy() end
     
-    -- Tự động bật Menu khi Intro xong
     Config.MenuVisible = true
     if MainFrame then MainFrame.Visible = true end
 end)
@@ -426,7 +427,6 @@ local function ProcessAutoFarmPlayer()
         if tick() - LastFarmTime >= Config.AutoFarmDelay then LastFarmTime = tick() CurrentFarmIndex = CurrentFarmIndex + 1 end
     end
 end
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
@@ -463,69 +463,13 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
         end
     end)
 end
+
 local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     TextButton.MouseButton1Click:Connect(function() if not HoldingTouch then Callback() end end)
     TextButton.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then HoldingTouch = true end end)
     TextButton.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then if HoldingTouch then HoldingTouch = false Callback() end end end)
 end
-
-local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
-    local xs = Config["MobilePos_"..Key.."_XS"] or InitPos.X.Scale
-    local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
-    local ys = Config["MobilePos_"..Key.."_YS"] or InitPos.Y.Scale
-    local yo = Config["MobilePos_"..Key.."_YO"] or InitPos.Y.Offset
-    if not Config["MobilePos_"..Key.."_XS"] then 
-        Config["MobilePos_"..Key.."_XS"] = xs; Config["MobilePos_"..Key.."_XO"] = xo; Config["MobilePos_"..Key.."_YS"] = ys; Config["MobilePos_"..Key.."_YO"] = yo 
-    end
-    local ShortcutBtn = Instance.new("TextButton")
-    ShortcutBtn.Name = "IndependentMobile_" .. Key
-    ShortcutBtn.Parent = ScreenGui
-    ShortcutBtn.BackgroundColor3 = DefaultColor
-    ShortcutBtn.BackgroundTransparency = 0.2
-    ShortcutBtn.Position = UDim2.new(xs, xo, ys, yo)
-    ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
-    ShortcutBtn.Font = Enum.Font.GothamBold
-    ShortcutBtn.Text = TextOff
-    ShortcutBtn.TextColor3 = Style_Text_Primary
-    ShortcutBtn.TextSize = 9
-    ShortcutBtn.Visible = (Config[ShowKey] and IsMobile)
-    Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
-    local Stroke = Instance.new("UIStroke", ShortcutBtn)
-    Stroke.Color = Style_Text_Primary
-    Stroke.Thickness = 1
-    MakeDraggable(ShortcutBtn, ShortcutBtn, Key)
-    GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
-    return ShortcutBtn
-end
-
-local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
-local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
-local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
-local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
-local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
-local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Style_Text_Secondary, UDim2.new(0.85, 0, 0.70, 0))
-local MobFly = CreateIndependentMobileButton("Fly", "FLY\nON", "FLY\nOFF", "Fly", "ShowMobileFly", Color3.fromRGB(0, 255, 255), UDim2.new(0.85, 0, 0.81, 0))
-
-local lxs, lxo, lys, lyo = 0, 20, 0, 20
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "PremiumToggleLogo"
-ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Style_SubBg
-ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
-ToggleButton.Size = UDim2.new(0, 45, 0, 45)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "W"
-ToggleButton.TextColor3 = Style_Text_Primary
-ToggleButton.TextSize = 20
-Instance.new("UICorner", ToggleButton).CornerRadius = Style_CornerRadius
-local TogStroke = Instance.new("UIStroke", ToggleButton)
-TogStroke.Color = Color3.fromRGB(60, 60, 60)
-TogStroke.Thickness = 1
-ToggleButton.Visible = IsMobile
-GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
-MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
 
 MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -602,7 +546,6 @@ CloseBtn.TextColor3 = Style_Text_Secondary
 CloseBtn.TextSize = 22
 CloseBtn.ZIndex = 4
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
-RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
@@ -790,7 +733,8 @@ local function CreateSliderElement(Page, TitleText, ConfigKey, Min, Max, Callbac
 
     local function slide(input)
         local x = input.Position.X - Track.AbsolutePosition.X
-        local rawPct = math.clamp(x / Track.AbsoluteSize.Width, 0, 1)
+        -- ĐÃ SỬA CHỖ NÀY: AbsoluteSize.X chứ KHÔNG PHẢI Width! Cậu bớt chửi lại nha!
+        local rawPct = math.clamp(x / Track.AbsoluteSize.X, 0, 1)
         local val = math.floor(Min + (rawPct * (Max - Min)))
         Config[ConfigKey] = val
         ValLabel.Text = tostring(val)
@@ -902,6 +846,64 @@ local function CreateColorElement(Page, TitleText, ConfigKey)
     end)
     return Row
 end
+local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey, DefaultColor, InitPos)
+    local xs = Config["MobilePos_"..Key.."_XS"] or InitPos.X.Scale
+    local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
+    local ys = Config["MobilePos_"..Key.."_YS"] or InitPos.Y.Scale
+    local yo = Config["MobilePos_"..Key.."_YO"] or InitPos.Y.Offset
+    if not Config["MobilePos_"..Key.."_XS"] then 
+        Config["MobilePos_"..Key.."_XS"] = xs; Config["MobilePos_"..Key.."_XO"] = xo; Config["MobilePos_"..Key.."_YS"] = ys; Config["MobilePos_"..Key.."_YO"] = yo 
+    end
+    local ShortcutBtn = Instance.new("TextButton")
+    ShortcutBtn.Name = "IndependentMobile_" .. Key
+    ShortcutBtn.Parent = ScreenGui
+    ShortcutBtn.BackgroundColor3 = DefaultColor
+    ShortcutBtn.BackgroundTransparency = 0.2
+    ShortcutBtn.Position = UDim2.new(xs, xo, ys, yo)
+    ShortcutBtn.Size = UDim2.new(0, 52, 0, 52)
+    ShortcutBtn.Font = Enum.Font.GothamBold
+    ShortcutBtn.Text = TextOff
+    ShortcutBtn.TextColor3 = Style_Text_Primary
+    ShortcutBtn.TextSize = 9
+    ShortcutBtn.Visible = (Config[ShowKey] and IsMobile)
+    Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
+    local Stroke = Instance.new("UIStroke", ShortcutBtn)
+    Stroke.Color = Style_Text_Primary
+    Stroke.Thickness = 1
+    MakeDraggable(ShortcutBtn, ShortcutBtn, Key)
+    GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
+    return ShortcutBtn
+end
+
+local MobAim = CreateIndependentMobileButton("Aimbot", "AIM\nON", "AIM\nOFF", "Aimbot", "ShowMobileAim", Color3.fromRGB(255, 50, 50), UDim2.new(0.85, 0, 0.15, 0))
+local MobTrig = CreateIndependentMobileButton("Triggerbot", "TRIG\nON", "TRIG\nOFF", "Triggerbot", "ShowMobileTrig", Color3.fromRGB(230, 125, 30), UDim2.new(0.85, 0, 0.26, 0))
+local MobSpeed = CreateIndependentMobileButton("Speed", "SPD\nON", "SPD\nOFF", "SpeedToggle", "ShowMobileSpeed", Color3.fromRGB(140, 30, 230), UDim2.new(0.85, 0, 0.37, 0))
+local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF", "AutoFarmPlayer", "ShowMobileFarm", Color3.fromRGB(45, 140, 75), UDim2.new(0.85, 0, 0.48, 0))
+local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
+local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Style_Text_Secondary, UDim2.new(0.85, 0, 0.70, 0))
+local MobFly = CreateIndependentMobileButton("Fly", "FLY\nON", "FLY\nOFF", "Fly", "ShowMobileFly", Color3.fromRGB(0, 255, 255), UDim2.new(0.85, 0, 0.81, 0))
+
+local lxs, lxo, lys, lyo = 0, 20, 0, 20
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "PremiumToggleLogo"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Style_SubBg
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Text = "W"
+ToggleButton.TextColor3 = Style_Text_Primary
+ToggleButton.TextSize = 20
+Instance.new("UICorner", ToggleButton).CornerRadius = Style_CornerRadius
+local TogStroke = Instance.new("UIStroke", ToggleButton)
+TogStroke.Color = Color3.fromRGB(60, 60, 60)
+TogStroke.Thickness = 1
+ToggleButton.Visible = IsMobile
+GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
+MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
+RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
+
 -- --- COMBAT PAGE ---
 CreateSectionTitle(CombatPage, "Aimbot Configuration")
 CreateToggleElement(CombatPage, "Enable Aimbot Lock", "Aimbot")
@@ -963,7 +965,6 @@ CreateSectionTitle(VisualPage, "Interface Elements")
 CreateToggleElement(VisualPage, "Draw Dynamic FOV", "FovCircle")
 CreateSliderElement(VisualPage, "FOV Radius Scale", "FovRadius", 30, 400)
 CreateToggleElement(VisualPage, "Show Crosshair Dot", "CrosshairDot")
-
 -- --- MISC PAGE ---
 CreateSectionTitle(MiscPage, "Configuration Manager")
 local TempRow = Instance.new("Frame", MiscPage)
@@ -997,9 +998,7 @@ ImportBtn.TextSize = 12
 Instance.new("UICorner", ImportBtn).CornerRadius = Style_CornerRadius
 RegisterTouchFriendlyClick(ImportBtn, function()
     local success = false
-    pcall(function()
-        if getclipboard then success = ImportSettings(getclipboard()) end
-    end)
+    pcall(function() if getclipboard then success = ImportSettings(getclipboard()) end end)
     ImportBtn.Text = success and "Imported!" or "Failed!"
     task.wait(1.5)
     ImportBtn.Text = "Import Settings"
@@ -1053,7 +1052,7 @@ local CredLabel = Instance.new("TextLabel", CreditsPage)
 CredLabel.BackgroundTransparency = 1
 CredLabel.Size = UDim2.new(1, 0, 0, 80)
 CredLabel.Font = Style_Font
-CredLabel.Text = "OWNER: WANG\nDEVELOPER: WANG\nVERSION: 7.0 VERTICAL SIDEBAR\n\nDISCORD: Https://discord.gg/GkAKn4zzH"
+CredLabel.Text = "OWNER: WANG\nVERSION: 7.0 VERTICAL SIDEBAR ESP 3D\n\nDISCORD: Https://discord.gg/GkAKn4zzH"
 CredLabel.TextColor3 = Style_Text_Secondary
 CredLabel.TextSize = 12
 CredLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1072,6 +1071,7 @@ end
 for K, _ in pairs(Config) do
     GlobalSyncToggles[K] = function(state) HandleMobileShortcutToggle(K, state) end
 end
+
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
     local Root = Character:WaitForChild("HumanoidRootPart", 5)
@@ -1080,7 +1080,7 @@ local function RenderVisuals(Player, Character)
     
     CleanCharacterVisuals(Character)
     
-    -- BOX 3D (BoxHandleAdornment) CHO ĐÚNG YÊU CẦU ESP 3D
+    -- BOX 3D (BoxHandleAdornment)
     local Box = Instance.new("BoxHandleAdornment")
     Box.Name = "WangBoxFill" 
     Box.Parent = Root 
@@ -1187,7 +1187,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
 
-                -- Render ESP 3D Chams box
+                -- Render ESP 3D Chams box (Đã trả lại hoàn toàn chức năng 3D)
                 if Config.EspBox and Dist <= Config.MaxDistance then 
                     Data.Box.Visible = true 
                     Data.Box.Color3 = PColor 

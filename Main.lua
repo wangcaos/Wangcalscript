@@ -1,4 +1,4 @@
----[Khởi tạo và Cấu hình]----
+---[Phần 1: Khởi tạo & Cấu hình]----
 -- ==============================================================================
 -- WANGCAOS PREMIUM CLIENT V6.9.0 - PE POSITION SAVER & BUTTON LOCK
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
@@ -91,7 +91,7 @@ local Config = {
     ShowMobileFarm = false,
     ShowMobileAura = false,
     ShowMobileTP = false,
-    LockMobileButtons = false, -- TÍNH NĂNG KHOÁ NÚT THEO LỆNH ĐẠI CA
+    LockMobileButtons = false, 
     
     CustomBackground = true,
     BackgroundAssetId = "rbxassetid://118670919014080",
@@ -105,7 +105,7 @@ local LastFarmTime = 0
 local CurrentFarmIndex = 1
 
 local UI_Refresh_Functions = {}
-local GlobalMobileButtons = {} -- Forward declare for Settings Import
+local GlobalMobileButtons = {}
 local GlobalSyncToggles = {}
 
 local function GetSafeGui()
@@ -122,7 +122,8 @@ if not SafeParent then return end
 for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" then old:Destroy() end
 end
-
+---[còn tiếp]----
+---[Phần 2: Data Import & Export]----
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
@@ -164,7 +165,6 @@ local function ImportSettings(hexStr)
         end
         for _, refresh in pairs(UI_Refresh_Functions) do pcall(refresh) end
         
-        -- Cập nhật tọa độ ngay lập tức cho các nút Mobile khi Import thành công
         for key, mData in pairs(GlobalMobileButtons) do
             local xs = Config["MobilePos_"..key.."_XS"]
             local xo = Config["MobilePos_"..key.."_XO"]
@@ -177,8 +177,7 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
----[còn tiếp]----
----[Hàm Hỗ trợ và Logic Visuals]----
+
 local FOV_Drawing = Drawing.new("Circle")
 FOV_Drawing.Color = Config.FovColor
 FOV_Drawing.Thickness = Config.FovThickness
@@ -204,7 +203,8 @@ AuraVisual.ZIndex = 5
 local Tracer_Cache = {}
 local Character_Cache = {}
 local NeckCache = {}
-
+---[còn tiếp]----
+---[Phần 3: Game Logic & Checks]----
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
     local Line = Drawing.new("Line")
@@ -283,7 +283,8 @@ local function CheckWallOcclusion(TargetPart, Character)
     local Result = workspace:Raycast(Origin, Direction, Params)
     return Result == nil
 end
-
+---[còn tiếp]----
+---[Phần 4: Combat Tracking]----
 local function CheckTriggerWall(Position)
     if not Config.TriggerWallCheck then return true end
     local Origin = Camera.CFrame.Position
@@ -340,8 +341,7 @@ local function GetClosestPlayerToCrosshair()
     end
     return ClosestTarget
 end
----[còn tiếp]----
----[Logic Combat & Khởi tạo UI Giao diện]----
+
 local function GetAuraTarget()
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -361,7 +361,6 @@ local function GetAuraTarget()
             
             if TargetPartInstance and EnemyRoot and Hum then
                 if Config.AuraWallCheck and not CheckWallOcclusion(TargetPartInstance, Player.Character) then continue end
-                
                 local MyPosFlat = Vector3.new(MyRoot.Position.X, 0, MyRoot.Position.Z)
                 local EnemyPosFlat = Vector3.new(EnemyRoot.Position.X, 0, EnemyRoot.Position.Z)
                 local DistFlat = (EnemyPosFlat - MyPosFlat).Magnitude
@@ -384,7 +383,8 @@ local function GetAuraTarget()
     end
     return BestTarget
 end
-
+---[còn tiếp]----
+---[Phần 5: Tính năng Farm & Mobile UI]----
 local function GetPlayerColor(Player)
     return IsTeammate(Player) and Color3.fromRGB(0, 170, 255) or Config.EspColor
 end
@@ -446,10 +446,7 @@ local function ProcessAutoFarmPlayer()
         MyRoot.CFrame = CFrame.new(BehindPosition, EnemyRoot.Position)
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, EnemyHead.Position)
         
-        if not IsFiring then
-            IsFiring = true
-            pcall(function() mouse1press() end)
-        end
+        if not IsFiring then IsFiring = true pcall(function() mouse1press() end) end
         
         if tick() - LastFarmTime >= Config.AutoFarmDelay then
             LastFarmTime = tick()
@@ -469,30 +466,21 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
     local dragInput, mousePos, framePos
 
     DragHandle.InputBegan:Connect(function(input)
-        -- TÍNH NĂNG KHOÁ VỊ TRÍ MOBILE NÚT THEO LỆNH ĐẠI CA
         if Config.LockMobileButtons and PosKey then return end 
-        
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            mousePos = input.Position
-            framePos = UIElement.Position
+            dragging = true mousePos = input.Position framePos = UIElement.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then 
                     dragging = false 
-                    -- LƯU VỊ TRÍ VÀO CẤU HÌNH ĐỂ EXPORT
                     if PosKey then
-                        Config["MobilePos_"..PosKey.."_XS"] = UIElement.Position.X.Scale
-                        Config["MobilePos_"..PosKey.."_XO"] = UIElement.Position.X.Offset
-                        Config["MobilePos_"..PosKey.."_YS"] = UIElement.Position.Y.Scale
-                        Config["MobilePos_"..PosKey.."_YO"] = UIElement.Position.Y.Offset
+                        Config["MobilePos_"..PosKey.."_XS"] = UIElement.Position.X.Scale Config["MobilePos_"..PosKey.."_XO"] = UIElement.Position.X.Offset
+                        Config["MobilePos_"..PosKey.."_YS"] = UIElement.Position.Y.Scale Config["MobilePos_"..PosKey.."_YO"] = UIElement.Position.Y.Offset
                     end
                 end
             end)
         end
     end)
-    DragHandle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
+    DragHandle.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - mousePos
@@ -501,15 +489,13 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
     end)
 end
 ---[còn tiếp]----
----[Xây dựng Nút Mobile & Khung Menu Main]----
+---[Phần 6: Giao diện Main & Nút Nổi]----
 local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     TextButton.MouseButton1Click:Connect(function() if not HoldingTouch then Callback() end end)
     TextButton.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then HoldingTouch = true end end)
     TextButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            if HoldingTouch then HoldingTouch = false Callback() end
-        end
+        if input.UserInputType == Enum.UserInputType.Touch then if HoldingTouch then HoldingTouch = false Callback() end end
     end)
 end
 
@@ -518,12 +504,8 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     local xo = Config["MobilePos_"..Key.."_XO"] or InitPos.X.Offset
     local ys = Config["MobilePos_"..Key.."_YS"] or InitPos.Y.Scale
     local yo = Config["MobilePos_"..Key.."_YO"] or InitPos.Y.Offset
-    
     if not Config["MobilePos_"..Key.."_XS"] then
-        Config["MobilePos_"..Key.."_XS"] = xs
-        Config["MobilePos_"..Key.."_XO"] = xo
-        Config["MobilePos_"..Key.."_YS"] = ys
-        Config["MobilePos_"..Key.."_YO"] = yo
+        Config["MobilePos_"..Key.."_XS"] = xs Config["MobilePos_"..Key.."_XO"] = xo Config["MobilePos_"..Key.."_YS"] = ys Config["MobilePos_"..Key.."_YO"] = yo
     end
 
     local ShortcutBtn = Instance.new("TextButton")
@@ -539,9 +521,7 @@ local function CreateIndependentMobileButton(Name, TextOn, TextOff, Key, ShowKey
     ShortcutBtn.TextSize = 9
     ShortcutBtn.Visible = (Config[ShowKey] and IsMobile)
     Instance.new("UICorner", ShortcutBtn).CornerRadius = UDim.new(1, 0)
-    local Stroke = Instance.new("UIStroke", ShortcutBtn)
-    Stroke.Color = Color3.fromRGB(255, 255, 255)
-    Stroke.Thickness = 1.5
+    local Stroke = Instance.new("UIStroke", ShortcutBtn) Stroke.Color = Color3.fromRGB(255, 255, 255) Stroke.Thickness = 1.5
     MakeDraggable(ShortcutBtn, ShortcutBtn, Key)
     GlobalMobileButtons[Key] = { Btn = ShortcutBtn, ShowKey = ShowKey }
     return ShortcutBtn
@@ -554,99 +534,41 @@ local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF",
 local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
 local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Color3.fromRGB(150, 150, 150), UDim2.new(0.85, 0, 0.70, 0))
 
-local lxs = Config["MobilePos_MainLogo_XS"] or 0
-local lxo = Config["MobilePos_MainLogo_XO"] or 20
-local lys = Config["MobilePos_MainLogo_YS"] or 0
-local lyo = Config["MobilePos_MainLogo_YO"] or 20
-if not Config["MobilePos_MainLogo_XS"] then
-    Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo
-end
+local lxs = Config["MobilePos_MainLogo_XS"] or 0 local lxo = Config["MobilePos_MainLogo_XO"] or 20 local lys = Config["MobilePos_MainLogo_YS"] or 0 local lyo = Config["MobilePos_MainLogo_YO"] or 20
+if not Config["MobilePos_MainLogo_XS"] then Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo end
 
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "PremiumToggleLogo"
-ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
-ToggleButton.Size = UDim2.new(0, 45, 0, 45)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "W"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 20
-Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
-Instance.new("UIStroke", ToggleButton).Thickness = 1.5
-
-ToggleButton.Visible = IsMobile
-GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
-MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
+ToggleButton.Name = "PremiumToggleLogo" ToggleButton.Parent = ScreenGui ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20) ToggleButton.BackgroundTransparency = 0.2 ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo) ToggleButton.Size = UDim2.new(0, 45, 0, 45) ToggleButton.Font = Enum.Font.GothamBold ToggleButton.Text = "W" ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255) ToggleButton.TextSize = 20
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8) Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60) Instance.new("UIStroke", ToggleButton).Thickness = 1.5
+ToggleButton.Visible = IsMobile GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton } MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17)
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.Visible = Config.MenuVisible
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50)
-MainFrame.UIStroke.Thickness = 1.5
+MainFrame.Name = "MainFrame" MainFrame.Parent = ScreenGui MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 17) MainFrame.BackgroundTransparency = 0.15 MainFrame.BorderSizePixel = 0 MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200) MainFrame.Size = UDim2.new(0, 600, 0, 400) MainFrame.Visible = Config.MenuVisible
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10) Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(45, 47, 50) MainFrame.UIStroke.Thickness = 1.5
 
 local CustomBackgroundImage = Instance.new("ImageLabel")
-CustomBackgroundImage.Name = "MenuCustomWallpaper"
-CustomBackgroundImage.Parent = MainFrame
-CustomBackgroundImage.BackgroundTransparency = 1
-CustomBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-CustomBackgroundImage.Image = Config.BackgroundAssetId
-CustomBackgroundImage.ImageTransparency = 0.75
-CustomBackgroundImage.ScaleType = Enum.ScaleType.Crop
-CustomBackgroundImage.ZIndex = 0
-CustomBackgroundImage.Visible = Config.CustomBackground
+CustomBackgroundImage.Name = "MenuCustomWallpaper" CustomBackgroundImage.Parent = MainFrame CustomBackgroundImage.BackgroundTransparency = 1 CustomBackgroundImage.Size = UDim2.new(1, 0, 1, 0) CustomBackgroundImage.Image = Config.BackgroundAssetId CustomBackgroundImage.ImageTransparency = 0.75 CustomBackgroundImage.ScaleType = Enum.ScaleType.Crop CustomBackgroundImage.ZIndex = 0 CustomBackgroundImage.Visible = Config.CustomBackground
 Instance.new("UICorner", CustomBackgroundImage).CornerRadius = UDim.new(0, 10)
-
+---[còn tiếp]----
+---[Phần 7: Tabs & Cấu trúc Section]----
 local TopNavBar = Instance.new("Frame")
-TopNavBar.Parent = MainFrame
-TopNavBar.BackgroundColor3 = Color3.fromRGB(23, 24, 26)
-TopNavBar.BackgroundTransparency = 0.3
-TopNavBar.Position = UDim2.new(0, 10, 0, 10)
-TopNavBar.Size = UDim2.new(1, -20, 0, 42)
-TopNavBar.ZIndex = 2
+TopNavBar.Parent = MainFrame TopNavBar.BackgroundColor3 = Color3.fromRGB(23, 24, 26) TopNavBar.BackgroundTransparency = 0.3 TopNavBar.Position = UDim2.new(0, 10, 0, 10) TopNavBar.Size = UDim2.new(1, -20, 0, 42) TopNavBar.ZIndex = 2
 Instance.new("UICorner", TopNavBar).CornerRadius = UDim.new(0, 8)
 
 local TabMenuContainer = Instance.new("Frame")
-TabMenuContainer.Parent = TopNavBar
-TabMenuContainer.BackgroundTransparency = 1
-TabMenuContainer.Size = UDim2.new(1, -45, 1, 0)
-local TabLayout = Instance.new("UIListLayout", TabMenuContainer)
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.Padding = UDim.new(0, 4)
-local TabPad = Instance.new("UIPadding", TabMenuContainer)
-TabPad.PaddingLeft = UDim.new(0, 6)
-TabPad.PaddingTop = UDim.new(0, 6)
+TabMenuContainer.Parent = TopNavBar TabMenuContainer.BackgroundTransparency = 1 TabMenuContainer.Size = UDim2.new(1, -45, 1, 0)
+local TabLayout = Instance.new("UIListLayout", TabMenuContainer) TabLayout.FillDirection = Enum.FillDirection.Horizontal TabLayout.Padding = UDim.new(0, 4)
+local TabPad = Instance.new("UIPadding", TabMenuContainer) TabPad.PaddingLeft = UDim.new(0, 6) TabPad.PaddingTop = UDim.new(0, 6)
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = TopNavBar
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -34, 0.5, -13)
-CloseBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "×"
-CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158)
-CloseBtn.TextSize = 22
+CloseBtn.Parent = TopNavBar CloseBtn.BackgroundTransparency = 1 CloseBtn.Position = UDim2.new(1, -34, 0.5, -13) CloseBtn.Size = UDim2.new(0, 26, 0, 26) CloseBtn.Font = Enum.Font.GothamBold CloseBtn.Text = "×" CloseBtn.TextColor3 = Color3.fromRGB(150, 153, 158) CloseBtn.TextSize = 22
 
-MakeDraggable(MainFrame, TopNavBar, nil) -- Không lưu vị trí Menu PC
+MakeDraggable(MainFrame, TopNavBar, nil)
 RegisterTouchFriendlyClick(CloseBtn, function() Config.MenuVisible = false MainFrame.Visible = false end)
 RegisterTouchFriendlyClick(ToggleButton, function() Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible end)
----[còn tiếp]----
----[Tạo Tabs và Elements cho UI]----
+
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Parent = MainFrame
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 15, 0, 65)
-ContentContainer.Size = UDim2.new(1, -30, 1, -80)
-ContentContainer.ZIndex = 2
+ContentContainer.Parent = MainFrame ContentContainer.BackgroundTransparency = 1 ContentContainer.Position = UDim2.new(0, 15, 0, 65) ContentContainer.Size = UDim2.new(1, -30, 1, -80) ContentContainer.ZIndex = 2
 
 local CombatPage = Instance.new("ScrollingFrame", ContentContainer)
 local PlayerPage = Instance.new("ScrollingFrame", ContentContainer)
@@ -659,17 +581,56 @@ for _, page in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.CanvasSize = UDim2.new(0, 0, 0, 650)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.CanvasSize = UDim2.new(0, 0, 0, 0)
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
-    local grid = Instance.new("UIGridLayout", page)
-    grid.CellSize = UDim2.new(0, 275, 0, 42)
-    grid.CellPadding = UDim2.new(0, 12, 0, 8)
-    grid.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    local list = Instance.new("UIListLayout", page)
+    list.SortOrder = Enum.SortOrder.LayoutOrder
+    list.Padding = UDim.new(0, 10)
+    
+    local pad = Instance.new("UIPadding", page)
+    pad.PaddingTop = UDim.new(0, 5) pad.PaddingLeft = UDim.new(0, 5) pad.PaddingRight = UDim.new(0, 10) pad.PaddingBottom = UDim.new(0, 10)
 end
 CombatPage.Visible = true
 
+-- Hàm TẠO KHUNG (SECTION) theo đúng ý đại ca
+local function AddSection(Page, TitleText)
+    local SecFrame = Instance.new("Frame", Page)
+    SecFrame.BackgroundTransparency = 1
+    SecFrame.Size = UDim2.new(1, 0, 0, 50)
+    
+    local TitleLbl = Instance.new("TextLabel", SecFrame)
+    TitleLbl.Text = "--- " .. TitleText:upper() .. " ---"
+    TitleLbl.Font = Enum.Font.GothamBold
+    TitleLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+    TitleLbl.TextSize = 12
+    TitleLbl.BackgroundTransparency = 1
+    TitleLbl.Position = UDim2.new(0, 0, 0, 0)
+    TitleLbl.Size = UDim2.new(1, 0, 0, 20)
+    TitleLbl.TextXAlignment = Enum.TextXAlignment.Center
+    
+    local Container = Instance.new("Frame", SecFrame)
+    Container.BackgroundTransparency = 1
+    Container.Position = UDim2.new(0, 0, 0, 25)
+    Container.Size = UDim2.new(1, 0, 1, -25)
+    
+    local Grid = Instance.new("UIGridLayout", Container)
+    Grid.CellSize = UDim2.new(0, 275, 0, 42)
+    Grid.CellPadding = UDim2.new(0, 12, 0, 8)
+    Grid.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    Grid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Container.Size = UDim2.new(1, 0, 0, Grid.AbsoluteContentSize.Y)
+        SecFrame.Size = UDim2.new(1, 0, 0, 25 + Grid.AbsoluteContentSize.Y + 5)
+    end)
+    
+    return Container
+end
+---[còn tiếp]----
+---[Phần 8: Components Helper]----
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(32, 34, 37) or Color3.fromRGB(0, 0, 0)
@@ -681,24 +642,13 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     TabBtn.TextColor3 = Order == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 143, 148)
     TabBtn.TextSize = 11
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-    local TStroke = Instance.new("UIStroke", TabBtn)
-    TStroke.Color = Color3.fromRGB(55, 57, 61)
-    TStroke.Enabled = Order == 1
+    local TStroke = Instance.new("UIStroke", TabBtn) TStroke.Color = Color3.fromRGB(55, 57, 61) TStroke.Enabled = Order == 1
     RegisterTouchFriendlyClick(TabBtn, function()
         for _, p in pairs({CombatPage, PlayerPage, MovementPage, VisualPage, MiscPage, CreditsPage}) do p.Visible = false end
         for _, btn in pairs(TabMenuContainer:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                btn.BackgroundTransparency = 1
-                btn.TextColor3 = Color3.fromRGB(140, 143, 148)
-                btn.UIStroke.Enabled = false
-            end
+            if btn:IsA("TextButton") then btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0) btn.BackgroundTransparency = 1 btn.TextColor3 = Color3.fromRGB(140, 143, 148) btn.UIStroke.Enabled = false end
         end
-        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37)
-        TabBtn.BackgroundTransparency = 0
-        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TStroke.Enabled = true
-        TargetPage.Visible = true
+        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 37) TabBtn.BackgroundTransparency = 0 TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255) TStroke.Enabled = true TargetPage.Visible = true
     end)
 end
 
@@ -723,142 +673,53 @@ local function UpdateToggleVisual(Key)
     end
 end
 
--- BỘ CHẶN BẬT NÚT MOBILE NẾU ĐANG CHƠI TRÊN PC THEO LỆNH ĐẠI CA
-local RestrictedKeys = {
-    ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
-    ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true
-}
+local RestrictedKeys = {ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true}
 
-local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, BindKey)
-    local TFrame = Instance.new("Frame", Page)
-    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    TFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
+local function AddPremiumToggle(Container, LabelText, Key, Callback, DefMobColor, BindKey)
+    local TFrame = Instance.new("Frame", Container)
+    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) TFrame.BackgroundTransparency = 0.4
+    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
     
-    local Lbl = Instance.new("TextLabel", TFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(1, -110, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 11
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local SwitchBg = Instance.new("Frame", TFrame)
-    SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45)
-    SwitchBg.Position = UDim2.new(1, -45, 0.5, -8)
-    SwitchBg.Size = UDim2.new(0, 32, 0, 16)
-    Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
-
-    local Ball = Instance.new("Frame", SwitchBg)
-    Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    Ball.Size = UDim2.new(0, 12, 0, 12)
-    Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
-
-    local Btn = Instance.new("TextButton", TFrame)
-    Btn.BackgroundTransparency = 1
-    Btn.Size = UDim2.new(1, -55, 1, 0)
-    Btn.Text = ""
+    local Lbl = Instance.new("TextLabel", TFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(1, -110, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = LabelText Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 11 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local SwitchBg = Instance.new("Frame", TFrame) SwitchBg.BackgroundColor3 = Config[Key] and Color3.fromRGB(45, 120, 75) or Color3.fromRGB(40, 42, 45) SwitchBg.Position = UDim2.new(1, -45, 0.5, -8) SwitchBg.Size = UDim2.new(0, 32, 0, 16) Instance.new("UICorner", SwitchBg).CornerRadius = UDim.new(1, 0)
+    local Ball = Instance.new("Frame", SwitchBg) Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255) Ball.Position = Config[Key] and UDim2.new(1, -13, 0.5, -6) or UDim2.new(0, 2, 0.5, -6) Ball.Size = UDim2.new(0, 12, 0, 12) Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
+    local Btn = Instance.new("TextButton", TFrame) Btn.BackgroundTransparency = 1 Btn.Size = UDim2.new(1, -55, 1, 0) Btn.Text = ""
 
     GlobalSyncToggles[Key] = {Ball = Ball, SwitchBg = SwitchBg, DefMobColor = DefMobColor or Color3.fromRGB(40, 42, 45)}
     RegisterTouchFriendlyClick(Btn, function() 
-        if RestrictedKeys[Key] and not IsMobile then
-            pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end)
-            return
-        end
-        Config[Key] = not Config[Key] 
-        UpdateToggleVisual(Key) 
-        if Callback then Callback(Config[Key]) end 
+        if RestrictedKeys[Key] and not IsMobile then pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Button enable only for PE!", Duration = 3}) end) return end
+        Config[Key] = not Config[Key] UpdateToggleVisual(Key) if Callback then Callback(Config[Key]) end 
     end)
 ---[còn tiếp]----
----[Quản lý UI và Binding Keys]----
+---[Phần 9: Component Controls (2)]----
     if BindKey then
-        local BindBtn = Instance.new("TextButton", TFrame)
-        BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
-        BindBtn.Position = UDim2.new(1, -100, 0.5, -10)
-        BindBtn.Size = UDim2.new(0, 50, 0, 20)
-        BindBtn.Font = Enum.Font.GothamBold
-        BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE"
-        BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
-        BindBtn.TextSize = 10
-        Instance.new("UICorner", BindBtn).CornerRadius = UDim.new(0, 4)
-        Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60)
-
-        local Listening = false
-        local ListenConnection
+        local BindBtn = Instance.new("TextButton", TFrame) BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35) BindBtn.Position = UDim2.new(1, -100, 0.5, -10) BindBtn.Size = UDim2.new(0, 50, 0, 20) BindBtn.Font = Enum.Font.GothamBold BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE" BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210) BindBtn.TextSize = 10 Instance.new("UICorner", BindBtn).CornerRadius = UDim.new(0, 4) Instance.new("UIStroke", BindBtn).Color = Color3.fromRGB(55, 57, 60)
+        local Listening = false local ListenConnection
         local function EndListening(NewKey)
-            Listening = false
-            if ListenConnection then ListenConnection:Disconnect() end
+            Listening = false if ListenConnection then ListenConnection:Disconnect() end
             if NewKey then Config[BindKey] = NewKey BindBtn.Text = NewKey.Name:upper() else BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE" end
             BindBtn.TextColor3 = Color3.fromRGB(200, 205, 210)
         end
         RegisterTouchFriendlyClick(BindBtn, function()
-            if Listening then return end
-            Listening = true
-            BindBtn.Text = "..."
-            BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
+            if Listening then return end Listening = true BindBtn.Text = "..." BindBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
             task.delay(5, function() if Listening then EndListening(nil) end end)
-            ListenConnection = UserInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Keyboard then EndListening(input.KeyCode) end
-            end)
+            ListenConnection = UserInputService.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Keyboard then EndListening(input.KeyCode) end end)
         end)
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
 
-local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
-    local SFrame = Instance.new("Frame", Page)
-    SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    SFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", SFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Lbl = Instance.new("TextLabel", SFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 4)
-    Lbl.Size = UDim2.new(1, -70, 0, 16)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText
-    Lbl.TextColor3 = Color3.fromRGB(180, 183, 188)
-    Lbl.TextSize = 11
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ValTxt = Instance.new("TextLabel", SFrame)
-    ValTxt.BackgroundTransparency = 1
-    ValTxt.Position = UDim2.new(1, -65, 0, 4)
-    ValTxt.Size = UDim2.new(0, 55, 0, 16)
-    ValTxt.Font = Enum.Font.GothamBold
-    ValTxt.Text = tostring(Config[Key])
-    ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ValTxt.TextSize = 11
-    ValTxt.TextXAlignment = Enum.TextXAlignment.Right
-
-    local Bar = Instance.new("Frame", SFrame)
-    Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50)
-    Bar.BorderSizePixel = 0
-    Bar.Position = UDim2.new(0, 10, 0, 26)
-    Bar.Size = UDim2.new(1, -20, 0, 3)
-    Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-
-    local Fill = Instance.new("Frame", Bar)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Fill.BorderSizePixel = 0
-    Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
-    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
-
-    local SliderBall = Instance.new("Frame", Fill)
-    SliderBall.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    SliderBall.Position = UDim2.new(1, -4, 0.5, -4)
-    SliderBall.Size = UDim2.new(0, 8, 0, 8)
-    Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
-
-    local Btn = Instance.new("TextButton", Bar)
-    Btn.BackgroundTransparency = 1
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.Text = ""
+local function AddPremiumSlider(Container, LabelText, Min, Max, Key, Callback)
+    local SFrame = Instance.new("Frame", Container) SFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) SFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", SFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", SFrame).Color = Color3.fromRGB(35, 37, 40)
+    
+    local Lbl = Instance.new("TextLabel", SFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 4) Lbl.Size = UDim2.new(1, -70, 0, 16) Lbl.Font = Enum.Font.Gotham Lbl.Text = LabelText Lbl.TextColor3 = Color3.fromRGB(180, 183, 188) Lbl.TextSize = 11 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local ValTxt = Instance.new("TextLabel", SFrame) ValTxt.BackgroundTransparency = 1 ValTxt.Position = UDim2.new(1, -65, 0, 4) ValTxt.Size = UDim2.new(0, 55, 0, 16) ValTxt.Font = Enum.Font.GothamBold ValTxt.Text = tostring(Config[Key]) ValTxt.TextColor3 = Color3.fromRGB(255, 255, 255) ValTxt.TextSize = 11 ValTxt.TextXAlignment = Enum.TextXAlignment.Right
+    
+    local Bar = Instance.new("Frame", SFrame) Bar.BackgroundColor3 = Color3.fromRGB(45, 47, 50) Bar.BorderSizePixel = 0 Bar.Position = UDim2.new(0, 10, 0, 26) Bar.Size = UDim2.new(1, -20, 0, 3) Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+    local Fill = Instance.new("Frame", Bar) Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) Fill.BorderSizePixel = 0 Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0) Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+    local SliderBall = Instance.new("Frame", Fill) SliderBall.BackgroundColor3 = Color3.fromRGB(255, 255, 255) SliderBall.Position = UDim2.new(1, -4, 0.5, -4) SliderBall.Size = UDim2.new(0, 8, 0, 8) Instance.new("UICorner", SliderBall).CornerRadius = UDim.new(1, 0)
+    local Btn = Instance.new("TextButton", Bar) Btn.BackgroundTransparency = 1 Btn.Size = UDim2.new(1, 0, 1, 0) Btn.Text = ""
 
     local Dragging = false
     local function Update(inputPos)
@@ -866,79 +727,27 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         local ratio = math.clamp((mouseX - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
         local val = Min + (Max - Min) * ratio
         if Max - Min > 10 then val = math.floor(val) else val = math.floor(val * 10) / 10 end
-        Fill.Size = UDim2.new(ratio, 0, 1, 0)
-        ValTxt.Text = tostring(val)
-        Config[Key] = val
-        if Callback then Callback(val) end
+        Fill.Size = UDim2.new(ratio, 0, 1, 0) ValTxt.Text = tostring(val) Config[Key] = val if Callback then Callback(val) end
     end
     Btn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = true Update(input.Position) end end)
     UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end end)
     UserInputService.InputChanged:Connect(function(input) if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then Update(input.Position) end end)
     
-    table.insert(UI_Refresh_Functions, function()
-        ValTxt.Text = tostring(Config[Key])
-        Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
-    end)
+    table.insert(UI_Refresh_Functions, function() ValTxt.Text = tostring(Config[Key]) Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0) end)
 end
 
-local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
-    local BFrame = Instance.new("Frame", Page)
-    BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    BFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", BFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", BFrame).Color = Color3.fromRGB(35, 37, 40)
-    
-    local Lbl = Instance.new("TextLabel", BFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = LabelText
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ActionBtn = Instance.new("TextButton", BFrame)
-    ActionBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    ActionBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 105, 0, 24)
-    ActionBtn.Font = Enum.Font.GothamBold
-    ActionBtn.Text = ButtonText
-    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActionBtn.TextSize = 11
-    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
+local function AddPremiumButton(Container, LabelText, ButtonText, Callback)
+    local BFrame = Instance.new("Frame", Container) BFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) BFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", BFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", BFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Lbl = Instance.new("TextLabel", BFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(0, 140, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = LabelText Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 12 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local ActionBtn = Instance.new("TextButton", BFrame) ActionBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50) ActionBtn.Position = UDim2.new(1, -115, 0.5, -12) ActionBtn.Size = UDim2.new(0, 105, 0, 24) ActionBtn.Font = Enum.Font.GothamBold ActionBtn.Text = ButtonText ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ActionBtn.TextSize = 11 Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
 ---[còn tiếp]----
----[Tính Năng & Nút Bấm Config Đặc Biệt]----
-local function AddHitboxSelector(Page)
-    local HFrame = Instance.new("Frame", Page)
-    HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    HFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", HFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", HFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Lbl = Instance.new("TextLabel", HFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "Aimbot Target Hitbox"
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local HitboxBtn = Instance.new("TextButton", HFrame)
-    HitboxBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
-    HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    HitboxBtn.Size = UDim2.new(0, 105, 0, 24)
-    HitboxBtn.Font = Enum.Font.GothamBold
-    HitboxBtn.Text = Config.TargetPart:upper()
-    HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxBtn.TextSize = 11
-    Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4)
-    Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65)
-
+---[Phần 10: Special Selectors]----
+local function AddHitboxSelector(Container)
+    local HFrame = Instance.new("Frame", Container) HFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) HFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", HFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", HFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Lbl = Instance.new("TextLabel", HFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(0, 140, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = "Aimbot Target Hitbox" Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 12 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local HitboxBtn = Instance.new("TextButton", HFrame) HitboxBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40) HitboxBtn.Position = UDim2.new(1, -115, 0.5, -12) HitboxBtn.Size = UDim2.new(0, 105, 0, 24) HitboxBtn.Font = Enum.Font.GothamBold HitboxBtn.Text = Config.TargetPart:upper() HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255) HitboxBtn.TextSize = 11 Instance.new("UICorner", HitboxBtn).CornerRadius = UDim.new(0, 4) Instance.new("UIStroke", HitboxBtn).Color = Color3.fromRGB(60, 62, 65)
     RegisterTouchFriendlyClick(HitboxBtn, function()
         if Config.TargetPart == "Head" then Config.TargetPart = "Torso" HitboxBtn.Text = "TORSO"
         elseif Config.TargetPart == "Torso" then Config.TargetPart = "Legs" HitboxBtn.Text = "LEGS"
@@ -947,317 +756,160 @@ local function AddHitboxSelector(Page)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
 
-local function AddSyncedEspColorSelector(Page)
-    local CFrame = Instance.new("Frame", Page)
-    CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    CFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Lbl = Instance.new("TextLabel", CFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "ESP & Tracer Color"
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ColorBtn = Instance.new("TextButton", CFrame)
-    ColorBtn.BackgroundColor3 = Config.EspColor
-    ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ColorBtn.Size = UDim2.new(0, 105, 0, 24)
-    ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "CHANGE COLOR"
-    ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ColorBtn.TextSize = 10
-    Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
-
+local function AddSyncedEspColorSelector(Container)
+    local CFrame = Instance.new("Frame", Container) CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) CFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Lbl = Instance.new("TextLabel", CFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(0, 140, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = "ESP & Tracer Color" Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 12 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local ColorBtn = Instance.new("TextButton", CFrame) ColorBtn.BackgroundColor3 = Config.EspColor ColorBtn.Position = UDim2.new(1, -115, 0.5, -12) ColorBtn.Size = UDim2.new(0, 105, 0, 24) ColorBtn.Font = Enum.Font.GothamBold ColorBtn.Text = "CHANGE COLOR" ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ColorBtn.TextSize = 10 Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
     local palette = {Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230), Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 255, 255)}
     local colorIdx = 1
-    RegisterTouchFriendlyClick(ColorBtn, function()
-        colorIdx = (colorIdx % #palette) + 1
-        Config.EspColor = palette[colorIdx]
-        ColorBtn.BackgroundColor3 = Config.EspColor
-    end)
+    RegisterTouchFriendlyClick(ColorBtn, function() colorIdx = (colorIdx % #palette) + 1 Config.EspColor = palette[colorIdx] ColorBtn.BackgroundColor3 = Config.EspColor end)
     table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.EspColor end)
 end
 
-local function AddAuraColorSelector(Page)
-    local CFrame = Instance.new("Frame", Page)
-    CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    CFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Lbl = Instance.new("TextLabel", CFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "Aura Circle Color"
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ColorBtn = Instance.new("TextButton", CFrame)
-    ColorBtn.BackgroundColor3 = Config.AuraColor
-    ColorBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ColorBtn.Size = UDim2.new(0, 105, 0, 24)
-    ColorBtn.Font = Enum.Font.GothamBold
-    ColorBtn.Text = "SWAP COLOR"
-    ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ColorBtn.TextSize = 11
-    Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
-
+local function AddAuraColorSelector(Container)
+    local CFrame = Instance.new("Frame", Container) CFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) CFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Lbl = Instance.new("TextLabel", CFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(0, 140, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = "Aura Circle Color" Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 12 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local ColorBtn = Instance.new("TextButton", CFrame) ColorBtn.BackgroundColor3 = Config.AuraColor ColorBtn.Position = UDim2.new(1, -115, 0.5, -12) ColorBtn.Size = UDim2.new(0, 105, 0, 24) ColorBtn.Font = Enum.Font.GothamBold ColorBtn.Text = "SWAP COLOR" ColorBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ColorBtn.TextSize = 11 Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(0, 4)
     local palette = {Color3.fromRGB(0, 170, 255), Color3.fromRGB(255, 50, 50), Color3.fromRGB(0, 255, 100), Color3.fromRGB(255, 200, 0), Color3.fromRGB(230, 30, 230)}
     local colorIdx = 1
-    RegisterTouchFriendlyClick(ColorBtn, function()
-        colorIdx = (colorIdx % #palette) + 1
-        Config.AuraColor = palette[colorIdx]
-        ColorBtn.BackgroundColor3 = Config.AuraColor
-    end)
+    RegisterTouchFriendlyClick(ColorBtn, function() colorIdx = (colorIdx % #palette) + 1 Config.AuraColor = palette[colorIdx] ColorBtn.BackgroundColor3 = Config.AuraColor end)
     table.insert(UI_Refresh_Functions, function() ColorBtn.BackgroundColor3 = Config.AuraColor end)
 end
 
-local function AddTracerModeSelector(Page)
-    local MFrame = Instance.new("Frame", Page)
-    MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    MFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Lbl = Instance.new("TextLabel", MFrame)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Position = UDim2.new(0, 10, 0, 0)
-    Lbl.Size = UDim2.new(0, 140, 1, 0)
-    Lbl.Font = Enum.Font.Gotham
-    Lbl.Text = "Tracer Origin Mode"
-    Lbl.TextColor3 = Color3.fromRGB(220, 223, 228)
-    Lbl.TextSize = 12
-    Lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local ModeBtn = Instance.new("TextButton", MFrame)
-    ModeBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40)
-    ModeBtn.Position = UDim2.new(1, -115, 0.5, -12)
-    ModeBtn.Size = UDim2.new(0, 105, 0, 24)
-    ModeBtn.Font = Enum.Font.GothamBold
-    ModeBtn.Text = Config.TracerMode:upper()
-    ModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ModeBtn.TextSize = 11
-    Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4)
-    Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
-
-    RegisterTouchFriendlyClick(ModeBtn, function()
-        Config.TracerMode = Config.TracerMode == "Bottom" and "Center" or "Bottom"
-        ModeBtn.Text = Config.TracerMode:upper()
-    end)
+local function AddTracerModeSelector(Container)
+    local MFrame = Instance.new("Frame", Container) MFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) MFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Lbl = Instance.new("TextLabel", MFrame) Lbl.BackgroundTransparency = 1 Lbl.Position = UDim2.new(0, 10, 0, 0) Lbl.Size = UDim2.new(0, 140, 1, 0) Lbl.Font = Enum.Font.Gotham Lbl.Text = "Tracer Origin Mode" Lbl.TextColor3 = Color3.fromRGB(220, 223, 228) Lbl.TextSize = 12 Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local ModeBtn = Instance.new("TextButton", MFrame) ModeBtn.BackgroundColor3 = Color3.fromRGB(35, 37, 40) ModeBtn.Position = UDim2.new(1, -115, 0.5, -12) ModeBtn.Size = UDim2.new(0, 105, 0, 24) ModeBtn.Font = Enum.Font.GothamBold ModeBtn.Text = Config.TracerMode:upper() ModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ModeBtn.TextSize = 11 Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 4) Instance.new("UIStroke", ModeBtn).Color = Color3.fromRGB(60, 62, 65)
+    RegisterTouchFriendlyClick(ModeBtn, function() Config.TracerMode = Config.TracerMode == "Bottom" and "Center" or "Bottom" ModeBtn.Text = Config.TracerMode:upper() end)
     table.insert(UI_Refresh_Functions, function() ModeBtn.Text = Config.TracerMode:upper() end)
 end
 ---[còn tiếp]----
----[Hệ thống Lưu, Tải và Nạp Tính Năng]----
-local function AddExportBox(Page)
-    local TFrame = Instance.new("Frame", Page)
-    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    TFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Box = Instance.new("TextBox", TFrame)
-    Box.BackgroundTransparency = 0.2
-    Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
-    Box.Position = UDim2.new(0, 10, 0.5, -12)
-    Box.Size = UDim2.new(1, -95, 0, 24)
-    Box.Font = Enum.Font.Gotham
-    Box.Text = ""
-    Box.PlaceholderText = "Exported Code Here"
-    Box.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Box.TextSize = 10
-    Box.ClearTextOnFocus = false
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
-
-    local ActionBtn = Instance.new("TextButton", TFrame)
-    ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230)
-    ActionBtn.Position = UDim2.new(1, -80, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 70, 0, 24)
-    ActionBtn.Font = Enum.Font.GothamBold
-    ActionBtn.Text = "EXPORT"
-    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActionBtn.TextSize = 11
-    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
-
+---[Phần 11: Export/Import Tools]----
+local function AddExportBox(Container)
+    local TFrame = Instance.new("Frame", Container) TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) TFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Box = Instance.new("TextBox", TFrame) Box.BackgroundTransparency = 0.2 Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35) Box.Position = UDim2.new(0, 10, 0.5, -12) Box.Size = UDim2.new(1, -95, 0, 24) Box.Font = Enum.Font.Gotham Box.Text = "" Box.PlaceholderText = "Exported Code Here" Box.TextColor3 = Color3.fromRGB(200, 200, 200) Box.TextSize = 10 Box.ClearTextOnFocus = false Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4) Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
+    local ActionBtn = Instance.new("TextButton", TFrame) ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230) ActionBtn.Position = UDim2.new(1, -80, 0.5, -12) ActionBtn.Size = UDim2.new(0, 70, 0, 24) ActionBtn.Font = Enum.Font.GothamBold ActionBtn.Text = "EXPORT" ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ActionBtn.TextSize = 11 Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, function()
-        local code = ExportSettings()
-        Box.Text = code
-        if setclipboard then
-            setclipboard(code)
-            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Code copied to clipboard!", Duration = 3})
-        else
-            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Please copy from the text box!", Duration = 3})
-        end
+        local code = ExportSettings() Box.Text = code
+        if setclipboard then setclipboard(code) StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Code copied to clipboard!", Duration = 3}) else StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Please copy from the text box!", Duration = 3}) end
     end)
 end
 
-local function AddImportBox(Page)
-    local TFrame = Instance.new("Frame", Page)
-    TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
-    TFrame.BackgroundTransparency = 0.4
-    Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
-
-    local Box = Instance.new("TextBox", TFrame)
-    Box.BackgroundTransparency = 0.2
-    Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
-    Box.Position = UDim2.new(0, 10, 0.5, -12)
-    Box.Size = UDim2.new(1, -95, 0, 24)
-    Box.Font = Enum.Font.Gotham
-    Box.Text = ""
-    Box.PlaceholderText = "Paste Code Here"
-    Box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Box.TextSize = 10
-    Box.ClearTextOnFocus = false
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-    Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
-
-    local ActionBtn = Instance.new("TextButton", TFrame)
-    ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75)
-    ActionBtn.Position = UDim2.new(1, -80, 0.5, -12)
-    ActionBtn.Size = UDim2.new(0, 70, 0, 24)
-    ActionBtn.Font = Enum.Font.GothamBold
-    ActionBtn.Text = "IMPORT"
-    ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActionBtn.TextSize = 11
-    Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
-
+local function AddImportBox(Container)
+    local TFrame = Instance.new("Frame", Container) TFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 23) TFrame.BackgroundTransparency = 0.4 Instance.new("UICorner", TFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", TFrame).Color = Color3.fromRGB(35, 37, 40)
+    local Box = Instance.new("TextBox", TFrame) Box.BackgroundTransparency = 0.2 Box.BackgroundColor3 = Color3.fromRGB(30, 32, 35) Box.Position = UDim2.new(0, 10, 0.5, -12) Box.Size = UDim2.new(1, -95, 0, 24) Box.Font = Enum.Font.Gotham Box.Text = "" Box.PlaceholderText = "Paste Code Here" Box.TextColor3 = Color3.fromRGB(255, 255, 255) Box.TextSize = 10 Box.ClearTextOnFocus = false Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4) Instance.new("UIStroke", Box).Color = Color3.fromRGB(55, 57, 60)
+    local ActionBtn = Instance.new("TextButton", TFrame) ActionBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 75) ActionBtn.Position = UDim2.new(1, -80, 0.5, -12) ActionBtn.Size = UDim2.new(0, 70, 0, 24) ActionBtn.Font = Enum.Font.GothamBold ActionBtn.Text = "IMPORT" ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255) ActionBtn.TextSize = 11 Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 4)
     RegisterTouchFriendlyClick(ActionBtn, function()
         local code = Box.Text
         if code and code ~= "" then
             local success = ImportSettings(code)
-            if success then
-                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3})
-                Box.Text = ""
-            else
-                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3})
-            end
+            if success then StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3}) Box.Text = "" else StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3}) end
         end
     end)
 end
 
-local function AddPremiumCreditBox(Page, Title, Description)
-    local CFrame = Instance.new("Frame", Page)
-    CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30)
-    CFrame.BackgroundTransparency = 0.3
-    Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(50, 52, 56)
-
-    local TitleLbl = Instance.new("TextLabel", CFrame)
-    TitleLbl.BackgroundTransparency = 1
-    TitleLbl.Position = UDim2.new(0, 10, 0, 4)
-    TitleLbl.Size = UDim2.new(1, -20, 0, 16)
-    TitleLbl.Font = Enum.Font.GothamBold
-    TitleLbl.Text = Title
-    TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLbl.TextSize = 12
-    TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local DescLbl = Instance.new("TextLabel", CFrame)
-    DescLbl.BackgroundTransparency = 1
-    DescLbl.Position = UDim2.new(0, 10, 0, 20)
-    DescLbl.Size = UDim2.new(1, -20, 0, 16)
-    DescLbl.Font = Enum.Font.Gotham
-    DescLbl.Text = Description
-    DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180)
-    DescLbl.TextSize = 11
-    DescLbl.TextXAlignment = Enum.TextXAlignment.Left
+local function AddPremiumCreditBox(Container, Title, Description)
+    local CFrame = Instance.new("Frame", Container) CFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 30) CFrame.BackgroundTransparency = 0.3 Instance.new("UICorner", CFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", CFrame).Color = Color3.fromRGB(50, 52, 56)
+    local TitleLbl = Instance.new("TextLabel", CFrame) TitleLbl.BackgroundTransparency = 1 TitleLbl.Position = UDim2.new(0, 10, 0, 4) TitleLbl.Size = UDim2.new(1, -20, 0, 16) TitleLbl.Font = Enum.Font.GothamBold TitleLbl.Text = Title TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255) TitleLbl.TextSize = 12 TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    local DescLbl = Instance.new("TextLabel", CFrame) DescLbl.BackgroundTransparency = 1 DescLbl.Position = UDim2.new(0, 10, 0, 20) DescLbl.Size = UDim2.new(1, -20, 0, 16) DescLbl.Font = Enum.Font.Gotham DescLbl.Text = Description DescLbl.TextColor3 = Color3.fromRGB(170, 175, 180) DescLbl.TextSize = 11 DescLbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 ---[còn tiếp]----
----[Chèn Nút Giao Diện và Chức Năng Bổ Sung]----
-AddPremiumToggle(CombatPage, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
-AddPremiumToggle(CombatPage, "Aura Team Guard", "TeamCheckAura")
-AddPremiumToggle(CombatPage, "Aura Wall Occlusion", "AuraWallCheck")
-AddPremiumSlider(CombatPage, "Aura Field Radius", 5, 150, "AuraRadius")
-AddPremiumSlider(CombatPage, "Aura Smoothness Factor", 0, 10, "AuraSmoothness")
-AddPremiumSlider(CombatPage, "Aura Transparency (%)", 0, 100, "AuraTransparency")
-AddAuraColorSelector(CombatPage)
-AddPremiumToggle(CombatPage, "Priority Lowest Health", "PriorityLowestHealth")
+---[Phần 12: Đăng ký giao diện theo Section (Khung chia mục)]----
+-- === TAB COMBAT ===
+local SecAimbot = AddSection(CombatPage, "Aimbot Settings")
+AddPremiumToggle(SecAimbot, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
+AddPremiumToggle(SecAimbot, "Aimbot Team Guard", "TeamCheck")
+AddPremiumToggle(SecAimbot, "Aimbot Wall Occlusion", "WallCheck")
+AddPremiumSlider(SecAimbot, "Aimbot Smoothness Factor", 0, 10, "Smoothness")
+AddHitboxSelector(SecAimbot)
 
-AddPremiumToggle(CombatPage, "Enable Aimbot Lock", "Aimbot", nil, Color3.fromRGB(255, 50, 50), "AimbotKeybind")
-AddPremiumToggle(CombatPage, "Aimbot Team Guard", "TeamCheck")
-AddPremiumToggle(CombatPage, "Aimbot Wall Occlusion", "WallCheck")
-AddPremiumSlider(CombatPage, "Aimbot Smoothness Factor", 0, 10, "Smoothness")
-AddHitboxSelector(CombatPage)
-AddPremiumToggle(CombatPage, "Triggerbot Click Engine", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
-AddPremiumToggle(CombatPage, "Triggerbot Wall Check", "TriggerWallCheck")
+local SecAura = AddSection(CombatPage, "Kill Aura Settings")
+AddPremiumToggle(SecAura, "Enable Kill Aura", "Aura", nil, Color3.fromRGB(0, 150, 255), "AuraKeybind")
+AddPremiumToggle(SecAura, "Aura Team Guard", "TeamCheckAura")
+AddPremiumToggle(SecAura, "Aura Wall Occlusion", "AuraWallCheck")
+AddPremiumSlider(SecAura, "Aura Field Radius", 5, 150, "AuraRadius")
+AddPremiumSlider(SecAura, "Aura Smoothness Factor", 0, 10, "AuraSmoothness")
+AddPremiumSlider(SecAura, "Aura Transparency (%)", 0, 100, "AuraTransparency")
+AddAuraColorSelector(SecAura)
+AddPremiumToggle(SecAura, "Priority Lowest Health", "PriorityLowestHealth")
 
-AddPremiumToggle(PlayerPage, "Enable Character Head Bow", "BowDown", nil, nil, nil)
-AddPremiumSlider(PlayerPage, "Head Bow Angle Degree", 0, 90, "BowAngle")
-AddPremiumToggle(PlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
-AddPremiumSlider(PlayerPage, "Farm TP Intervallic Delay", 0.01, 5, "AutoFarmDelay")
-AddPremiumToggle(PlayerPage, "FullBright Atmosphere", "FullBright", function(state)
+local SecTrigger = AddSection(CombatPage, "Triggerbot Settings")
+AddPremiumToggle(SecTrigger, "Triggerbot Click Engine", "Triggerbot", nil, Color3.fromRGB(230, 125, 30), "TriggerbotKeybind")
+AddPremiumToggle(SecTrigger, "Triggerbot Wall Check", "TriggerWallCheck")
+
+-- === TAB PLAYER ===
+local SecFarm = AddSection(PlayerPage, "Auto Farm Player")
+AddPremiumToggle(SecFarm, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
+AddPremiumSlider(SecFarm, "Farm TP Intervallic Delay", 0.01, 5, "AutoFarmDelay")
+
+local SecChar = AddSection(PlayerPage, "Character Modification")
+AddPremiumToggle(SecChar, "Enable Character Head Bow", "BowDown", nil, nil, nil)
+AddPremiumSlider(SecChar, "Head Bow Angle Degree", 0, 90, "BowAngle")
+AddPremiumToggle(SecChar, "Enable Spinbot Axis", "Spinbot", nil, nil, "SpinbotKeybind")
+AddPremiumSlider(SecChar, "Spinbot Rotate Velocity", 5, 100, "SpinSpeed")
+AddPremiumToggle(SecChar, "FullBright Atmosphere", "FullBright", function(state)
     if state then Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
     else Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient end
 end)
-AddPremiumToggle(PlayerPage, "Enable Spinbot Axis", "Spinbot", nil, nil, "SpinbotKeybind")
-AddPremiumSlider(PlayerPage, "Spinbot Rotate Velocity", 5, 100, "SpinSpeed")
 
-AddPremiumToggle(MovementPage, "WalkSpeed Safe Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
-AddPremiumSlider(MovementPage, "Speed Core Value", 16, 200, "WalkSpeed")
-AddPremiumToggle(MovementPage, "JumpPower Boost Axis", "JumpToggle", nil, nil, "JumpKeybind")
-AddPremiumSlider(MovementPage, "Jump Force Magnitude", 50, 350, "JumpPower")
+-- === TAB MOVEMENT ===
+local SecMovement = AddSection(MovementPage, "Movement Modifiers")
+AddPremiumToggle(SecMovement, "WalkSpeed Safe Bypass", "SpeedToggle", nil, Color3.fromRGB(140, 30, 230), "SpeedKeybind")
+AddPremiumSlider(SecMovement, "Speed Core Value", 16, 200, "WalkSpeed")
+AddPremiumToggle(SecMovement, "JumpPower Boost Axis", "JumpToggle", nil, nil, "JumpKeybind")
+AddPremiumSlider(SecMovement, "Jump Force Magnitude", 50, 350, "JumpPower")
+---[còn tiếp]----
+---[Phần 13: Các Section Visual & Misc & Vòng Lặp Chính]----
+-- === TAB VISUALS ===
+local SecEsp = AddSection(VisualPage, "ESP & Overlays")
+AddPremiumToggle(SecEsp, "Master ESP Overlay Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
+AddPremiumToggle(SecEsp, "Render 3D Chams Box", "EspBox")
+AddPremiumSlider(SecEsp, "Chams Opacity Multiplier", 0, 100, "EspTransparency")
+AddPremiumToggle(SecEsp, "Snapline Tracers Vector", "EspTracer")
+AddTracerModeSelector(SecEsp)
+AddSyncedEspColorSelector(SecEsp)
+AddPremiumToggle(SecEsp, "Informative Character Tags", "EspName")
+AddPremiumToggle(SecEsp, "Show Character Health Meter", "EspHealth") 
+AddPremiumSlider(SecEsp, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
 
-AddPremiumToggle(VisualPage, "Master ESP Overlay Control", "EspMaster", nil, Color3.fromRGB(30, 140, 230), "EspMasterKeybind")
-AddPremiumToggle(VisualPage, "Render 3D Chams Box", "EspBox")
-AddPremiumSlider(VisualPage, "Chams Opacity Multiplier", 0, 100, "EspTransparency")
-AddPremiumToggle(VisualPage, "Snapline Tracers Vector", "EspTracer")
-AddTracerModeSelector(VisualPage)
-AddSyncedEspColorSelector(VisualPage)
-AddPremiumToggle(VisualPage, "Informative Character Tags", "EspName")
-AddPremiumToggle(VisualPage, "Show Character Health Meter", "EspHealth") 
-AddPremiumSlider(VisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
+-- === TAB MISC ===
+local SecCamera = AddSection(MiscPage, "Camera & Viewport")
+AddPremiumToggle(SecCamera, "Force Third Person View", "ThirdPerson", nil, nil, nil)
+AddPremiumSlider(SecCamera, "Third Person Distance", 5, 100, "ThirdPersonDist")
+AddPremiumToggle(SecCamera, "Draw Dynamic FOV Circle", "FovCircle")
+AddPremiumSlider(SecCamera, "FOV Perimeter Range", 30, 500, "FovRadius")
+AddPremiumToggle(SecCamera, "Crosshair Center Alignment Dot", "CrosshairDot")
 
-AddPremiumToggle(MiscPage, "Force Third Person View", "ThirdPerson", nil, nil, nil)
-AddPremiumSlider(MiscPage, "Third Person Distance", 5, 100, "ThirdPersonDist")
-AddPremiumToggle(MiscPage, "Draw Dynamic FOV Circle", "FovCircle")
-AddPremiumSlider(MiscPage, "FOV Perimeter Range", 30, 500, "FovRadius")
-AddPremiumToggle(MiscPage, "Crosshair Center Alignment Dot", "CrosshairDot")
-AddPremiumToggle(MiscPage, "Anti-AFK Auto Interactor", "AntiAFK", nil, Color3.fromRGB(210, 50, 140))
-
--- NÚT KHOÁ VỊ TRÍ MOBILE NẰM Ở ĐÂY ĐẠI CA NHÉ
-AddPremiumToggle(MiscPage, "Lock Mobile Buttons Position", "LockMobileButtons", nil, Color3.fromRGB(200, 50, 50))
-
-AddExportBox(MiscPage)
-AddImportBox(MiscPage)
-
-AddPremiumToggle(MiscPage, "Display Mobile 3RD Button", "ShowMobileTP", function(state) GlobalMobileButtons["ThirdPerson"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Display Mobile Aura Trigger", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Display Mobile Aim Trigger", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Display Mobile Trigger Clicker", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
-AddPremiumToggle(MiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
-
-AddPremiumButton(MiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
+local SecUtil = AddSection(MiscPage, "Utilities & Config")
+AddPremiumToggle(SecUtil, "Anti-AFK Auto Interactor", "AntiAFK", nil, Color3.fromRGB(210, 50, 140))
+AddPremiumToggle(SecUtil, "Lock Mobile Buttons Position", "LockMobileButtons", nil, Color3.fromRGB(200, 50, 50))
+AddPremiumToggle(SecUtil, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
+AddExportBox(SecUtil)
+AddImportBox(SecUtil)
+AddPremiumButton(SecUtil, "Uninject Execution Process", "UNINJECT NOW", function()
     MasterLoop:Disconnect()
-    pcall(function() FOV_Drawing:Remove() end)
-    pcall(function() Dot_Drawing:Remove() end)
-    pcall(function() AuraVisual:Remove() end)
-    pcall(function() mouse1release() end)
+    pcall(function() FOV_Drawing:Remove() Dot_Drawing:Remove() AuraVisual:Remove() mouse1release() end)
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     for neck, origC0 in pairs(NeckCache) do if neck and neck.Parent then pcall(function() neck.C0 = origC0 end) end end
-    LocalPlayer.CameraMinZoomDistance = 0.5
-    LocalPlayer.CameraMaxZoomDistance = 400
-    Lighting.Ambient = Config.StoredAmbient
-    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
+    LocalPlayer.CameraMinZoomDistance = 0.5 LocalPlayer.CameraMaxZoomDistance = 400
+    Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
     ScreenGui:Destroy()
 end)
----[còn tiếp]----
----[Vòng Lặp Chính & Xử Lý Sự Kiện Cuối]----
-AddPremiumCreditBox(CreditsPage, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
-AddPremiumCreditBox(CreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Ultimate PE Control Matrix")
 
+local SecMobile = AddSection(MiscPage, "Mobile Button Visibility")
+AddPremiumToggle(SecMobile, "Display Mobile 3RD Button", "ShowMobileTP", function(state) GlobalMobileButtons["ThirdPerson"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(SecMobile, "Display Mobile Aura Trigger", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(SecMobile, "Display Mobile Aim Trigger", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(SecMobile, "Display Mobile Trigger Clicker", "ShowMobileTrig", function(state) GlobalMobileButtons["Triggerbot"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(SecMobile, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
+AddPremiumToggle(SecMobile, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
+
+local SecCredits = AddSection(CreditsPage, "Developer Information")
+AddPremiumCreditBox(SecCredits, "Lead Architecture Designer", "Dai Ca Wang (Wangcaos Client Framework Proprietor)")
+AddPremiumCreditBox(SecCredits, "Framework Integrity Status", "Premium V6.9.0 - Ultimate PE Control Matrix")
+---[còn tiếp]----
+---[Phần 14: Events & RenderStepped Loop]----
 CreatePremiumTab("Combat", "⚔", 1, CombatPage)
 CreatePremiumTab("Player", "👤", 2, PlayerPage)
 CreatePremiumTab("Movement", "🏃", 3, MovementPage)
@@ -1265,15 +917,10 @@ CreatePremiumTab("Visuals", "👁", 4, VisualPage)
 CreatePremiumTab("Misc", "⚙", 5, MiscPage)
 CreatePremiumTab("Credits", "👑", 6, CreditsPage)
 
-local function RegisterMobileClick(Btn, Key)
-    RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) end)
-end
-RegisterMobileClick(MobAim, "Aimbot")
-RegisterMobileClick(MobTrig, "Triggerbot")
-RegisterMobileClick(MobSpeed, "SpeedToggle")
-RegisterMobileClick(MobFarm, "AutoFarmPlayer")
-RegisterMobileClick(MobAura, "Aura")
-RegisterMobileClick(MobTP, "ThirdPerson")
+local function RegisterMobileClick(Btn, Key) RegisterTouchFriendlyClick(Btn, function() Config[Key] = not Config[Key] UpdateToggleVisual(Key) end) end
+RegisterMobileClick(MobAim, "Aimbot") RegisterMobileClick(MobTrig, "Triggerbot") RegisterMobileClick(MobSpeed, "SpeedToggle")
+RegisterMobileClick(MobFarm, "AutoFarmPlayer") RegisterMobileClick(MobAura, "Aura") RegisterMobileClick(MobTP, "ThirdPerson")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Config.MenuKeybind then Config.MenuVisible = not Config.MenuVisible MainFrame.Visible = Config.MenuVisible
@@ -1289,36 +936,21 @@ end)
 
 pcall(function()
     LocalPlayer.Idled:Connect(function()
-        if Config.AntiAFK then
-            VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
-            task.wait(1)
-            VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
-        end
+        if Config.AntiAFK then VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame) task.wait(1) VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame) end
     end)
 end)
 
 local function RenderVisuals(Player, Character)
     if not Character or not Character.Parent then return end
-    local Root = Character:WaitForChild("HumanoidRootPart", 5)
-    local Head = Character:WaitForChild("Head", 5)
+    local Root = Character:WaitForChild("HumanoidRootPart", 5) local Head = Character:WaitForChild("Head", 5)
     if not Root or not Head then return end
     
     CleanCharacterVisuals(Character)
-    local Box = Instance.new("BoxHandleAdornment")
-    Box.Name = "WangBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 Box.Size = Vector3.new(4, 6, 4) Box.Visible = false
-
-    local Gui = Instance.new("BillboardGui")
-    Gui.Name = "WangInfoTag" Gui.Adornee = Head Gui.Size = UDim2.new(0, 200, 0, 100) Gui.StudsOffset = Vector3.new(0, 4, 0) Gui.AlwaysOnTop = true
-
-    local Label = Instance.new("TextLabel", Gui)
-    Label.Size = UDim2.new(1, 0, 0, 40) Label.BackgroundTransparency = 1 Label.Font = Enum.Font.Code Label.TextSize = 13 Label.TextColor3 = Config.EspColor
-    
-    local HealthBG = Instance.new("Frame", Gui)
-    HealthBG.Name = "HealthBG" HealthBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0) HealthBG.BorderSizePixel = 1 HealthBG.Position = UDim2.new(0.25, 0, 0, 45) HealthBG.Size = UDim2.new(0.5, 0, 0, 5) HealthBG.Visible = false
-    
-    local HealthBar = Instance.new("Frame", HealthBG)
-    HealthBar.Name = "HealthBar" HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100) HealthBar.BorderSizePixel = 0 HealthBar.Size = UDim2.new(1, 0, 1, 0)
-
+    local Box = Instance.new("BoxHandleAdornment") Box.Name = "WangBoxFill" Box.Parent = Root Box.Adornee = Root Box.AlwaysOnTop = true Box.ZIndex = 10 Box.Size = Vector3.new(4, 6, 4) Box.Visible = false
+    local Gui = Instance.new("BillboardGui") Gui.Name = "WangInfoTag" Gui.Adornee = Head Gui.Size = UDim2.new(0, 200, 0, 100) Gui.StudsOffset = Vector3.new(0, 4, 0) Gui.AlwaysOnTop = true
+    local Label = Instance.new("TextLabel", Gui) Label.Size = UDim2.new(1, 0, 0, 40) Label.BackgroundTransparency = 1 Label.Font = Enum.Font.Code Label.TextSize = 13 Label.TextColor3 = Config.EspColor
+    local HealthBG = Instance.new("Frame", Gui) HealthBG.Name = "HealthBG" HealthBG.BackgroundColor3 = Color3.fromRGB(40, 0, 0) HealthBG.BorderSizePixel = 1 HealthBG.Position = UDim2.new(0.25, 0, 0, 45) HealthBG.Size = UDim2.new(0.5, 0, 0, 5) HealthBG.Visible = false
+    local HealthBar = Instance.new("Frame", HealthBG) HealthBar.Name = "HealthBar" HealthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100) HealthBar.BorderSizePixel = 0 HealthBar.Size = UDim2.new(1, 0, 1, 0)
     Gui.Parent = Head
     Character_Cache[Character] = { Box = Box, Gui = Gui, Label = Label, HealthBG = HealthBG, HealthBar = HealthBar, Player = Player }
 end
@@ -1328,7 +960,8 @@ local function MonitorPlayer(Player)
     Player.CharacterAdded:Connect(function(Char) task.spawn(RenderVisuals, Player, Char) end)
     if Player.Character then task.spawn(RenderVisuals, Player, Player.Character) end
 end
-
+---[còn tiếp]----
+---[Phần 15: Execution Loop Cuối Cùng]----
 MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -1336,8 +969,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.FovCircle then FOV_Drawing.Position = ScreenCenter FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true else FOV_Drawing.Visible = false end
     if Config.CrosshairDot then Dot_Drawing.Position = ScreenCenter Dot_Drawing.Visible = true else Dot_Drawing.Visible = false end
 
-    if Config.ThirdPerson then LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist
-    else LocalPlayer.CameraMinZoomDistance = 0.5 LocalPlayer.CameraMaxZoomDistance = 400 end
+    if Config.ThirdPerson then LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist else LocalPlayer.CameraMinZoomDistance = 0.5 LocalPlayer.CameraMaxZoomDistance = 400 end
 
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -1353,13 +985,11 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
         end
         
-        local headInstance = MyChar:FindFirstChild("Head")
-        local torsoInstance = MyChar:FindFirstChild("UpperTorso") or MyChar:FindFirstChild("Torso")
+        local headInstance = MyChar:FindFirstChild("Head") local torsoInstance = MyChar:FindFirstChild("UpperTorso") or MyChar:FindFirstChild("Torso")
         local neckJoint = (headInstance and headInstance:FindFirstChild("Neck")) or (torsoInstance and torsoInstance:FindFirstChild("Neck"))
         if neckJoint and neckJoint:IsA("Motor6D") then
             if not NeckCache[neckJoint] then NeckCache[neckJoint] = neckJoint.C0 end
-            if Config.BowDown then neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0)
-            else neckJoint.C0 = NeckCache[neckJoint] end
+            if Config.BowDown then neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0) else neckJoint.C0 = NeckCache[neckJoint] end
         end
         
         if Config.Aura then
@@ -1376,8 +1006,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Aura then
         AuraActiveTarget = GetAuraTarget()
         if AuraActiveTarget then
-            local LerpFactor = 1
-            if Config.AuraSmoothness > 0 then LerpFactor = math.clamp(1 / (Config.AuraSmoothness * 3 + 1), 0.01, 1) end
+            local LerpFactor = 1 if Config.AuraSmoothness > 0 then LerpFactor = math.clamp(1 / (Config.AuraSmoothness * 3 + 1), 0.01, 1) end
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, AuraActiveTarget.Position), LerpFactor)
         end
     end
@@ -1385,16 +1014,14 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if Config.Aimbot and not Config.AutoFarmPlayer and not AuraActiveTarget then
         local Target = GetClosestPlayerToCrosshair()
         if Target then
-            local LerpFactor = 1
-            if Config.Smoothness > 0 then LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1) end
+            local LerpFactor = 1 if Config.Smoothness > 0 then LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1) end
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
         end
     end
 
     for Char, Data in pairs(Character_Cache) do
         if Char and Char.Parent and IsAlive(Char) then
-            local Root = Char:FindFirstChild("HumanoidRootPart")
-            local Hum = Char:FindFirstChildOfClass("Humanoid")
+            local Root = Char:FindFirstChild("HumanoidRootPart") local Hum = Char:FindFirstChildOfClass("Humanoid")
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum then
                 local PColor = GetPlayerColor(Data.Player)
                 local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
@@ -1419,13 +1046,7 @@ Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
-pcall(function()
-    StarterGui:SetCore("SendNotification", {
-        Title = "WANGCAOS CLIENT V6.9.0",
-        Text = "Successfully implemented Mobile Button Position Lock & Save System!",
-        Duration = 7
-    })
-end)
+pcall(function() StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.0", Text = "Sectionized UI Loaded Successfully!", Duration = 7}) end)
 -- ==============================================================================
 -- END OF SCRIPT - POWERED BY BE FOR DAI CA WANG (2026)
 -- ==============================================================================

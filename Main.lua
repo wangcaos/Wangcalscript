@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.0 - MINIMAL UI (ULTIMATE UNIVERSAL EXECUTOR FIX)
+-- WANGCAOS PREMIUM CLIENT V6.9.0 - MINIMAL PE-INSPIRED UI (DELTA NATIVE)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -99,7 +99,7 @@ local Config = {
 }
 
 local CurrentSpinAngle = 0
-local IsMobile = UserInputService.TouchEnabled
+local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
 local LastFarmTime = 0
 local CurrentFarmIndex = 1
 
@@ -107,15 +107,12 @@ local UI_Refresh_Functions = {}
 local GlobalMobileButtons = {} 
 local GlobalSyncToggles = {}
 
--- [BẢN VÁ VẠN NĂNG] Hàm tìm GUI an toàn nhất cho mọi executor
+-- TRẢ LẠI HÀM TÌM GUI Y HỆT BẢN GỐC CỦA CẬU
 local function GetSafeGui()
-    -- Thử gethui() trước (Delta, Synapse, KRNL xịn)
     local success, hui = pcall(function() return gethui() end)
-    if success and hui and typeof(hui) == "Instance" then return hui end
-    -- Thử CoreGui (Executor trung bình có ProtectGui)
+    if success and hui then return hui end
     local success2, core = pcall(function() return CoreGui end)
-    if success2 and core and typeof(core) == "Instance" then return core end
-    -- Đường cùng: Vứt vào PlayerGui (Executor rác/yếu)
+    if success2 and core then return core end
     return LocalPlayer:WaitForChild("PlayerGui", 10)
 end
 
@@ -123,24 +120,7 @@ local SafeParent = GetSafeGui()
 if not SafeParent then return end
 
 for _, old in pairs(SafeParent:GetChildren()) do
-    if old.Name == "Wangcaos_Premium_Figma_UI" then pcall(function() old:Destroy() end) end
-end
-
--- [BẢN VÁ VẠN NĂNG] Xử lý executor không có Drawing API (tránh crash toàn bộ script)
-local HasDrawingAPI = (type(Drawing) == "table" or type(Drawing) == "userdata") and type(Drawing.new) == "function"
-local function CreateSafeDrawing(drawType)
-    if HasDrawingAPI then
-        local success, obj = pcall(function() return Drawing.new(drawType) end)
-        if success and obj then return obj end
-    end
-    -- Dummy Object nếu executor cùi không hỗ trợ
-    return setmetatable({}, {
-        __index = function(self, key)
-            if key == "Remove" or key == "Destroy" then return function() end end
-            return nil
-        end,
-        __newindex = function() end
-    })
+    if old.Name == "Wangcaos_Premium_Figma_UI" then old:Destroy() end
 end
 
 local function ExportSettings()
@@ -196,26 +176,22 @@ local function ImportSettings(hexStr)
     end)
     return success
 end
-local FOV_Drawing = CreateSafeDrawing("Circle")
-pcall(function()
-    FOV_Drawing.Color = Config.FovColor
-    FOV_Drawing.Thickness = Config.FovThickness
-    FOV_Drawing.NumSides = Config.FovSides
-    FOV_Drawing.Filled = Config.FovFilled
-    FOV_Drawing.Transparency = Config.FovTransparency
-    FOV_Drawing.Visible = false
-end)
+local FOV_Drawing = Drawing.new("Circle")
+FOV_Drawing.Color = Config.FovColor
+FOV_Drawing.Thickness = Config.FovThickness
+FOV_Drawing.NumSides = Config.FovSides
+FOV_Drawing.Filled = Config.FovFilled
+FOV_Drawing.Transparency = Config.FovTransparency
+FOV_Drawing.Visible = false
 
-local Dot_Drawing = CreateSafeDrawing("Circle")
-pcall(function()
-    Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
-    Dot_Drawing.Thickness = 1
-    Dot_Drawing.Radius = 3
-    Dot_Drawing.NumSides = 16
-    Dot_Drawing.Filled = true
-    Dot_Drawing.Transparency = 1
-    Dot_Drawing.Visible = false
-end)
+local Dot_Drawing = Drawing.new("Circle")
+Dot_Drawing.Color = Color3.fromRGB(255, 255, 255)
+Dot_Drawing.Thickness = 1
+Dot_Drawing.Radius = 3
+Dot_Drawing.NumSides = 16
+Dot_Drawing.Filled = true
+Dot_Drawing.Transparency = 1
+Dot_Drawing.Visible = false
 
 local AuraVisual = Instance.new("CylinderHandleAdornment")
 AuraVisual.Name = "WangAuraCircle"
@@ -228,13 +204,11 @@ local NeckCache = {}
 
 local function CreateTracerObject(Player)
     if Tracer_Cache[Player] then return end
-    local Line = CreateSafeDrawing("Line")
-    pcall(function()
-        Line.Thickness = 1.2
-        Line.Color = Config.EspColor
-        Line.Transparency = 1
-        Line.Visible = false
-    end)
+    local Line = Drawing.new("Line")
+    Line.Thickness = 1.2
+    Line.Color = Config.EspColor
+    Line.Transparency = 1
+    Line.Visible = false
     Tracer_Cache[Player] = Line
 end
 
@@ -482,7 +456,6 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Wangcaos_Premium_Figma_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.IgnoreGuiInset = true 
 ScreenGui.Parent = SafeParent
 
 local function MakeDraggable(UIElement, DragHandle, PosKey)
@@ -572,12 +545,20 @@ local MobFarm = CreateIndependentMobileButton("AutoFarm", "FRM\nON", "FRM\nOFF",
 local MobAura = CreateIndependentMobileButton("Aura", "AUR\nON", "AUR\nOFF", "Aura", "ShowMobileAura", Color3.fromRGB(0, 150, 255), UDim2.new(0.85, 0, 0.59, 0))
 local MobTP = CreateIndependentMobileButton("ThirdPerson", "3RD\nON", "3RD\nOFF", "ThirdPerson", "ShowMobileTP", Color3.fromRGB(150, 150, 150), UDim2.new(0.85, 0, 0.70, 0))
 
+local lxs = Config["MobilePos_MainLogo_XS"] or 0
+local lxo = Config["MobilePos_MainLogo_XO"] or 20
+local lys = Config["MobilePos_MainLogo_YS"] or 0
+local lyo = Config["MobilePos_MainLogo_YO"] or 20
+if not Config["MobilePos_MainLogo_XS"] then
+    Config["MobilePos_MainLogo_XS"] = lxs Config["MobilePos_MainLogo_XO"] = lxo Config["MobilePos_MainLogo_YS"] = lys Config["MobilePos_MainLogo_YO"] = lyo
+end
+
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "PremiumToggleLogo"
 ToggleButton.Parent = ScreenGui
 ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.Position = UDim2.new(lxs, lxo, lys, lyo)
 ToggleButton.Size = UDim2.new(0, 45, 0, 45)
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "W"
@@ -586,21 +567,23 @@ ToggleButton.TextSize = 20
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(60, 60, 60)
 Instance.new("UIStroke", ToggleButton).Thickness = 1.5
-ToggleButton.Visible = true 
+
+ToggleButton.Visible = true -- TỚ ÉP NÓ HIỆN LUÔN DÙ CẬU XÀI PC HAY MOBILE
 GlobalMobileButtons["MainLogo"] = { Btn = ToggleButton }
 MakeDraggable(ToggleButton, ToggleButton, "MainLogo")
-
+-- TỚ BẮT ĐẦU ĐỔI THÀNH GIAO DIỆN MINIMAL Ở ĐÂY, KÍCH THƯỚC GIỐNG ẢNH NHÉ
 local NewMainPanel = Instance.new("Frame")
 NewMainPanel.Name = "NewMainPanel"
 NewMainPanel.Parent = ScreenGui
 NewMainPanel.BackgroundColor3 = Color3.fromRGB(20, 21, 23)
 NewMainPanel.BackgroundTransparency = 0.2
-NewMainPanel.Position = UDim2.new(0.5, -140, 0.5, -180)
+NewMainPanel.Position = UDim2.new(1, -290, 1, -370) -- GÓC DƯỚI PHẢI NHƯ ẢNH
 NewMainPanel.Size = UDim2.new(0, 280, 0, 360)
-NewMainPanel.Visible = true
+NewMainPanel.Visible = Config.MenuVisible
 Instance.new("UICorner", NewMainPanel).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", NewMainPanel).Color = Color3.fromRGB(50, 52, 56)
 NewMainPanel.UIStroke.Thickness = 1
+
 local CustomBackgroundImage = Instance.new("ImageLabel")
 CustomBackgroundImage.Name = "MenuCustomWallpaper"
 CustomBackgroundImage.Parent = NewMainPanel
@@ -700,7 +683,6 @@ for _, page in pairs({NewCombatPage, NewPlayerPage, NewMovementPage, NewVisualPa
     Instance.new("UIPadding", page).PaddingLeft = UDim.new(0, 5)
 end
 NewCombatPage.Visible = true
-
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(28, 30, 32) or Color3.fromRGB(0, 0, 0)
@@ -734,6 +716,7 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
+
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -805,8 +788,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         UpdateToggleVisual(Key) 
         if Callback then Callback(Config[Key]) end 
     end)
-
-    if BindKey then
+        if BindKey then
         local BindBtn = Instance.new("TextButton", TFrame)
         BindBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 35)
         BindBtn.Position = UDim2.new(1, -90, 0.5, -9)
@@ -822,7 +804,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
         local ListenConnection
         local function EndListening(NewKey)
             Listening = false
-            if ListenConnection then pcall(function() ListenConnection:Disconnect() end) end
+            if ListenConnection then ListenConnection:Disconnect() end
             if NewKey then Config[BindKey] = NewKey BindBtn.Text = NewKey.Name:upper() else BindBtn.Text = Config[BindKey] and Config[BindKey].Name or "NONE" end
             BindBtn.TextColor3 = Color3.fromRGB(180, 185, 190)
         end
@@ -840,6 +822,7 @@ local function AddPremiumToggle(Page, LabelText, Key, Callback, DefMobColor, Bin
     end
     table.insert(UI_Refresh_Functions, function() UpdateToggleVisual(Key) end)
 end
+
 local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
     local SFrame = Instance.new("Frame", Page)
     SFrame.BackgroundColor3 = Color3.fromRGB(25, 26, 28)
@@ -894,7 +877,7 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
 
     local Dragging = false
     local function Update(inputPos)
-        local mouseX = (inputPos and inputPos.X) or (Mouse and Mouse.X) or 0
+        local mouseX = (inputPos and inputPos.X) or Mouse.X
         local ratio = math.clamp((mouseX - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
         local val = Min + (Max - Min) * ratio
         if Max - Min > 10 then val = math.floor(val) else val = math.floor(val * 10) / 10 end
@@ -912,7 +895,6 @@ local function AddPremiumSlider(Page, LabelText, Min, Max, Key, Callback)
         Fill.Size = UDim2.new((Config[Key] - Min) / (Max - Min), 0, 1, 0)
     end)
 end
-
 local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     local BFrame = Instance.new("Frame", Page)
     BFrame.BackgroundColor3 = Color3.fromRGB(25, 26, 28)
@@ -979,6 +961,7 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
+
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Color3.fromRGB(25, 26, 28)
@@ -1125,14 +1108,12 @@ local function AddExportBox(Page)
     RegisterTouchFriendlyClick(ActionBtn, function()
         local code = ExportSettings()
         Box.Text = code
-        pcall(function()
-            if setclipboard then
-                setclipboard(code)
-                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Code copied to clipboard!", Duration = 3})
-            else
-                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Please copy from the text box!", Duration = 3})
-            end
-        end)
+        if setclipboard then
+            pcall(function() setclipboard(code) end)
+            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Code copied to clipboard!", Duration = 3})
+        else
+            StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Please copy from the text box!", Duration = 3})
+        end
     end)
 end
 
@@ -1172,14 +1153,12 @@ local function AddImportBox(Page)
         local code = Box.Text
         if code and code ~= "" then
             local success = ImportSettings(code)
-            pcall(function()
-                if success then
-                    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3})
-                    Box.Text = ""
-                else
-                    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3})
-                end
-            end)
+            if success then
+                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Import Success! Interface updated.", Duration = 3})
+                Box.Text = ""
+            else
+                StarterGui:SetCore("SendNotification", {Title = "WANGCAOS", Text = "Invalid Code!", Duration = 3})
+            end
         end
     end)
 end
@@ -1268,10 +1247,8 @@ AddPremiumSlider(NewPlayerPage, "Head Bow Angle Degree", 0, 90, "BowAngle")
 AddPremiumToggle(NewPlayerPage, "Auto Farm Player (Behind)", "AutoFarmPlayer", nil, Color3.fromRGB(45, 140, 75))
 AddPremiumSlider(NewPlayerPage, "Farm TP Intervallic Delay", 0.01, 5, "AutoFarmDelay")
 AddPremiumToggle(NewPlayerPage, "FullBright Atmosphere", "FullBright", function(state)
-    pcall(function()
-        if state then Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        else Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient end
-    end)
+    if state then Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    else Lighting.Ambient = Config.StoredAmbient Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient end
 end)
 AddPremiumToggle(NewPlayerPage, "Enable Spinbot Axis", "Spinbot", nil, nil, "SpinbotKeybind")
 AddPremiumSlider(NewPlayerPage, "Spinbot Rotate Velocity", 5, 100, "SpinSpeed")
@@ -1290,6 +1267,7 @@ AddSyncedEspColorSelector(NewVisualPage)
 AddPremiumToggle(NewVisualPage, "Informative Character Tags", "EspName")
 AddPremiumToggle(NewVisualPage, "Show Character Health Meter", "EspHealth") 
 AddPremiumSlider(NewVisualPage, "Max Rendering Vector Range", 100, 5000, "MaxDistance")
+
 AddPremiumToggle(NewMiscPage, "Force Third Person View", "ThirdPerson", nil, nil, nil)
 AddPremiumSlider(NewMiscPage, "Third Person Distance", 5, 100, "ThirdPersonDist")
 AddPremiumToggle(NewMiscPage, "Draw Dynamic FOV Circle", "FovCircle")
@@ -1301,7 +1279,6 @@ AddPremiumToggle(NewMiscPage, "Lock Mobile Buttons Position", "LockMobileButtons
 
 AddExportBox(NewMiscPage)
 AddImportBox(NewMiscPage)
-
 AddPremiumToggle(NewMiscPage, "Display Mobile 3RD Button", "ShowMobileTP", function(state) GlobalMobileButtons["ThirdPerson"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(NewMiscPage, "Display Mobile Aura Trigger", "ShowMobileAura", function(state) GlobalMobileButtons["Aura"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(NewMiscPage, "Display Mobile Aim Trigger", "ShowMobileAim", function(state) GlobalMobileButtons["Aimbot"].Btn.Visible = (state and IsMobile) end)
@@ -1311,7 +1288,7 @@ AddPremiumToggle(NewMiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", fu
 AddPremiumToggle(NewMiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
 
 AddPremiumButton(NewMiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
-    pcall(function() MasterLoop:Disconnect() end)
+    MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
     pcall(function() Dot_Drawing:Remove() end)
     pcall(function() AuraVisual:Remove() end)
@@ -1319,15 +1296,15 @@ AddPremiumButton(NewMiscPage, "Uninject Execution Process", "UNINJECT NOW", func
     for _, L in pairs(Tracer_Cache) do pcall(function() L:Remove() end) end
     for C, _ in pairs(Character_Cache) do CleanCharacterVisuals(C) end
     for neck, origC0 in pairs(NeckCache) do if neck and neck.Parent then pcall(function() neck.C0 = origC0 end) end end
-    pcall(function() LocalPlayer.CameraMinZoomDistance = 0.5 end)
-    pcall(function() LocalPlayer.CameraMaxZoomDistance = 400 end)
-    pcall(function() Lighting.Ambient = Config.StoredAmbient end)
-    pcall(function() Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient end)
-    pcall(function() ScreenGui:Destroy() end)
+    LocalPlayer.CameraMinZoomDistance = 0.5
+    LocalPlayer.CameraMaxZoomDistance = 400
+    Lighting.Ambient = Config.StoredAmbient
+    Lighting.OutdoorAmbient = Config.StoredOutdoorAmbient
+    ScreenGui:Destroy()
 end)
 
 AddPremiumCreditBox(NewCreditsPage, "Lead Architecture Designer", "Dai Ca Wang")
-AddPremiumCreditBox(NewCreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Universal Universal")
+AddPremiumCreditBox(NewCreditsPage, "Framework Integrity Status", "Premium V6.9.0 - Delta Native Core")
 
 CreatePremiumTab("Combat", "⚔", 1, NewCombatPage)
 CreatePremiumTab("Player", "👤", 2, NewPlayerPage)
@@ -1345,6 +1322,7 @@ RegisterMobileClick(MobSpeed, "SpeedToggle")
 RegisterMobileClick(MobFarm, "AutoFarmPlayer")
 RegisterMobileClick(MobAura, "Aura")
 RegisterMobileClick(MobTP, "ThirdPerson")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Config.MenuKeybind then Config.MenuVisible = not Config.MenuVisible NewMainPanel.Visible = Config.MenuVisible
@@ -1361,9 +1339,9 @@ end)
 pcall(function()
     LocalPlayer.Idled:Connect(function()
         if Config.AntiAFK then
-            pcall(function() VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame) end)
+            VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
             task.wait(1)
-            pcall(function() VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame) end)
+            VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
         end
     end)
 end)
@@ -1401,19 +1379,14 @@ local function MonitorPlayer(Player)
 end
 
 MasterLoop = RunService.RenderStepped:Connect(function()
-    if not Camera then return end
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
-    pcall(function()
-        if Config.FovCircle then FOV_Drawing.Position = ScreenCenter FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true else FOV_Drawing.Visible = false end
-        if Config.CrosshairDot then Dot_Drawing.Position = ScreenCenter Dot_Drawing.Visible = true else Dot_Drawing.Visible = false end
-    end)
+    if Config.FovCircle then FOV_Drawing.Position = ScreenCenter FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true else FOV_Drawing.Visible = false end
+    if Config.CrosshairDot then Dot_Drawing.Position = ScreenCenter Dot_Drawing.Visible = true else Dot_Drawing.Visible = false end
 
-    pcall(function()
-        if Config.ThirdPerson then LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist
-        else LocalPlayer.CameraMinZoomDistance = 0.5 LocalPlayer.CameraMaxZoomDistance = 400 end
-    end)
+    if Config.ThirdPerson then LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist
+    else LocalPlayer.CameraMinZoomDistance = 0.5 LocalPlayer.CameraMaxZoomDistance = 400 end
 
     local MyChar = LocalPlayer.Character
     local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
@@ -1421,12 +1394,12 @@ MasterLoop = RunService.RenderStepped:Connect(function()
     if IsAlive(MyChar) and MyRoot then
         local MyHum = MyChar:FindFirstChildOfClass("Humanoid")
         if MyHum then
-            if Config.SpeedToggle then pcall(function() MyHum.WalkSpeed = Config.WalkSpeed end) end
-            if Config.JumpToggle then pcall(function() MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end) end
+            if Config.SpeedToggle then MyHum.WalkSpeed = Config.WalkSpeed end
+            if Config.JumpToggle then MyHum.UseJumpPower = true MyHum.JumpPower = Config.JumpPower end
         end
         if Config.Spinbot then
             CurrentSpinAngle = (CurrentSpinAngle + Config.SpinSpeed) % 360
-            pcall(function() MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0) end)
+            MyRoot.CFrame = CFrame.new(MyRoot.CFrame.Position) * CFrame.Angles(0, math.rad(CurrentSpinAngle), 0)
         end
         
         local headInstance = MyChar:FindFirstChild("Head")
@@ -1434,18 +1407,16 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         local neckJoint = (headInstance and headInstance:FindFirstChild("Neck")) or (torsoInstance and torsoInstance:FindFirstChild("Neck"))
         if neckJoint and neckJoint:IsA("Motor6D") then
             if not NeckCache[neckJoint] then NeckCache[neckJoint] = neckJoint.C0 end
-            if Config.BowDown then pcall(function() neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0) end)
-            else pcall(function() neckJoint.C0 = NeckCache[neckJoint] end) end
+            if Config.BowDown then neckJoint.C0 = NeckCache[neckJoint] * CFrame.Angles(math.rad(-Config.BowAngle), 0, 0)
+            else neckJoint.C0 = NeckCache[neckJoint] end
         end
         
         if Config.Aura then
-            pcall(function()
-                if AuraVisual.Parent ~= MyRoot then AuraVisual.Parent = MyRoot AuraVisual.Adornee = MyRoot end
-                AuraVisual.Height = 0.08 AuraVisual.Radius = Config.AuraRadius AuraVisual.Color3 = Config.AuraColor
-                AuraVisual.Transparency = Config.AuraTransparency / 100 AuraVisual.CFrame = CFrame.new(0, -3.1, 0) * CFrame.Angles(math.rad(90), 0, 0) AuraVisual.Visible = true
-            end)
-        else pcall(function() AuraVisual.Visible = false end) end
-    else pcall(function() AuraVisual.Visible = false end) end
+            if AuraVisual.Parent ~= MyRoot then AuraVisual.Parent = MyRoot AuraVisual.Adornee = MyRoot end
+            AuraVisual.Height = 0.08 AuraVisual.Radius = Config.AuraRadius AuraVisual.Color3 = Config.AuraColor
+            AuraVisual.Transparency = Config.AuraTransparency / 100 AuraVisual.CFrame = CFrame.new(0, -3.1, 0) * CFrame.Angles(math.rad(90), 0, 0) AuraVisual.Visible = true
+        else AuraVisual.Visible = false end
+    else AuraVisual.Visible = false end
 
     task.spawn(ProcessAutoFarmPlayer)
     if Config.Triggerbot then task.spawn(PerformTriggerbotClick) end
@@ -1456,7 +1427,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         if AuraActiveTarget then
             local LerpFactor = 1
             if Config.AuraSmoothness > 0 then LerpFactor = math.clamp(1 / (Config.AuraSmoothness * 3 + 1), 0.01, 1) end
-            pcall(function() Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, AuraActiveTarget.Position), LerpFactor) end)
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, AuraActiveTarget.Position), LerpFactor)
         end
     end
 
@@ -1465,7 +1436,7 @@ MasterLoop = RunService.RenderStepped:Connect(function()
         if Target then
             local LerpFactor = 1
             if Config.Smoothness > 0 then LerpFactor = math.clamp(1 / (Config.Smoothness * 3 + 1), 0.01, 1) end
-            pcall(function() Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor) end)
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Target.Position), LerpFactor)
         end
     end
 
@@ -1475,27 +1446,18 @@ MasterLoop = RunService.RenderStepped:Connect(function()
             local Hum = Char:FindFirstChildOfClass("Humanoid")
             if Config.EspMaster and Root and MyChar and MyChar:FindFirstChild("HumanoidRootPart") and Hum then
                 local PColor = GetPlayerColor(Data.Player)
-                local Dist = 0
-                pcall(function() Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude) end)
+                local Dist = math.floor((Root.Position - MyChar.HumanoidRootPart.Position).Magnitude)
 
-                pcall(function()
-                    if Config.EspBox and Dist <= Config.MaxDistance then Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100 else Data.Box.Visible = false end
-                    if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
-                    if Config.EspHealth and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.HealthBG.Visible = true local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1) Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0) Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1) else Data.HealthBG.Visible = false end
-                end)
+                if Config.EspBox and Dist <= Config.MaxDistance then Data.Box.Visible = true Data.Box.Color3 = PColor Data.Box.Transparency = Config.EspTransparency / 100 else Data.Box.Visible = false end
+                if Config.EspName and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.Label.Visible = true Data.Label.TextColor3 = PColor Data.Label.Text = string.format("%s (%dm)\\n[%s] [%s]", Data.Player.Name, Dist, Data.Player.Team and Data.Player.Team.Name or "No Team", GetEquippedTool(Char)) else Data.Label.Visible = false end
+                if Config.EspHealth and Dist <= Config.MaxDistance then Data.Gui.Enabled = true Data.HealthBG.Visible = true local HealthPercent = math.clamp(Hum.Health / Hum.MaxHealth, 0, 1) Data.HealthBar.Size = UDim2.new(HealthPercent, 0, 1, 0) Data.HealthBar.BackgroundColor3 = Color3.fromHSV(HealthPercent * 0.35, 1, 1) else Data.HealthBG.Visible = false end
 
                 local Tracer = Tracer_Cache[Data.Player]
                 if Tracer and Config.EspTracer and Dist <= Config.MaxDistance then
-                    local Leg, OnScreen = false, false
-                    pcall(function() Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0)) end)
-                    pcall(function()
-                        if OnScreen then Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true else Tracer.Visible = false end
-                    end)
-                elseif Tracer then pcall(function() Tracer.Visible = false end) end
-            else 
-                pcall(function() Data.Box.Visible = false Data.Label.Visible = false Data.HealthBG.Visible = false end)
-                if Tracer_Cache[Data.Player] then pcall(function() Tracer_Cache[Data.Player].Visible = false end) end
-            end
+                    local Leg, OnScreen = Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0))
+                    if OnScreen then Tracer.From = Config.TracerMode == "Center" and ScreenCenter or ScreenBottom Tracer.To = Vector2.new(Leg.X, Leg.Y) Tracer.Color = PColor Tracer.Visible = true else Tracer.Visible = false end
+                elseif Tracer then Tracer.Visible = false end
+            else Data.Box.Visible = false Data.Label.Visible = false Data.HealthBG.Visible = false if Tracer_Cache[Data.Player] then Tracer_Cache[Data.Player].Visible = false end end
         else CleanCharacterVisuals(Char) Character_Cache[Char] = nil end
     end
 end)
@@ -1504,15 +1466,15 @@ Players.PlayerAdded:Connect(function(Player) CreateTracerObject(Player) MonitorP
 Players.PlayerRemoving:Connect(function(Player) ClearTracerObject(Player) end)
 
 for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P) end
-for K, _ in pairs(GlobalSyncToggles) do pcall(function() UpdateToggleVisual(K) end) end
+for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "WANGCAOS CLIENT V6.9.0",
-        Text = "UNIVERSAL EXECUTOR FIX APPLIED!",
+        Text = "Restored Delta Original Compatibility!",
         Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - ULTIMATE UNIVERSAL EXECUTOR FIX
+-- END OF SCRIPT - 100% ORIGINAL COMPATIBILITY RESTORED
 -- ==============================================================================

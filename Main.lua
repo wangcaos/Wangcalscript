@@ -1,5 +1,5 @@
 -- ==============================================================================
--- WANGCAOS PREMIUM CLIENT V6.9.0 - MINIMAL PE-INSPIRED UI
+-- WANGCAOS PREMIUM CLIENT V6.9.0 - MINIMAL PE-INSPIRED UI (HOTFIX)
 -- ALL RIGHTS RESERVED BY DAI CA WANG (2026)
 -- ==============================================================================
 
@@ -99,7 +99,8 @@ local Config = {
 }
 
 local CurrentSpinAngle = 0
-local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+-- Đã sửa lại lỗi nhận diện bàn phím ảo trên điện thoại Android
+local IsMobile = UserInputService.TouchEnabled 
 local LastFarmTime = 0
 local CurrentFarmIndex = 1
 
@@ -225,7 +226,6 @@ local function CleanCharacterVisuals(Character)
     local OldTag = Character:FindFirstChild("WangInfoTag", true)
     if OldTag then OldTag:Destroy() end
 end
-
 local function IsAlive(Character)
     if not Character or not Character.Parent then return false end
     local Hum = Character:FindFirstChildOfClass("Humanoid")
@@ -491,7 +491,6 @@ local function MakeDraggable(UIElement, DragHandle, PosKey)
         end
     end)
 end
-
 local function RegisterTouchFriendlyClick(TextButton, Callback)
     local HoldingTouch = false
     TextButton.MouseButton1Click:Connect(function() if not HoldingTouch then Callback() end end)
@@ -645,6 +644,8 @@ TabMenuContainer.BorderSizePixel = 0
 TabMenuContainer.Position = UDim2.new(0, 0, 0, 0)
 TabMenuContainer.Size = UDim2.new(1, 0, 1, 0)
 TabMenuContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+-- Tớ đã thêm AutomaticCanvasSize ở đây để cậu vuốt được rồi này!
+TabMenuContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 TabMenuContainer.ScrollBarThickness = 0
 local TabLayout = Instance.new("UIListLayout", TabMenuContainer)
 TabLayout.FillDirection = Enum.FillDirection.Vertical
@@ -671,6 +672,7 @@ for _, page in pairs({NewCombatPage, NewPlayerPage, NewMovementPage, NewVisualPa
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
     page.CanvasSize = UDim2.new(0, 0, 0, 0) 
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
     page.ScrollBarThickness = 2
     page.ScrollBarImageColor3 = Color3.fromRGB(60, 62, 65)
     page.Visible = false
@@ -681,7 +683,6 @@ for _, page in pairs({NewCombatPage, NewPlayerPage, NewMovementPage, NewVisualPa
     Instance.new("UIPadding", page).PaddingLeft = UDim.new(0, 5)
 end
 NewCombatPage.Visible = true
-
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Order == 1 and Color3.fromRGB(28, 30, 32) or Color3.fromRGB(0, 0, 0)
@@ -735,6 +736,7 @@ local function UpdateToggleVisual(Key)
         end
     end
 end
+
 local RestrictedKeys = {
     ShowMobileTP = true, ShowMobileAura = true, ShowMobileAim = true, 
     ShowMobileTrig = true, ShowMobileSpeed = true, ShowMobileFarm = true
@@ -1092,7 +1094,7 @@ local function AddExportBox(Page)
     Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
     Instance.new("UIStroke", Box).Color = Color3.fromRGB(50, 52, 55)
 
-local ActionBtn = Instance.new("TextButton", TFrame)
+    local ActionBtn = Instance.new("TextButton", TFrame)
     ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 230)
     ActionBtn.Position = UDim2.new(1, -75, 0.5, -11)
     ActionBtn.Size = UDim2.new(0, 65, 0, 22)
@@ -1113,7 +1115,6 @@ local ActionBtn = Instance.new("TextButton", TFrame)
         end
     end)
 end
-
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Color3.fromRGB(25, 26, 28)
@@ -1285,7 +1286,6 @@ AddPremiumToggle(NewMiscPage, "Display Mobile Trigger Clicker", "ShowMobileTrig"
 AddPremiumToggle(NewMiscPage, "Display Mobile Speed Toggle", "ShowMobileSpeed", function(state) GlobalMobileButtons["SpeedToggle"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(NewMiscPage, "Display Mobile Farm Toggle", "ShowMobileFarm", function(state) GlobalMobileButtons["AutoFarmPlayer"].Btn.Visible = (state and IsMobile) end)
 AddPremiumToggle(NewMiscPage, "Menu Modular Wallpaper", "CustomBackground", function(state) CustomBackgroundImage.Visible = state end)
-
 AddPremiumButton(NewMiscPage, "Uninject Execution Process", "UNINJECT NOW", function()
     MasterLoop:Disconnect()
     pcall(function() FOV_Drawing:Remove() end)
@@ -1469,10 +1469,10 @@ for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "WANGCAOS CLIENT V6.9.0",
-        Text = "Implemented Compact Minimalist PE-Inspired UI!",
+        Text = "Successfully hotfixed Mobile detection & Scrolling issues!",
         Duration = 7
     })
 end)
 -- ==============================================================================
--- END OF SCRIPT - REFACTOR FOR MINIMALIST DESIGN
+-- END OF SCRIPT - HOTFIXED
 -- ==============================================================================

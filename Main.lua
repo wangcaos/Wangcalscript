@@ -73,7 +73,6 @@ if not SafeParent then return end
 for _, old in pairs(SafeParent:GetChildren()) do
     if old.Name == "Wangcaos_Premium_Figma_UI" or old.Name == "WangcaosIntro" then old:Destroy() end
 end
-
 -- Animated Intro Loading Screen
 local IntroScreen = Instance.new("ScreenGui")
 IntroScreen.Name = "WangcaosIntro"
@@ -162,6 +161,7 @@ task.spawn(function()
     task.wait(0.8)
     if IntroScreen then IntroScreen:Destroy() end
 end)
+
 local function ExportSettings()
     local exportTable = {}
     for k, v in pairs(Config) do
@@ -175,7 +175,6 @@ local function ExportSettings()
     for i = 1, #json do hex = hex .. string.format("%02X", string.byte(json, i)) end
     return hex
 end
-
 local function ImportSettings(hexStr)
     local success, err = pcall(function()
         local json = ""
@@ -281,13 +280,13 @@ local function IsTeammate(Player)
     if CheckHiddenValues(LocalPlayer.Character, Player.Character) then return true end
     return false
 end
-
 local function CheckWallOcclusion(TargetPart, Character)
     if not Config.WallCheck and not Config.AuraWallCheck then return true end
     local Origin = Camera.CFrame.Position; local Direction = TargetPart.Position - Origin
     local Params = RaycastParams.new(); Params.FilterType = Enum.RaycastFilterType.Exclude; Params.FilterDescendantsInstances = {LocalPlayer.Character, Character, Camera}
     return workspace:Raycast(Origin, Direction, Params) == nil
 end
+
 local function CheckTriggerWall(Position)
     if not Config.TriggerWallCheck then return true end
     local Origin = Camera.CFrame.Position; local Direction = Position - Origin
@@ -384,7 +383,6 @@ local function GetAuraTarget()
     end
     return BestTarget
 end
-
 local function GetPlayerColor(Player)
     if Config.EspTeamCheck and IsTeammate(Player) then return Color3.fromRGB(0, 255, 0) end
     return Config.EspColor
@@ -577,7 +575,6 @@ TopNavBar.Position = UDim2.new(0, 0, 0, 10)
 TopNavBar.Size = UDim2.new(1, -10, 0, 42)
 TopNavBar.ZIndex = 2
 Instance.new("UICorner", TopNavBar).CornerRadius = Style_CornerRadius
-
 local TabMenuContainer = Instance.new("Frame")
 TabMenuContainer.Parent = TopNavBar
 TabMenuContainer.BackgroundTransparency = 1
@@ -648,6 +645,7 @@ local function CreateSectionTitle(Page, Text)
     Instance.new("UIPadding", Title).PaddingLeft = UDim.new(0, 4) 
     return Title
 end
+
 local function CreatePremiumTab(Name, IconText, Order, TargetPage)
     local TabBtn = Instance.new("TextButton", TabMenuContainer)
     TabBtn.BackgroundColor3 = Style_Bg 
@@ -679,7 +677,6 @@ local function CreatePremiumTab(Name, IconText, Order, TargetPage)
         TargetPage.Visible = true
     end)
 end
-
 local function UpdateToggleVisual(Key)
     local TargetData = GlobalSyncToggles[Key]
     if not TargetData then return end
@@ -887,7 +884,6 @@ local function AddPremiumButton(Page, LabelText, ButtonText, Callback)
     Instance.new("UICorner", ActionBtn).CornerRadius = Style_CornerRadius
     RegisterTouchFriendlyClick(ActionBtn, Callback)
 end
-
 local function AddHitboxSelector(Page)
     local HFrame = Instance.new("Frame", Page)
     HFrame.BackgroundColor3 = Style_SubBg
@@ -926,6 +922,7 @@ local function AddHitboxSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() HitboxBtn.Text = Config.TargetPart:upper() end)
 end
+
 local function AddSyncedEspColorSelector(Page)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg
@@ -1003,7 +1000,6 @@ local function AddAuraColorSelector(Page)
     end)
     table.insert(UI_Refresh_Functions, function() ColorBox.BackgroundColor3 = Config.AuraColor end)
 end
-
 local function AddTracerModeSelector(Page)
     local MFrame = Instance.new("Frame", Page)
     MFrame.BackgroundColor3 = Style_SubBg
@@ -1087,6 +1083,7 @@ local function AddExportBox(Page)
         end
     end)
 end
+
 local function AddImportBox(Page)
     local TFrame = Instance.new("Frame", Page)
     TFrame.BackgroundColor3 = Style_SubBg
@@ -1134,7 +1131,6 @@ local function AddImportBox(Page)
         end
     end)
 end
-
 local function AddPremiumCreditBox(Page, Title, Description)
     local CFrame = Instance.new("Frame", Page)
     CFrame.BackgroundColor3 = Style_SubBg 
@@ -1358,14 +1354,30 @@ local function MonitorPlayer(Player)
 end
 
 -- ==============================================================================
--- MASTER RENDER STEPPED LOOP
+-- MASTER RENDER STEPPED LOOP (Tích hợp FOV nhạt màu)
 -- ==============================================================================
 
 MasterLoop = RunService.RenderStepped:Connect(function()
     local ScreenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local ScreenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
-    if Config.FovCircle then FOV_Drawing.Position = ScreenCenter FOV_Drawing.Radius = Config.FovRadius FOV_Drawing.Visible = true else FOV_Drawing.Visible = false end
+    if Config.FovCircle then 
+        FOV_Drawing.Position = ScreenCenter 
+        FOV_Drawing.Radius = Config.FovRadius 
+        FOV_Drawing.Visible = true 
+        
+        local FovTarget = GetClosestPlayerToCrosshair()
+        if FovTarget then
+            local FovScreenPos = Camera:WorldToViewportPoint(FovTarget.Position)
+            local FovDist = (Vector2.new(FovScreenPos.X, FovScreenPos.Y) - ScreenCenter).Magnitude
+            FOV_Drawing.Transparency = math.clamp((1 - (FovDist / Config.FovRadius)) * Config.FovTransparency, 0, 1)
+        else
+            FOV_Drawing.Transparency = Config.FovTransparency
+        end
+    else 
+        FOV_Drawing.Visible = false 
+    end
+
     if Config.CrosshairDot then Dot_Drawing.Position = ScreenCenter Dot_Drawing.Visible = true else Dot_Drawing.Visible = false end
 
     if Config.ThirdPerson then LocalPlayer.CameraMinZoomDistance = Config.ThirdPersonDist LocalPlayer.CameraMaxZoomDistance = Config.ThirdPersonDist
@@ -1474,7 +1486,7 @@ for _, P in pairs(Players:GetPlayers()) do CreateTracerObject(P) MonitorPlayer(P
 for K, _ in pairs(GlobalSyncToggles) do UpdateToggleVisual(K) end
 
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Modern Compact Edition (3D Chams) successfully!", Duration = 5})
+    StarterGui:SetCore("SendNotification", {Title = "WANGCAOS CLIENT V6.9.4", Text = "Loaded Modern Compact Edition (3D Chams + FOV Fade) successfully!", Duration = 5})
 end)
 -- ==============================================================================
 -- END OF SCRIPT - MODERN COMPACT EDITION CREATED BY BE FOR DAI CA WANG (2026)
